@@ -13,6 +13,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Extract project
+        run: |
+          rm -rf project
+          mkdir project
+          ZIP=$(find . -maxdepth 1 -type f -name "*GitHub-Actions-APK*.zip" | head -1)
+          echo "Using ZIP: $ZIP"
+          unzip -q "$ZIP" -d project
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -23,16 +30,15 @@ jobs:
         id: project
         shell: bash
         run: |
-          if [ -f package.json ]; then
-            echo "dir=." >> "$GITHUB_OUTPUT"
+          if [ -f project/web/package.json ]; then
+            echo "dir=project/web" >> "$GITHUB_OUTPUT"
           else
-            DIR=$(find . -maxdepth 3 -type f -name package.json -not -path "*/node_modules/*" -printf '%h\n' | head -n 1)
-            if [ -z "$DIR" ]; then
-              echo "package.json not found"
-              exit 1
-            fi
-            echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+            echo "project/web/package.json not found"
+            exit 1
           fi
+              
+
+    
 
       - name: Install dependencies
         working-directory: ${{ steps.project.outputs.dir }}
