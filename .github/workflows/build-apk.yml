@@ -63,7 +63,7 @@ jobs:
       - name: Install Capacitor
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
-      npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest --save --legacy-peer-deps
+        npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest --save --legacy-peer-deps
 
     - name: Create Capacitor config
       working-directory: ${{ steps.project.outputs.dir }}
