@@ -52,7 +52,10 @@ jobs:
       - name: Install dependencies
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm install --legacy-peer-deps
-
+      - name: Fix fetchEquipment export
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: |
+          echo "export { fetchEquipment } from './equipment';" >> src/lib/transactions.ts
       - name: Build web app
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm run build
