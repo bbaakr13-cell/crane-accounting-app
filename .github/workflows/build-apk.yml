@@ -14,50 +14,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Find ZIP file
-        id: zip
-        run: |
-          ZIP=$(find . -maxdepth 2 -type f -name "*.zip" | head -1)
-          if [ -z "$ZIP" ]; then
-            echo "No ZIP file found"
-            exit 1
-          fi
-          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
-          echo "Found ZIP: $ZIP"
-
-      - name: Extract project
-        run: |
-          rm -rf project
-          mkdir project
-          unzip -q "${{ steps.zip.outputs.zip }}" -d project
-
-      - name: Find package.json
-        id: project
-        run: |
-          PACKAGE=$(find project -type f -name "package.json" | head -1)
-          if [ -z "$PACKAGE" ]; then
-            echo "package.json not found"
-            exit 1
-          fi
-          DIR=$(dirname "$PACKAGE")
-          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
-          echo "Project directory: $DIR"
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '20'
+
+      - name: Find project
+        id: project
+        shell: bash
+        run: |
+          if [ -f package.json ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          else
+            DIR=$(find . -maxdepth 3 -type f -name package.json -not -path "*/node_modules/*" -printf '%h\n' | head -n 1)
+            if [ -z "$DIR" ]; then
+              echo "package.json not found"
+              exit 1
+            fi
+            echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Install dependencies
         working-directory: ${{ steps.project.outputs.dir }}
-        run: npm install --legacy-peer-deps
-
-      - name: Fix fetchEquipment export
-        working-directory: ${{ steps.project.outputs.dir }}
-        run: |
-          if ! grep -q "export.*fetchEquipment" src/lib/transactions.ts 2>/dev/null; then
-            echo "export { fetchEquipment } from './equipment';" >> src/lib/transactions.ts
-          fi
+        run: npm install
 
       - name: Build web app
         working-directory: ${{ steps.project.outputs.dir }}
@@ -65,14 +44,19 @@ jobs:
 
       - name: Install Capacitor
         working-directory: ${{ steps.project.outputs.dir }}
-        run: |
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest --save --legacy-peer-deps
+        run: npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
 
       - name: Create Capacitor config
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
           rm -f capacitor.config.json capacitor.config.ts
-          npx cap init "حساب كرينات" "com.crane.accounting" --web-dir=dist
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.crane.accounting",
+            "appName": "Crane Accounting",
+            "webDir": "dist"
+          }
+          EOF
 
       - name: Add Android
         working-directory: ${{ steps.project.outputs.dir }}
@@ -91,7 +75,7 @@ jobs:
         working-directory: ${{ steps.project.outputs.dir }}/android
         run: |
           chmod +x gradlew
-          ./gradlew clean assembleDebug --stacktrace
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
