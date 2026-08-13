@@ -75,7 +75,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-
+      - name: Fix Kotlin duplicate classes
+        working-directory: ${{ env.PROJECT_DIR }}/android
+        run: |
+          echo "kotlin.stdlib.default.dependency=false" >> gradle.properties
       - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}/android
         run: |
