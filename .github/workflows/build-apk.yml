@@ -40,7 +40,10 @@ jobs:
       - name: Install dependencies
         working-directory: ${{ env.PROJECT_DIR }}
         run: npm install
-
+      - name: Fix fetchEquipment export
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "export { fetchEquipment } from './equipment';" >> src/lib/transactions.ts
       - name: Build web app
         working-directory: ${{ env.PROJECT_DIR }}
         run: npm run build
