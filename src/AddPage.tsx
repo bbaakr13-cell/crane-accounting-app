@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, ArrowDownLeft, ArrowUpLeft, Save, X, Printer } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -17,8 +17,16 @@ import { generateExpenseReceiptHTML, openPrintWindow } from '@/lib/pdf';
 type Mode = 'job' | 'expense' | null;
 
 export function AddPage() {
-  const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>(null);
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState<Mode>(() => {
+  const value = searchParams.get('mode');
+
+  if (value === 'job' || value === 'expense') {
+    return value;
+  }
+
+  return null;
+});
 
   // Shared
   const [equipment, setEquipment] = useState<Equipment[]>([]);
