@@ -1,27 +1,44 @@
-import React from "react";
-import StatCard from "./StatCard";
+import {
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Clock,
+} from "lucide-react";
+
+import { StatCard } from "./StatCard";
 
 export default function DashboardStats() {
   return (
-    <section className="dashboard-stats" dir="rtl">
+    <section
+      className="grid grid-cols-2 gap-3"
+      dir="rtl"
+    >
       <StatCard
-        title="الإيرادات"
-        value="0 ر.س"
+        label="إجمالي الدخل"
+        amount="0 ر.س"
+        icon={TrendingUp}
+        tone="income"
       />
 
       <StatCard
-        title="المصروفات"
-        value="0 ر.س"
+        label="إجمالي المصروفات"
+        amount="0 ر.س"
+        icon={TrendingDown}
+        tone="expense"
       />
 
       <StatCard
-        title="الرصيد"
-        value="0 ر.س"
+        label="صافي الربح"
+        amount="0 ر.س"
+        icon={Wallet}
+        tone="profit"
       />
 
       <StatCard
-        title="الديون"
-        value="0 ر.س"
+        label="المستحقات"
+        amount="0 ر.س"
+        icon={Clock}
+        tone="receivable"
       />
     </section>
   );
