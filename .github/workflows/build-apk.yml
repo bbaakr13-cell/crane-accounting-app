@@ -36,7 +36,10 @@ jobs:
             echo "project/web/package.json not found"
             exit 1
           fi
-              
+      - name: Apply latest source changes
+        run: |
+          mkdir -p project/web/src
+          cp -r src/. project/web/src/              
 
     
 
