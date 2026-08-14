@@ -1,7 +1,7 @@
 import React from "react";
 import DashboardHeader from "./DashboardHeader";
-import QuickAction from "./QuickAction";
-import StatCard from "./StatCard";
+import DashboardStats from "./DashboardStats";
+import DashboardActions from "./DashboardActions";
 import TransactionItem from "./TransactionItem";
 
 export default function Dashboard() {
@@ -9,18 +9,9 @@ export default function Dashboard() {
     <main className="dashboard" dir="rtl">
       <DashboardHeader />
 
-      <section className="dashboard-stats">
-        <StatCard title="الإيرادات" value="0 ر.س" />
-        <StatCard title="المصروفات" value="0 ر.س" />
-        <StatCard title="الرصيد" value="0 ر.س" />
-      </section>
+      <DashboardStats />
 
-      <section className="dashboard-actions">
-        <QuickAction title="إضافة عملية" />
-        <QuickAction title="العملاء" />
-        <QuickAction title="المعدات" />
-        <QuickAction title="التقارير" />
-      </section>
+      <DashboardActions />
 
       <section className="dashboard-transactions">
         <h2>آخر العمليات</h2>
