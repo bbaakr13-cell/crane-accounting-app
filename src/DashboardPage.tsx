@@ -63,8 +63,8 @@ export function DashboardPage() {
         </div>
         <Card className="p-4">
           <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-            <QuickAction label="إضافة دخل" icon={ArrowDownLeft} to="/add" tone="income" delay={0} />
-            <QuickAction label="إضافة مصروف" icon={ArrowUpLeft} to="/add" tone="expense" delay={50} />
+            <QuickAction label="إضافة دخل" icon={ArrowDownLeft} to="/add?mode=job" tone="income" delay={0} />
+            <QuickAction label="إضافة مصروف" icon={ArrowUpLeft} to="/add?mode=expense" tone="expense" delay={50} />
             <QuickAction label="العملاء" icon={Users} to="/customers" tone="profit" delay={100} />
             <QuickAction label="المعدات" icon={Truck} to="/equipment" tone="gold" delay={150} />
             <QuickAction label="الحساب الشهري" icon={CalendarClock} to="/monthly" tone="receivable" delay={200} />
