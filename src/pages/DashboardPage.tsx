@@ -68,6 +68,8 @@ export function DashboardPage() {
             <QuickAction label="العملاء" icon={Users} to="/customers" tone="profit" delay={100} />
             <QuickAction label="المعدات" icon={Truck} to="/equipment" tone="gold" delay={150} />
             <QuickAction label="الحساب الشهري" icon={CalendarClock} to="/monthly" tone="receivable" delay={200} />
+<QuickAction label="التأجير الشهري" icon={CalendarClock} onClick={() => navigate('/monthly-rental')} />
+<QuickAction label="السواقين والمشغلين" icon={Users} onClick={() => navigate('/drivers')} />
             <QuickAction label="التقارير" icon={FileBarChart} to="/reports" tone="profit" delay={250} />
             <QuickAction label="الفواتير" icon={FileText} to="/invoices" tone="gold" delay={300} />
             <QuickAction label="حساب اليوم" icon={Calculator} to="/daily-calculator" tone="gold" delay={350} />
