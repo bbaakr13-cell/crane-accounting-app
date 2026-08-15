@@ -14,6 +14,8 @@ import { ReportsPage } from '@/pages/ReportsPage';
 import { InvoicesPage } from '@/pages/InvoicesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
+import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
+import { DriversPage } from '@/pages/DriversPage';
 
 function App() {
   return (
@@ -33,6 +35,9 @@ function App() {
       <Route path="/invoices" element={<InvoicesPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/daily-calculator" element={<DailyCalculatorPage />} />
+
+      <Route path="/monthly-rental" element={<MonthlyRentalPage />} />
+      <Route path="/drivers" element={<DriversPage />} />
     </Routes>
   );
 }
