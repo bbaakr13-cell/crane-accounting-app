@@ -1,4 +1,4 @@
-name: Build Android APK
+٨name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -46,6 +46,10 @@ jobs:
       - name: Install dependencies
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm install
+
+      - name: Install PDF and sharing libraries
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: npm install jspdf html2canvas @capacitor/filesystem @capacitor/share
       - name: Fix fetchEquipment export
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
