@@ -14,6 +14,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 
 type Invoice = {
@@ -307,6 +308,85 @@ export function InvoicesPage() {
     padding: 16,
   };
 
+ async function createInvoicePDF(invoice: Invoice) {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  pdf.setFontSize(20);
+  pdf.text('INVOICE', 105, 20, { align: 'center' });
+
+  pdf.setFontSize(12);
+  pdf.text(`Invoice: ${invoice.number}`, 20, 40);
+  pdf.text(`Date: ${invoice.date}`, 20, 50);
+  pdf.text(`Customer: ${invoice.customer}`, 20, 60);
+  pdf.text(`Phone: ${invoice.phone || '-'}`, 20, 70);
+  pdf.text(`Equipment: ${invoice.equipment}`, 20, 80);
+  pdf.text(`Description: ${invoice.description || '-'}`, 20, 90);
+  pdf.text(`Amount: ${invoice.amount.toLocaleString()} SAR`, 20, 100);
+  pdf.text(`Status: ${invoice.status}`, 20, 110);
+  pdf.text(`Notes: ${invoice.notes || '-'}`, 20, 120);
+
+  return pdf;
+}
+
+async function printInvoice(invoice: Invoice) {
+  try {
+    const pdf = await createInvoicePDF(invoice);
+    const fileName = `invoice-${invoice.number}.pdf`;
+
+    if (Capacitor.isNativePlatform()) {
+      const base64 = pdf.output('datauristring').split(',')[1];
+
+      await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Documents,
+      });
+
+      alert('تم حفظ ملف PDF بنجاح');
+    } else {
+      pdf.save(fileName);
+    }
+  } catch (error) {
+    console.error(error);
+    alert('حدث خطأ أثناء حفظ PDF');
+  }
+}
+
+async function shareInvoice(invoice: Invoice) {
+  try {
+    const pdf = await createInvoicePDF(invoice);
+    const fileName = `invoice-${invoice.number}.pdf`;
+
+    if (Capacitor.isNativePlatform()) {
+      const base64 = pdf.output('datauristring').split(',')[1];
+
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache,
+      });
+
+      await Share.share({
+        title: `فاتورة ${invoice.number}`,
+        text: `فاتورة العميل ${invoice.customer}`,
+        url: result.uri,
+        dialogTitle: 'مشاركة الفاتورة PDF',
+      });
+    } else {
+      pdf.save(fileName);
+    }
+  } catch (error) {
+    console.error(error);
+    alert('حدث خطأ أثناء مشاركة PDF');
+  }
+}
+
+  
+  
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '12px 13px',
