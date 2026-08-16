@@ -11,6 +11,10 @@ import {
   Save,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 type Invoice = {
   id: number;
