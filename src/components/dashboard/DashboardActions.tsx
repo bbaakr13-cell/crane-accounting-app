@@ -15,7 +15,7 @@ export default function DashboardActions() {
       <QuickAction
         label="إضافة عملية"
         icon={Plus}
-        to="/add"
+        to="/invoices"
         tone="gold"
       />
 
