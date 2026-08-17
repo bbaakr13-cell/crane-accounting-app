@@ -168,21 +168,56 @@ export function InvoicesPage() {
     const reader = new FileReader();
     reader.onload = () => updateData('logoDataUrl', typeof reader.result === 'string' ? reader.result : '');
     reader.readAsDataURL(file);
-  }
+async function createPdf() {
+  if (!invoiceRef.current) throw new Error('Invoice not found');
 
-  async function createPdf() {
-    if (!invoiceRef.current) throw new Error('Invoice not found');
-    const canvas = await html2canvas(invoiceRef.current, { scale: 2.2, backgroundColor: '#ffffff', useCORS: true, logging: false });
-    const image = canvas.toDataURL('image/jpeg', 0.96);
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 3;
-    const width = pageWidth - margin * 2;
-    const height = (canvas.height * width) / canvas.width;
-    pdf.addImage(image, 'JPEG', margin, margin, width, Math.min(height, pageHeight - margin * 2), undefined, 'FAST');
-    return pdf;
-  }
+  const canvas = await html2canvas(invoiceRef.current, {
+    scale: 3,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    logging: false,
+  });
+
+  const image = canvas.toDataURL('image/jpeg', 0.98);
+
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+    compress: true,
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const margin = 4;
+  const maxWidth = pageWidth - margin * 2;
+  const maxHeight = pageHeight - margin * 2;
+
+  const ratio = Math.min(
+    maxWidth / canvas.width,
+    maxHeight / canvas.height
+  );
+
+  const imageWidth = canvas.width * ratio;
+  const imageHeight = canvas.height * ratio;
+
+  const x = (pageWidth - imageWidth) / 2;
+  const y = (pageHeight - imageHeight) / 2;
+
+  pdf.addImage(
+    image,
+    'JPEG',
+    x,
+    y,
+    imageWidth,
+    imageHeight,
+    undefined,
+    'FAST'
+  );
+
+  return pdf;
+}
 
   async function savePdf() {
     try {
