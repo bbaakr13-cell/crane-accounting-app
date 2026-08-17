@@ -10,7 +10,7 @@ import { EquipmentPage } from '@/pages/EquipmentPage';
 import { EquipmentDetailPage } from '@/pages/EquipmentDetailPage';
 import { MonthlyPage } from '@/pages/MonthlyPage';
 import { MonthlyDetailPage } from '@/pages/MonthlyDetailPage';
-import { InvoicesPage } from '@/pages/InvoicesPage-2-fixed';
+import { InvoicesPage } from '@/pages/InvoicesPage-2';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
