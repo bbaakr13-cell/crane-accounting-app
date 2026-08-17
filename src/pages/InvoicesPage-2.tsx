@@ -62,7 +62,7 @@ const initialData: InvoiceData = {
   ],
 };
 
-export default function InvoicesPage2() {
+export function InvoicesPage() {
   const [data, setData] = useState<InvoiceData>(initialData);
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
 
