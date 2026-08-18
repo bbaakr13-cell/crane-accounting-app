@@ -168,59 +168,70 @@ export function InvoicesPage() {
     const reader = new FileReader();
     reader.onload = () => updateData('logoDataUrl', typeof reader.result === 'string' ? reader.result : '');
     reader.readAsDataURL(file);
-  }
-
 async function createPdf() {
   if (!invoiceRef.current) {
     throw new Error('Invoice not found');
   }
 
-  const canvas = await html2canvas(invoiceRef.current, {
-    scale: 3,
-    backgroundColor: '#ffffff',
-    useCORS: true,
-    logging: false,
-  });
+  const element = invoiceRef.current;
 
-  const image = canvas.toDataURL('image/png', 1.0);
+  // حفظ المقاسات الحالية
+  const oldWidth = element.style.width;
+  const oldMinWidth = element.style.minWidth;
+  const oldMaxWidth = element.style.maxWidth;
 
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-    compress: true,
-  });
+  try {
+    // إجبار الفاتورة على مقاس A4 الصحيح قبل تصويرها
+    element.style.width = '794px';
+    element.style.minWidth = '794px';
+    element.style.maxWidth = '794px';
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+    // إعطاء المتصفح فرصة لإعادة ترتيب الفاتورة
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
-  const margin = 4;
-  const maxWidth = pageWidth - margin * 2;
-  const maxHeight = pageHeight - margin * 2;
+    const canvas = await html2canvas(element, {
+      scale: 2.5,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+      width: 794,
+      windowWidth: 1200,
+    });
 
-  const ratio = Math.min(
-    maxWidth / canvas.width,
-    maxHeight / canvas.height
-  );
+    const image = canvas.toDataURL('image/jpeg', 0.98);
 
-  const imageWidth = canvas.width * ratio;
-  const imageHeight = canvas.height * ratio;
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true,
+    });
 
-  const x = (pageWidth - imageWidth) / 2;
-  const y = (pageHeight - imageHeight) / 2;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-  pdf.addImage(
-    image,
-    'PNG',
-    x,
-    y,
-    imageWidth,
-    imageHeight,
-    undefined,
-    'FAST'
-  );
+    const margin = 3;
+    const imageWidth = pageWidth - margin * 2;
+    const imageHeight = (canvas.height * imageWidth) / canvas.width;
 
-  return pdf;
+    pdf.addImage(
+      image,
+      'JPEG',
+      margin,
+      margin,
+      imageWidth,
+      Math.min(imageHeight, pageHeight - margin * 2),
+      undefined,
+      'FAST'
+    );
+
+    return pdf;
+  } finally {
+    // إعادة شكل الفاتورة في التطبيق كما كان
+    element.style.width = oldWidth;
+    element.style.minWidth = oldMinWidth;
+    element.style.maxWidth = oldMaxWidth;
+  }
 }
 
   async function savePdf() {
