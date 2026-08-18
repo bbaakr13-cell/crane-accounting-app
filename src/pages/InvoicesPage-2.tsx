@@ -168,6 +168,7 @@ export function InvoicesPage() {
     const reader = new FileReader();
     reader.onload = () => updateData('logoDataUrl', typeof reader.result === 'string' ? reader.result : '');
     reader.readAsDataURL(file);
+  }
 async function createPdf() {
   if (!invoiceRef.current) {
     throw new Error('Invoice not found');
@@ -314,8 +315,8 @@ async function createPdf() {
                     <div key={index} style={workRow}>
                       <div style={rowNumber(theme)}>{index + 1}</div>
                       <div><label style={miniLabel}>البيان</label><input style={inputStyle} value={item.description} onChange={(e) => updateItem(index, 'description', e.target.value)} placeholder={index < 4 ? initialData.items[index].description : '—'} /></div>
-                      <div><label style={miniLabel}>الكمية</label><input type="number" min="0" style={inputStyle} value={item.qty} onChange={(e) => updateItem(index, 'qty', Number(e.target.value))} /></div>
-                      <div><label style={miniLabel}>سعر الوحدة</label><input type="number" min="0" style={inputStyle} value={item.unitPrice} onChange={(e) => updateItem(index, 'unitPrice', Number(e.target.value))} /></div>
+                      <div><label style={miniLabel}>الكمية</label><input inputMode="decimal" style={inputStyle} value={String(item.qty ?? '')} onChange={(e) => { const v = e.target.value.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[^\d.]/g, ''); updateItem(index, 'qty', v === '' ? 0 : Number(v)); }} /></div>
+                      <div><label style={miniLabel}>سعر الوحدة</label><input inputMode="decimal" style={inputStyle} value={String(item.unitPrice ?? '')} onChange={(e) => { const v = e.target.value.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[^\d.]/g, ''); updateItem(index, 'unitPrice', v === '' ? 0 : Number(v)); }} /></div>
                       <div style={totalBox}><span style={miniLabel}>السعر الإجمالي</span><strong>{rowTotal.toLocaleString()} ر.س</strong></div>
                     </div>
                   );
