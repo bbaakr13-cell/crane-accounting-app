@@ -470,4 +470,5 @@ const invoiceUnpaid: React.CSSProperties = { ...invoicePaid, background: '#fee2e
 const invoiceSignatures: React.CSSProperties = { display: 'flex', justifyContent: 'space-around', textAlign: 'center', marginTop: 20 };
 const actionBar: React.CSSProperties = { maxWidth: 794, margin: '12px auto 0', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 7 };
 const actionButton = (theme: string): React.CSSProperties => ({ border: `1px solid ${theme}66`, background: '#0a1727', color: '#fff', borderRadius: 11, padding: '10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 12, fontWeight: 800 });
+
 const whatsappAction: React.CSSProperties = { border: '1px solid #22c55e66', background: '#0c2918', color: '#fff', borderRadius: 11, padding: '10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 12, fontWeight: 800 };
