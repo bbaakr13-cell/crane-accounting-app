@@ -11,7 +11,7 @@ import { EquipmentDetailPage } from '@/pages/EquipmentDetailPage';
 import { MonthlyPage } from '@/pages/MonthlyPage';
 import { MonthlyDetailPage } from '@/pages/MonthlyDetailPage';
 import { ReportsPage } from '@/pages/ReportsPage';
-import { InvoicesPage } from '@/pages/InvoicesPage-21-final-polished';
+import { InvoicesPage } from '@/pages/InvoicesPage-2-final-polished-FINAL';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
