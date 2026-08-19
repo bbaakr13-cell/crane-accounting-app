@@ -13,6 +13,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Extract project
         run: |
           rm -rf project
@@ -36,12 +37,11 @@ jobs:
             echo "project/web/package.json not found"
             exit 1
           fi
+
       - name: Apply latest source changes
         run: |
           mkdir -p project/web/src
-          cp -r src/. project/web/src/              
-
-    
+          cp -r src/. project/web/src/
 
       - name: Install dependencies
         working-directory: ${{ steps.project.outputs.dir }}
@@ -50,10 +50,12 @@ jobs:
       - name: Install PDF and sharing libraries
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm install jspdf html2canvas @capacitor/filesystem @capacitor/share @capacitor/app
+
       - name: Fix fetchEquipment export
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
           echo "export { fetchEquipment } from './equipment';" >> src/lib/transactions.ts
+
       - name: Build web app
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm run build
@@ -80,15 +82,16 @@ jobs:
           rm -rf android
           npx cap add android
           npx cap sync android
-      - name: Generate Android app icons
+
+      - name: Generate BAAKR PRO app icon
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
           npm install --no-save @capacitor/assets
+          rm -rf assets
           mkdir -p assets
-          cp src/app-icon.png assets/icon-only.png
-          cp src/app-icon.png assets/icon-foreground.png
-          cp src/app-icon.png assets/icon-background.png
-          npx capacitor-assets generate --android
+          cp src/app-icon.png assets/icon.png
+          npx @capacitor/assets generate --android --iconBackgroundColor '#07101f' --iconBackgroundColorDark '#07101f'
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -110,6 +113,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease
+
           $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/apksigner sign \
             --ks app/crane-release.jks \
             --ks-key-alias "$ANDROID_KEY_ALIAS" \
@@ -117,11 +121,13 @@ jobs:
             --key-pass env:ANDROID_KEYSTORE_PASSWORD \
             --out app/build/outputs/apk/release/crane-accounting-signed.apk \
             app/build/outputs/apk/release/app-release-unsigned.apk
-          $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/apksigner verify --verbose app/build/outputs/apk/release/crane-accounting-signed.apk
+
+          $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/apksigner verify --verbose \
+            app/build/outputs/apk/release/crane-accounting-signed.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: crane-accounting-app-signed
+          name: BAAKR-PRO-signed
           path: ${{ steps.project.outputs.dir }}/android/app/build/outputs/apk/release/crane-accounting-signed.apk
           if-no-files-found: error
