@@ -99,7 +99,6 @@ jobs:
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease
@@ -107,7 +106,7 @@ jobs:
             --ks app/crane-release.jks \
             --ks-key-alias "$ANDROID_KEY_ALIAS" \
             --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
-            --key-pass env:ANDROID_KEY_PASSWORD \
+            --key-pass env:ANDROID_KEYSTORE_PASSWORD \
             --out app/build/outputs/apk/release/crane-accounting-signed.apk \
             app/build/outputs/apk/release/app-release-unsigned.apk
           $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/apksigner verify --verbose app/build/outputs/apk/release/crane-accounting-signed.apk
