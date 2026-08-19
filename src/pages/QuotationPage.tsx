@@ -23,15 +23,9 @@ const newRow = (id: number): QuoteRow => ({
 
 export function QuotationPage() {
   const [company, setCompany] = useState('شركة الجهاز للمقاولات');
-  const [date, setDate] = useState(
-    () => new Date().toISOString().slice(0, 10)
-  );
-
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [subject, setSubject] = useState('عرض سعر تأجير معدات');
-
-  const [notes, setNotes] = useState(
-    'السعر غير شامل الديزل والضريبة.'
-  );
+  const [notes, setNotes] = useState('السعر غير شامل الديزل والضريبة.');
 
   const [rows, setRows] = useState<QuoteRow[]>([
     newRow(1),
@@ -78,6 +72,7 @@ export function QuotationPage() {
     );
   };
 
+  // إنشاء PDF بحجم A4 واضح وكبير
   const buildPdf = async () => {
     const el = document.getElementById('quotation-print');
 
@@ -85,94 +80,94 @@ export function QuotationPage() {
       throw new Error('quotation preview not found');
     }
 
-    const canvas = await html2canvas(el, {
+    const clone = el.cloneNode(true) as HTMLElement;
+
+    clone.style.position = 'fixed';
+    clone.style.left = '-10000px';
+    clone.style.top = '0';
+
+    clone.style.width = '794px';
+    clone.style.minHeight = '1123px';
+    clone.style.height = '1123px';
+
+    clone.style.borderRadius = '0';
+    clone.style.boxShadow = 'none';
+    clone.style.margin = '0';
+    clone.style.transform = 'none';
+    clone.style.background = '#ffffff';
+
+    document.body.appendChild(clone);
+
+    const canvas = await html2canvas(clone, {
       scale: 2,
       backgroundColor: '#ffffff',
       useCORS: true,
+      width: 794,
+      height: 1123,
+      windowWidth: 794,
+      windowHeight: 1123,
     });
+
+    document.body.removeChild(clone);
 
     const image = canvas.toDataURL('image/jpeg', 0.98);
 
     const pdf = new jsPDF('p', 'mm', 'a4');
 
-    const pageW = 210;
-    const pageH = 297;
-    const margin = 6;
-
-    const maxW = pageW - margin * 2;
-    const maxH = pageH - margin * 2;
-
-    const ratio = Math.min(
-      maxW / canvas.width,
-      maxH / canvas.height
-    );
-
-    const imgW = canvas.width * ratio;
-    const imgH = canvas.height * ratio;
-
     pdf.addImage(
       image,
       'JPEG',
-      (pageW - imgW) / 2,
-      (pageH - imgH) / 2,
-      imgW,
-      imgH
+      4,
+      4,
+      202,
+      289
     );
 
     return pdf;
   };
 
   const savePdf = async () => {
-    try {
-      const pdf = await buildPdf();
+    const pdf = await buildPdf();
 
-      const base64 = pdf
-        .output('datauristring')
-        .split(',')[1];
+    const base64 =
+      pdf.output('datauristring').split(',')[1];
 
-      const fileName = `quotation-${date}.pdf`;
+    const fileName =
+      `quotation-${date}.pdf`;
 
+    await Filesystem.writeFile({
+      path: fileName,
+      data: base64,
+      directory: Directory.Cache,
+    });
+
+    alert('تم إنشاء ملف عرض السعر PDF');
+  };
+
+  const sharePdf = async () => {
+    const pdf = await buildPdf();
+
+    const base64 =
+      pdf.output('datauristring').split(',')[1];
+
+    const fileName =
+      `quotation-${date}.pdf`;
+
+    const saved =
       await Filesystem.writeFile({
         path: fileName,
         data: base64,
         directory: Directory.Cache,
       });
 
-      alert('تم إنشاء ملف عرض السعر PDF');
-    } catch (error) {
-      console.error(error);
-      alert('حدث خطأ أثناء إنشاء PDF');
-    }
-  };
-
-  const sharePdf = async () => {
-    try {
-      const pdf = await buildPdf();
-
-      const base64 = pdf
-        .output('datauristring')
-        .split(',')[1];
-
-      const fileName = `quotation-${date}.pdf`;
-
-      const saved = await Filesystem.writeFile({
-        path: fileName,
-        data: base64,
-        directory: Directory.Cache,
-      });
-
-      await Share.share({
-        title: 'عرض سعر',
-        text: company
-          ? `عرض سعر موجه إلى ${company}`
-          : 'عرض سعر تأجير معدات',
-        url: saved.uri,
-        dialogTitle: 'مشاركة عرض السعر',
-      });
-    } catch (error) {
-      console.error(error);
-      alert('تعذر مشاركة عرض السعر');
-    }
+    await Share.share({
+      title: 'عرض سعر',
+      text: company
+        ? `عرض سعر موجه إلى ${company}`
+        : 'عرض سعر تأجير معدات',
+      url: saved.uri,
+      dialogTitle: 'مشاركة عرض السعر',
+    });
   };
 
   const sendWhatsApp = () => {
@@ -212,7 +207,10 @@ export function QuotationPage() {
 
   return (
     <AppLayout>
-      <section className="space-y-4 pb-8" dir="rtl">
+      <section
+        className="space-y-4 pb-8"
+        dir="rtl"
+      >
 
         <div className="pt-2">
           <h1 className="text-xl font-extrabold text-white">
@@ -233,7 +231,9 @@ export function QuotationPage() {
 
             <input
               value={company}
-              onChange={(e) => setCompany(e.target.value)}
+              onChange={(e) =>
+                setCompany(e.target.value)
+              }
               placeholder="اسم الشركة أو المؤسسة"
               className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
             />
@@ -249,7 +249,9 @@ export function QuotationPage() {
               <input
                 type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) =>
+                  setDate(e.target.value)
+                }
                 className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
               />
             </div>
@@ -261,7 +263,9 @@ export function QuotationPage() {
 
               <input
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
+                onChange={(e) =>
+                  setSubject(e.target.value)
+                }
                 className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
               />
             </div>
@@ -311,13 +315,17 @@ export function QuotationPage() {
                   </span>
 
                   {rows.length > 4 && (
+
                     <button
                       type="button"
-                      onClick={() => removeRow(row.id)}
+                      onClick={() =>
+                        removeRow(row.id)
+                      }
                       className="text-red-400"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+
                   )}
 
                 </div>
@@ -383,14 +391,16 @@ export function QuotationPage() {
 
           <textarea
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) =>
+              setNotes(e.target.value)
+            }
             rows={3}
             className="w-full resize-none rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-sm text-white outline-none"
           />
 
         </Card>
 
-        {/* الورقة الرسمية */}
+        {/* ورقة عرض السعر */}
 
         <div
           id="quotation-print"
@@ -400,12 +410,13 @@ export function QuotationPage() {
             color: '#111',
             padding: '18px 20px 16px',
             borderRadius: 18,
-            fontFamily: 'Arial, Tahoma, sans-serif',
+            fontFamily:
+              'Arial, Tahoma, sans-serif',
             boxSizing: 'border-box',
           }}
         >
 
-          {/* رأس الورقة */}
+          {/* رأس المؤسسة */}
 
           <div
             style={{
@@ -417,12 +428,15 @@ export function QuotationPage() {
             }}
           >
 
+            {/* English */}
+
             <div
               style={{
                 direction: 'ltr',
                 textAlign: 'center',
               }}
             >
+
               <div style={{ fontSize: 14 }}>
                 Establishment of
               </div>
@@ -446,7 +460,10 @@ export function QuotationPage() {
               >
                 For Equipment Rental
               </div>
+
             </div>
+
+            {/* عربي */}
 
             <div style={{ textAlign: 'center' }}>
 
@@ -485,7 +502,7 @@ export function QuotationPage() {
 
           </div>
 
-          {/* الإطار */}
+          {/* جسم الورقة */}
 
           <div
             style={{
@@ -509,7 +526,8 @@ export function QuotationPage() {
             >
 
               <div>
-                Date&nbsp;&nbsp;:&nbsp;&nbsp;{date}
+                Date&nbsp;&nbsp;:&nbsp;&nbsp;
+                {date}
               </div>
 
               <div style={{ direction: 'rtl' }}>
@@ -533,6 +551,8 @@ export function QuotationPage() {
               عرض سعر
             </div>
 
+            {/* اسم العميل */}
+
             <div
               style={{
                 fontSize: 17,
@@ -545,7 +565,7 @@ export function QuotationPage() {
               &nbsp;&nbsp; المحترمين
             </div>
 
-            {/* الخطاب */}
+            {/* مقدمة */}
 
             <div
               style={{
@@ -559,6 +579,7 @@ export function QuotationPage() {
 
               نفيدكم نحن مؤسسة / سلطان سرور القثامي
               للمقاولات المعمارية
+
               <br />
 
               إليكم تسعيرتنا بخصوص المعدات التالية :
@@ -738,27 +759,33 @@ export function QuotationPage() {
 
             </div>
 
-            {/* أسفل الورقة */}
+            {/* بيانات أسفل الصفحة */}
 
             <div
               style={{
                 marginTop: 18,
-                borderTop: '1.5px solid #173a85',
+                borderTop:
+                  '1.5px solid #173a85',
                 paddingTop: 8,
                 textAlign: 'center',
                 fontSize: 10,
               }}
             >
 
-              المملكة العربية السعودية - مكة المكرمة -
-              س.ت : 4031242880 - جوال : 0509697720
+              <div>
+                المملكة العربية السعودية - مكة المكرمة -
+                س.ت : ٤٠٣١٢٤٢٨٨٠ - جوال :
+                ٠٥٠٩٦٩٧٧٢٠
+              </div>
 
-              <br />
-
-              <span dir="ltr">
-                Kingdom of Saudi Arabia - Makkah -
-                C.R.: 4031242880 - Mobile: 0509697720
-              </span>
+              <div
+                dir="ltr"
+                style={{ marginTop: 4 }}
+              >
+                Kingdom of Saudi Arabia - Makkah. -
+                C.R.: 4031242880 - Mobile:
+                0509697720
+              </div>
 
             </div>
 
