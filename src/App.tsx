@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { App as CapacitorApp } from '@capacitor/app';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { TransactionsPage } from '@/pages/TransactionsPage';
 import { AddPage } from '@/pages/AddPage';
@@ -21,6 +23,8 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const showBackButton = location.pathname !== '/';
+  const [showExitHint, setShowExitHint] = useState(false);
+  const [lastBackPress, setLastBackPress] = useState(0);
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -29,6 +33,45 @@ function App() {
       navigate('/');
     }
   };
+
+  useEffect(() => {
+    let exitHintTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const setupBackButton = async () => {
+      const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+        if (location.pathname !== '/') {
+          navigate(-1);
+          return;
+        }
+
+        const now = Date.now();
+        if (now - lastBackPress < 2000) {
+          CapacitorApp.exitApp();
+          return;
+        }
+
+        setLastBackPress(now);
+        setShowExitHint(true);
+
+        if (exitHintTimer) clearTimeout(exitHintTimer);
+        exitHintTimer = setTimeout(() => {
+          setShowExitHint(false);
+        }, 1800);
+      });
+
+      return listener;
+    };
+
+    let activeListener: Awaited<ReturnType<typeof setupBackButton>> | undefined;
+    setupBackButton().then((listener) => {
+      activeListener = listener;
+    });
+
+    return () => {
+      if (exitHintTimer) clearTimeout(exitHintTimer);
+      activeListener?.remove();
+    };
+  }, [location.pathname, navigate, lastBackPress]);
 
   return (
     <>
@@ -59,6 +102,30 @@ function App() {
         >
           ←
         </button>
+      )}
+
+      {showExitHint && (
+        <div
+          role="status"
+          style={{
+            position: 'fixed',
+            left: '50%',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 28px)',
+            transform: 'translateX(-50%)',
+            zIndex: 10000,
+            background: 'rgba(15, 23, 42, 0.96)',
+            color: '#ffffff',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: 14,
+            padding: '11px 16px',
+            fontSize: 14,
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+          }}
+        >
+          اضغط رجوع مرة أخرى للخروج
+        </div>
       )}
 
       <Routes>
