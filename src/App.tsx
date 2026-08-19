@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { TransactionsPage } from '@/pages/TransactionsPage';
 import { AddPage } from '@/pages/AddPage';
@@ -18,8 +18,50 @@ import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
 import { DriversPage } from '@/pages/DriversPage';
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const showBackButton = location.pathname !== '/';
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
-    <Routes>
+    <>
+      {showBackButton && (
+        <button
+          type="button"
+          onClick={handleBack}
+          aria-label="رجوع"
+          style={{
+            position: 'fixed',
+            top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+            left: 14,
+            zIndex: 9999,
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            border: '1px solid rgba(255,255,255,0.16)',
+            background: 'rgba(10, 25, 48, 0.94)',
+            color: '#ffffff',
+            fontSize: 24,
+            fontWeight: 900,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.24)',
+            cursor: 'pointer',
+          }}
+        >
+          ←
+        </button>
+      )}
+
+      <Routes>
       <Route path="/" element={<DashboardPage />} />
       <Route path="/transactions" element={<TransactionsPage />} />
       <Route path="/add" element={<AddPage />} />
