@@ -22,36 +22,40 @@ const newRow = (id: number): QuoteRow => ({
 });
 
 export function QuotationPage() {
-  const [company, setCompany] = useState('شركة الجهاز للمقاولات');
+  const [company, setCompany] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [hijriDate, setHijriDate] = useState('1448 /  /  هـ');
-  const [subject, setSubject] = useState('عرض سعر تأجير معدات');
+  const [subject, setSubject] = useState('');
 
-  const [headerEn1, setHeaderEn1] = useState('Establishment of');
-  const [headerEn2, setHeaderEn2] = useState('Sultan Sorour Al-Qathami');
-  const [headerEn3, setHeaderEn3] = useState('For Equipment Rental');
+  const [headerEn1, setHeaderEn1] = useState('');
+  const [headerEn2, setHeaderEn2] = useState('');
+  const [headerEn3, setHeaderEn3] = useState('');
 
-  const [headerAr1, setHeaderAr1] = useState('مؤسسة');
-  const [headerAr2, setHeaderAr2] = useState('سلطان سرور القثامي');
-  const [headerAr3, setHeaderAr3] = useState('لتأجير المعدات');
+  const [headerAr1, setHeaderAr1] = useState('');
+  const [headerAr2, setHeaderAr2] = useState('');
+  const [headerAr3, setHeaderAr3] = useState('');
 
-  const [intro1, setIntro1] = useState('السلام عليكم ورحمة الله وبركاته');
-  const [intro2, setIntro2] = useState('نفيدكم نحن مؤسسة / سلطان سرور القثامي للمقاولات المعمارية');
-  const [intro3, setIntro3] = useState('إليكم تسعيرتنا بخصوص المعدات التالية :');
+  const [intro1, setIntro1] = useState('');
+  const [intro2, setIntro2] = useState('');
+  const [intro3, setIntro3] = useState('');
   const [intro4, setIntro4] = useState('');
+  const [stampImage, setStampImage] = useState('');
 
-  const [closingText, setClosingText] = useState('نأمل أن تحوز تسعيرتنا على رضاكم');
-  const [notes, setNotes] = useState('السعر غير شامل الديزل والضريبة.');
+  const handleStampImage = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setStampImage(String(reader.result || ''));
+    reader.readAsDataURL(file);
+  };
 
-  const [signatureTitle, setSignatureTitle] = useState('المؤسسة');
-  const [signatureName, setSignatureName] = useState('سلطان سرور القثامي للمقاولات المعمارية');
+  const [closingText, setClosingText] = useState('');
+  const [notes, setNotes] = useState('');
 
-  const [footerAr, setFooterAr] = useState(
-    'المملكة العربية السعودية - مكة المكرمة - س.ت : ٤٠٣١٢٤٢٨٨٠ - جوال : ٠٥٠٩٦٩٧٧٢٠'
-  );
-  const [footerEn, setFooterEn] = useState(
-    'Kingdom of Saudi Arabia - Makkah. - C.R.: 4031242880 - Mobile: 0509697720'
-  );
+  const [signatureTitle, setSignatureTitle] = useState('');
+  const [signatureName, setSignatureName] = useState('');
+
+  const [footerAr, setFooterAr] = useState('');
+  const [footerEn, setFooterEn] = useState('');
 
   const [rows, setRows] = useState<QuoteRow[]>([
     newRow(1),
@@ -474,6 +478,36 @@ export function QuotationPage() {
           />
         </Card>
 
+        <Card className="p-4 space-y-3">
+          <h2 className="text-sm font-bold text-white">ختم المؤسسة</h2>
+          <label className="block cursor-pointer rounded-2xl border border-dashed border-white/25 bg-white/[0.03] p-5 text-center">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleStampImage(e.target.files?.[0])}
+            />
+            {stampImage ? (
+              <img
+                src={stampImage}
+                alt="ختم المؤسسة"
+                className="mx-auto max-h-28 max-w-full object-contain"
+              />
+            ) : (
+              <div className="text-sm text-slate-400">اضغط لاختيار صورة الختم</div>
+            )}
+          </label>
+          {stampImage && (
+            <button
+              type="button"
+              onClick={() => setStampImage('')}
+              className="text-xs text-red-400"
+            >
+              حذف صورة الختم
+            </button>
+          )}
+        </Card>
+
         <div
           id="quotation-print"
           dir="rtl"
@@ -644,7 +678,7 @@ export function QuotationPage() {
                 whiteSpace: 'pre-wrap',
               }}
             >
-              • {notes}
+              {notes && <>• {notes}</>}
             </div>
 
             <div
@@ -660,15 +694,50 @@ export function QuotationPage() {
             <div
               style={{
                 marginTop: 34,
-                width: '48%',
-                textAlign: 'center',
-                alignSelf: 'flex-start',
-                fontSize: 17,
-                lineHeight: 1.8,
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                direction: 'ltr',
+                minHeight: 120,
               }}
             >
-              <div style={{ fontWeight: 800 }}>{signatureTitle}</div>
-              <div style={{ marginTop: 12, fontWeight: 700 }}>{signatureName}</div>
+              <div
+                style={{
+                  width: '42%',
+                  minHeight: 110,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {stampImage && (
+                  <img
+                    src={stampImage}
+                    alt="ختم المؤسسة"
+                    style={{
+                      maxWidth: '190px',
+                      maxHeight: '110px',
+                      objectFit: 'contain',
+                    }}
+                  />
+                )}
+              </div>
+
+              <div
+                dir="rtl"
+                style={{
+                  width: '48%',
+                  textAlign: 'center',
+                  fontSize: 17,
+                  lineHeight: 1.8,
+                }}
+              >
+                {signatureTitle && <div style={{ fontWeight: 800 }}>{signatureTitle}</div>}
+                {signatureName && (
+                  <div style={{ marginTop: 12, fontWeight: 700 }}>{signatureName}</div>
+                )}
+              </div>
             </div>
 
             <div
