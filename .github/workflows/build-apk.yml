@@ -69,7 +69,7 @@ jobs:
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.crane.accounting",
-            "appName": "Crane Accounting",
+            "appName": "BAAKR PRO",
             "webDir": "dist"
           }
           EOF
