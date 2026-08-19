@@ -31,7 +31,14 @@ export function QuotationPage() {
   const [headerEn2, setHeaderEn2] = useState('Sultan Sorour Al-Qathami');
   const [headerEn3, setHeaderEn3] = useState('For Equipment Rental');
 
-  const [headerAr, setHeaderAr] = useState('مؤسسة سلطان سرور القثامي لتأجير المعدات');
+  const [headerAr1, setHeaderAr1] = useState('مؤسسة');
+  const [headerAr2, setHeaderAr2] = useState('سلطان سرور القثامي');
+  const [headerAr3, setHeaderAr3] = useState('لتأجير المعدات');
+
+  const [intro1, setIntro1] = useState('السلام عليكم ورحمة الله وبركاته');
+  const [intro2, setIntro2] = useState('نفيدكم نحن مؤسسة / سلطان سرور القثامي للمقاولات المعمارية');
+  const [intro3, setIntro3] = useState('إليكم تسعيرتنا بخصوص المعدات التالية :');
+  const [intro4, setIntro4] = useState('');
 
   const [closingText, setClosingText] = useState('نأمل أن تحوز تسعيرتنا على رضاكم');
   const [notes, setNotes] = useState('السعر غير شامل الديزل والضريبة.');
@@ -264,9 +271,23 @@ export function QuotationPage() {
           <h2 className="text-sm font-bold text-white">تعديل ترويسة عرض السعر</h2>
 
           <input
-            value={headerAr}
-            onChange={(e) => setHeaderAr(e.target.value)}
-            placeholder="الترويسة العربية"
+            value={headerAr1}
+            onChange={(e) => setHeaderAr1(e.target.value)}
+            placeholder="السطر العربي الأول"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
+          />
+
+          <input
+            value={headerAr2}
+            onChange={(e) => setHeaderAr2(e.target.value)}
+            placeholder="السطر العربي الثاني"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
+          />
+
+          <input
+            value={headerAr3}
+            onChange={(e) => setHeaderAr3(e.target.value)}
+            placeholder="السطر العربي الثالث"
             className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
           />
 
@@ -292,6 +313,38 @@ export function QuotationPage() {
             placeholder="For Equipment Rental"
             className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
             dir="ltr"
+          />
+        </Card>
+
+        <Card className="p-4 space-y-3">
+          <h2 className="text-sm font-bold text-white">تعديل نص الخطاب</h2>
+
+          <input
+            value={intro1}
+            onChange={(e) => setIntro1(e.target.value)}
+            placeholder="السطر 1"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
+          />
+
+          <input
+            value={intro2}
+            onChange={(e) => setIntro2(e.target.value)}
+            placeholder="السطر 2"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
+          />
+
+          <input
+            value={intro3}
+            onChange={(e) => setIntro3(e.target.value)}
+            placeholder="السطر 3"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
+          />
+
+          <input
+            value={intro4}
+            onChange={(e) => setIntro4(e.target.value)}
+            placeholder="السطر 4 - اكتب أي عبارة تريدها"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-white outline-none"
           />
         </Card>
 
@@ -463,13 +516,12 @@ export function QuotationPage() {
               style={{
                 textAlign: 'center',
                 color: '#173a85',
-                fontWeight: 900,
-                fontSize: 23,
-                lineHeight: 1.55,
-                whiteSpace: 'pre-wrap',
+                lineHeight: 1.45,
               }}
             >
-              {headerAr}
+              <div style={{ fontSize: 17, fontWeight: 700 }}>{headerAr1}</div>
+              <div style={{ fontSize: 23, fontWeight: 900, marginTop: 4 }}>{headerAr2}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, marginTop: 4 }}>{headerAr3}</div>
             </div>
           </div>
 
@@ -527,11 +579,10 @@ export function QuotationPage() {
                 marginTop: 26,
               }}
             >
-              السلام عليكم ورحمة الله وبركاته
-              <br />
-              نفيدكم نحن مؤسسة / سلطان سرور القثامي للمقاولات المعمارية
-              <br />
-              إليكم تسعيرتنا بخصوص المعدات التالية :
+              <div>{intro1}</div>
+              <div>{intro2}</div>
+              <div>{intro3}</div>
+              {intro4.trim() && <div>{intro4}</div>}
             </div>
 
             <div
