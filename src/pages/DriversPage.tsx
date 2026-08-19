@@ -1,4 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 type Driver = {
   id: number;
@@ -132,153 +137,233 @@ export function DriversPage() {
 
     return [
       'ملخص حساب السائق / المشغل',
+      '━━━━━━━━━━━━━━━━━━',
       `الاسم: ${driver.name}`,
       `رقم الجوال: ${driver.phone || '-'}`,
       `المعدة: ${driver.equipment || '-'}`,
+      '',
       `الراتب الشهري: ${driver.salary.toLocaleString()} ر.س`,
       `أيام العمل: ${driver.workDays}`,
       `أيام الغياب: ${driver.absentDays}`,
       `العمل الإضافي: ${driver.extraAmount.toLocaleString()} ر.س`,
       `السحوبات / السلف: ${driver.withdrawals.toLocaleString()} ر.س`,
+      '━━━━━━━━━━━━━━━━━━',
       `صافي المتبقي: ${remaining.toLocaleString()} ر.س`,
     ].join('\n');
   }
 
-  function buildDriverPdfHtml(driver: Driver) {
+  function buildStatementMarkup(driver: Driver) {
     const remaining = getRemaining(driver);
     const issueDate = new Date().toLocaleDateString('ar-SA');
 
-    return `<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ملخص حساب ${driver.name}</title>
-<style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#eef2f6;font-family:Arial,Tahoma,sans-serif;color:#111827}
-  .page{width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:13mm}
-  .top-line{height:8px;border-radius:999px;background:#123e78;margin-bottom:18px}
-  .header{text-align:center}
-  .header h1{margin:0;color:#123e78;font-size:28px}
-  .header p{margin:7px 0 0;color:#64748b;font-size:13px}
-  .info{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
-  .box{border:1.4px solid #cbd5e1;border-radius:12px;padding:13px}
-  .label{font-size:12px;color:#64748b;margin-bottom:5px}
-  .value{font-size:16px;font-weight:700}
-  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
-  .metric{border:1px solid #dbe3ec;border-radius:12px;padding:12px;text-align:center}
-  .metric span{display:block;color:#64748b;font-size:12px}
-  .metric b{display:block;margin-top:7px;font-size:19px}
-  .green{color:#168a55}.orange{color:#c97700}.blue{color:#123e78}.red{color:#c83232}
-  table{width:100%;border-collapse:collapse;margin-top:15px}
-  th{background:#123e78;color:#fff;padding:11px 8px;font-size:13px}
-  td{border:1px solid #d8dee8;padding:11px 8px;text-align:center;font-size:13px}
-  .net{margin-top:18px;border:2px solid #2e9b65;background:#effaf4;border-radius:13px;padding:15px;display:flex;align-items:center;justify-content:space-between}
-  .net strong{font-size:26px;color:#168a55}
-  .note{margin-top:12px;color:#64748b;font-size:12px;text-align:center}
-  .signatures{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:55px;text-align:center}
-  .sign-line{border-top:1px dashed #64748b;padding-top:8px}
-  footer{margin-top:48px;border-top:2px solid #123e78;padding-top:10px;display:flex;justify-content:space-between;color:#64748b;font-size:11px}
-  @media print{
-    body{background:#fff}
-    .page{width:auto;min-height:auto;margin:0;padding:10mm}
-    @page{size:A4;margin:0}
-  }
-</style>
-</head>
-<body>
-<div class="page">
-  <div class="top-line"></div>
-  <div class="header">
-    <h1>ملخص حساب السائق / المشغل</h1>
-    <p>كشف حساب الرواتب والسحوبات والعمل الإضافي</p>
-  </div>
+    return `
+      <div dir="rtl" style="width:794px;background:#ffffff;color:#111827;font-family:Arial,Tahoma,sans-serif;padding:42px;box-sizing:border-box;">
+        <div style="height:10px;border-radius:99px;background:linear-gradient(90deg,#0f3f78,#1d5fa8);margin-bottom:24px;"></div>
 
-  <div class="info">
-    <div class="box"><div class="label">اسم السائق / المشغل</div><div class="value">${driver.name}</div></div>
-    <div class="box"><div class="label">رقم الجوال</div><div class="value">${driver.phone || '-'}</div></div>
-    <div class="box"><div class="label">المعدة</div><div class="value">${driver.equipment || '-'}</div></div>
-    <div class="box"><div class="label">تاريخ إصدار الكشف</div><div class="value">${issueDate}</div></div>
-  </div>
+        <div style="text-align:center;margin-bottom:26px;">
+          <div style="display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:#edf4ff;color:#0f3f78;font-size:28px;margin-bottom:12px;">👷</div>
+          <h1 style="margin:0;color:#0f3f78;font-size:30px;line-height:1.4;">ملخص حساب السائق / المشغل</h1>
+          <div style="margin-top:7px;color:#64748b;font-size:14px;">كشف حساب مختصر وواضح للمستحقات والسحوبات</div>
+        </div>
 
-  <div class="metrics">
-    <div class="metric"><span>الراتب الشهري</span><b class="blue">${driver.salary.toLocaleString()} ر.س</b></div>
-    <div class="metric"><span>العمل الإضافي</span><b class="green">${driver.extraAmount.toLocaleString()} ر.س</b></div>
-    <div class="metric"><span>السحوبات / السلف</span><b class="orange">${driver.withdrawals.toLocaleString()} ر.س</b></div>
-    <div class="metric"><span>أيام الغياب</span><b class="red">${driver.absentDays} يوم</b></div>
-  </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">اسم السائق / المشغل</div>
+            <div style="font-size:19px;font-weight:800;color:#0f172a;">${driver.name}</div>
+          </div>
+          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">رقم الجوال</div>
+            <div style="font-size:18px;font-weight:800;color:#0f172a;">${driver.phone || '-'}</div>
+          </div>
+          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">المعدة</div>
+            <div style="font-size:18px;font-weight:800;color:#0f172a;">${driver.equipment || '-'}</div>
+          </div>
+          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">تاريخ إصدار الملخص</div>
+            <div style="font-size:18px;font-weight:800;color:#0f172a;">${issueDate}</div>
+          </div>
+        </div>
 
-  <table>
-    <thead>
-      <tr><th>البيان</th><th>القيمة</th><th>التفاصيل</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>الراتب الشهري</td><td>${driver.salary.toLocaleString()} ر.س</td><td>أيام العمل: ${driver.workDays}</td></tr>
-      <tr><td>العمل الإضافي</td><td>${driver.extraAmount.toLocaleString()} ر.س</td><td>إضافة على الراتب</td></tr>
-      <tr><td>السحوبات / السلف</td><td>${driver.withdrawals.toLocaleString()} ر.س</td><td>تخصم من المستحق</td></tr>
-      <tr><td>أيام الغياب</td><td>${driver.absentDays} يوم</td><td>للمتابعة</td></tr>
-    </tbody>
-  </table>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;">
+          <div style="border-radius:15px;padding:15px;text-align:center;background:#eef5ff;border:1px solid #cddff8;">
+            <div style="font-size:12px;color:#5b6b82;">الراتب الشهري</div>
+            <div style="font-size:20px;font-weight:900;color:#0f3f78;margin-top:8px;">${driver.salary.toLocaleString()} ر.س</div>
+          </div>
+          <div style="border-radius:15px;padding:15px;text-align:center;background:#eefbf4;border:1px solid #c8ead7;">
+            <div style="font-size:12px;color:#5b6b82;">العمل الإضافي</div>
+            <div style="font-size:20px;font-weight:900;color:#15824f;margin-top:8px;">${driver.extraAmount.toLocaleString()} ر.س</div>
+          </div>
+          <div style="border-radius:15px;padding:15px;text-align:center;background:#fff7e8;border:1px solid #f0ddb2;">
+            <div style="font-size:12px;color:#5b6b82;">السحوبات / السلف</div>
+            <div style="font-size:20px;font-weight:900;color:#b66a00;margin-top:8px;">${driver.withdrawals.toLocaleString()} ر.س</div>
+          </div>
+          <div style="border-radius:15px;padding:15px;text-align:center;background:#fff0f0;border:1px solid #f1cccc;">
+            <div style="font-size:12px;color:#5b6b82;">أيام الغياب</div>
+            <div style="font-size:20px;font-weight:900;color:#b83232;margin-top:8px;">${driver.absentDays} يوم</div>
+          </div>
+        </div>
 
-  <div class="net">
-    <span>صافي المبلغ المتبقي</span>
-    <strong>${remaining.toLocaleString()} ر.س</strong>
-  </div>
+        <div style="border:1px solid #d9e2ee;border-radius:16px;overflow:hidden;margin-bottom:18px;">
+          <div style="display:grid;grid-template-columns:1.3fr .8fr 1fr;background:#0f3f78;color:white;font-weight:800;font-size:14px;">
+            <div style="padding:13px;text-align:center;">البيان</div><div style="padding:13px;text-align:center;">القيمة</div><div style="padding:13px;text-align:center;">التفاصيل</div>
+          </div>
+          ${[
+            ['الراتب الشهري', `${driver.salary.toLocaleString()} ر.س`, `أيام العمل: ${driver.workDays}`],
+            ['العمل الإضافي', `${driver.extraAmount.toLocaleString()} ر.س`, 'إضافة على المستحق'],
+            ['السحوبات / السلف', `${driver.withdrawals.toLocaleString()} ر.س`, 'تخصم من المستحق'],
+            ['أيام الغياب', `${driver.absentDays} يوم`, 'للمتابعة'],
+          ].map((r, i) => `<div style="display:grid;grid-template-columns:1.3fr .8fr 1fr;background:${i % 2 ? '#fbfdff' : '#ffffff'};border-top:1px solid #e5eaf0;font-size:14px;"><div style="padding:13px;text-align:center;font-weight:700;">${r[0]}</div><div style="padding:13px;text-align:center;">${r[1]}</div><div style="padding:13px;text-align:center;color:#64748b;">${r[2]}</div></div>`).join('')}
+        </div>
 
-  <div class="note">صافي المتبقي = الراتب + العمل الإضافي - السحوبات / السلف</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;border:2px solid #28a36a;background:#edfaf3;border-radius:18px;padding:20px 22px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:14px;color:#4b6358;margin-bottom:5px;">صافي المبلغ المتبقي</div>
+            <div style="font-size:12px;color:#718177;">الراتب + الإضافي - السحوبات</div>
+          </div>
+          <div style="font-size:30px;font-weight:900;color:#168754;">${remaining.toLocaleString()} ر.س</div>
+        </div>
 
-  <div class="signatures">
-    <div class="sign-line">توقيع السائق / المشغل</div>
-    <div class="sign-line">توقيع الإدارة</div>
-  </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:58px;text-align:center;color:#334155;font-size:14px;">
+          <div><div style="border-top:1px dashed #64748b;padding-top:10px;">توقيع السائق / المشغل</div></div>
+          <div><div style="border-top:1px dashed #64748b;padding-top:10px;">توقيع الإدارة</div></div>
+        </div>
 
-  <footer>
-    <span>تاريخ الإصدار: ${issueDate}</span>
-    <span>ملخص حساب السائقين والمشغلين</span>
-  </footer>
-</div>
-<script>
-  window.onload = () => setTimeout(() => window.print(), 300);
-</script>
-</body>
-</html>`;
+        <div style="margin-top:46px;border-top:2px solid #0f3f78;padding-top:12px;display:flex;justify-content:space-between;color:#64748b;font-size:11px;">
+          <span>تاريخ الإصدار: ${issueDate}</span>
+          <span>ملخص حساب السائقين والمشغلين</span>
+        </div>
+      </div>`;
   }
 
-  function openDriverStatement(driver: Driver) {
-    const win = window.open('', '_blank');
-
-    if (!win) {
-      alert('تعذر فتح كشف الحساب. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.');
-      return;
-    }
-
-    win.document.open();
-    win.document.write(buildDriverPdfHtml(driver));
-    win.document.close();
-  }
-
-  function shareDriverOnWhatsApp(driver: Driver) {
-    const text = encodeURIComponent(getDriverSummaryText(driver));
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-  }
-
-  async function shareDriver(driver: Driver) {
-    const text = getDriverSummaryText(driver);
+  async function createDriverPdf(driver: Driver) {
+    const host = document.createElement('div');
+    host.style.position = 'fixed';
+    host.style.left = '-10000px';
+    host.style.top = '0';
+    host.style.width = '794px';
+    host.style.background = '#fff';
+    host.innerHTML = buildStatementMarkup(driver);
+    document.body.appendChild(host);
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `ملخص حساب ${driver.name}`,
-          text,
+      const canvas = await html2canvas(host.firstElementChild as HTMLElement, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+      const finalHeight = Math.min(imgHeight, pageHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, finalHeight, undefined, 'FAST');
+
+      return pdf;
+    } finally {
+      document.body.removeChild(host);
+    }
+  }
+
+  function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = String(reader.result || '');
+        resolve(result.includes(',') ? result.split(',')[1] : result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function saveOrSharePdf(driver: Driver, shareAfterSave = false) {
+    try {
+      const pdf = await createDriverPdf(driver);
+      const safeName = driver.name.replace(/[^\w\u0600-\u06FF-]+/g, '-');
+      const fileName = `ملخص-حساب-${safeName || 'سائق'}.pdf`;
+
+      if (Capacitor.isNativePlatform()) {
+        const blob = pdf.output('blob');
+        const base64 = await blobToBase64(blob);
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Cache,
+          recursive: true,
         });
+
+        if (shareAfterSave) {
+          await Share.share({
+            title: `ملخص حساب ${driver.name}`,
+            text: getDriverSummaryText(driver),
+            files: [result.uri],
+            dialogTitle: 'مشاركة ملخص الحساب',
+          });
+        } else {
+          await Share.share({
+            title: fileName,
+            text: 'تم تجهيز ملف PDF، اختر التطبيق الذي تريد حفظه أو فتحه من خلاله.',
+            files: [result.uri],
+            dialogTitle: 'حفظ / فتح ملف PDF',
+          });
+        }
+      } else {
+        pdf.save(fileName);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('تعذر إنشاء ملف PDF. حاول مرة أخرى.');
+    }
+  }
+
+  async function openDriverStatement(driver: Driver) {
+    await saveOrSharePdf(driver, false);
+  }
+
+  async function shareDriverOnWhatsApp(driver: Driver) {
+    const text = encodeURIComponent(getDriverSummaryText(driver));
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        window.location.href = `whatsapp://send?text=${text}`;
         return;
       }
 
-      await navigator.clipboard.writeText(text);
-      alert('تم نسخ ملخص الحساب. يمكنك لصقه في التطبيق الذي تريد.');
+      window.open(`https://wa.me/?text=${text}`, '_blank');
     } catch {
-      // المستخدم أغلق نافذة المشاركة
+      try {
+        await Share.share({
+          title: `ملخص حساب ${driver.name}`,
+          text: getDriverSummaryText(driver),
+          dialogTitle: 'اختر واتساب',
+        });
+      } catch {
+        alert('تعذر فتح واتساب. استخدم زر المشاركة واختر واتساب.');
+      }
+    }
+  }
+
+  async function shareDriver(driver: Driver) {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await saveOrSharePdf(driver, true);
+        return;
+      }
+
+      if (navigator.share) {
+        await navigator.share({
+          title: `ملخص حساب ${driver.name}`,
+          text: getDriverSummaryText(driver),
+        });
+      } else {
+        await navigator.clipboard.writeText(getDriverSummaryText(driver));
+        alert('تم نسخ ملخص الحساب.');
+      }
+    } catch (error) {
+      console.error(error);
     }
   }
 
