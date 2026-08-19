@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { fetchEquipment, type Equipment } from '@/lib/equipment';
 
 type DayRow = {
   day: number;
@@ -9,17 +10,6 @@ type DayRow = {
   expense: number;
   notes: string;
 };
-
-const equipmentList = [
-  'كرين 50 طن',
-  'كرين 25 طن',
-  'كرين 25 طن ساني',
-  'كرين 25 طن أصفر بكر',
-  'كرين 25 طن كاتو',
-  'كرين 25 طن أصفر مستبيشي',
-  'بوم ترك الأخضر',
-  'بوم ترك الأحمر',
-];
 
 const monthNames = [
   'يناير',
@@ -39,16 +29,62 @@ const monthNames = [
 export function MonthlyPage() {
   const now = new Date();
 
-  const [equipment, setEquipment] = useState(equipmentList[0]);
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+  const [equipment, setEquipment] = useState('');
+  const [equipmentLoading, setEquipmentLoading] = useState(true);
+
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEquipment() {
+      setEquipmentLoading(true);
+
+      try {
+        const list = await fetchEquipment();
+
+        if (cancelled) return;
+
+        setEquipmentList(list);
+
+        setEquipment((current) => {
+          if (current && list.some((item) => item.name === current)) {
+            return current;
+          }
+
+          return list[0]?.name ?? '';
+        });
+      } catch (error) {
+        console.error('تعذر تحميل المعدات:', error);
+
+        if (!cancelled) {
+          setEquipmentList([]);
+          setEquipment('');
+        }
+      } finally {
+        if (!cancelled) {
+          setEquipmentLoading(false);
+        }
+      }
+    }
+
+    loadEquipment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const daysInMonth = useMemo(
     () => new Date(year, month + 1, 0).getDate(),
     [year, month]
   );
 
-  const storageKey = `monthly-ledger-${equipment}-${year}-${month}`;
+  const storageKey = equipment
+    ? `monthly-ledger-${equipment}-${year}-${month}`
+    : `monthly-ledger-no-equipment-${year}-${month}`;
 
   const emptyRows = (): DayRow[] =>
     Array.from({ length: daysInMonth }, (_, index) => ({
@@ -63,6 +99,11 @@ export function MonthlyPage() {
   const [rows, setRows] = useState<DayRow[]>(emptyRows());
 
   useEffect(() => {
+    if (!equipment) {
+      setRows(emptyRows());
+      return;
+    }
+
     try {
       const saved = localStorage.getItem(storageKey);
 
@@ -81,11 +122,13 @@ export function MonthlyPage() {
     } catch {
       setRows(emptyRows());
     }
-  }, [equipment, year, month, daysInMonth]);
+  }, [equipment, year, month, daysInMonth, storageKey]);
 
   useEffect(() => {
+    if (!equipment) return;
+
     localStorage.setItem(storageKey, JSON.stringify(rows));
-  }, [rows, storageKey]);
+  }, [rows, storageKey, equipment]);
 
   function updateRow(
     day: number,
@@ -199,12 +242,19 @@ export function MonthlyPage() {
               value={equipment}
               onChange={(e) => setEquipment(e.target.value)}
               style={selectStyle}
+              disabled={equipmentLoading || equipmentList.length === 0}
             >
-              {equipmentList.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
+              {equipmentLoading ? (
+                <option value="">جاري تحميل المعدات...</option>
+              ) : equipmentList.length === 0 ? (
+                <option value="">لا توجد معدات — أضف معدة أولاً</option>
+              ) : (
+                equipmentList.map((item) => (
+                  <option key={item.id} value={item.name}>
+                    {item.name}
+                  </option>
+                ))
+              )}
             </select>
           </label>
 
@@ -309,7 +359,7 @@ export function MonthlyPage() {
             fontSize: 18,
           }}
         >
-          {equipment} — {monthNames[month]} {year}
+          {equipment || 'لا توجد معدة محددة'} — {monthNames[month]} {year}
         </div>
 
         <div
@@ -372,6 +422,7 @@ export function MonthlyPage() {
                           )
                         }
                         style={inputStyle}
+                        disabled={!equipment}
                       >
                         <option value="">لا يوجد شغل</option>
                         <option value="مشوار">مشوار</option>
@@ -396,6 +447,7 @@ export function MonthlyPage() {
                         }
                         style={inputStyle}
                         placeholder="0"
+                        disabled={!equipment}
                       />
                     </td>
 
@@ -413,6 +465,7 @@ export function MonthlyPage() {
                         }
                         style={inputStyle}
                         placeholder="0"
+                        disabled={!equipment}
                       />
                     </td>
 
@@ -430,6 +483,7 @@ export function MonthlyPage() {
                         }
                         style={inputStyle}
                         placeholder="0"
+                        disabled={!equipment}
                       />
                     </td>
 
@@ -459,6 +513,7 @@ export function MonthlyPage() {
                           minWidth: 150,
                         }}
                         placeholder="ملاحظات"
+                        disabled={!equipment}
                       />
                     </td>
                   </tr>
@@ -509,4 +564,4 @@ export function MonthlyPage() {
       </div>
     </AppLayout>
   );
-                            }
+    }    
