@@ -72,6 +72,7 @@ export function DashboardPage() {
 <QuickAction label="السواقين والمشغلين" icon={Users} to="/drivers" tone="gold" delay={240} />
             <QuickAction label="التقارير" icon={FileBarChart} to="/reports" tone="profit" delay={250} />
             <QuickAction label="الفواتير" icon={FileText} to="/invoices" tone="gold" delay={300} />
+            <QuickAction label="عرض سعر" icon={FileText} to="/quotation" tone="profit" delay={325} />
             <QuickAction label="حساب اليوم" icon={Calculator} to="/daily-calculator" tone="gold" delay={350} />
             <QuickAction label="الإعدادات" icon={Settings} to="/settings" tone="expense" delay={400} />
           </div>
