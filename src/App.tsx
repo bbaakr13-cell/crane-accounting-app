@@ -18,6 +18,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
 import { DriversPage } from '@/pages/DriversPage';
+import { QuotationPage } from '@/pages/QuotationPage';
 
 function App() {
   const navigate = useNavigate();
@@ -146,6 +147,7 @@ function App() {
         <Route path="/daily-calculator" element={<DailyCalculatorPage />} />
         <Route path="/monthly-rental" element={<MonthlyRentalPage />} />
         <Route path="/drivers" element={<DriversPage />} />
+        <Route path="/quotation" element={<QuotationPage />} />
       </Routes>
     </>
   );
