@@ -49,7 +49,7 @@ jobs:
 
       - name: Install PDF and sharing libraries
         working-directory: ${{ steps.project.outputs.dir }}
-        run: npm install jspdf html2canvas @capacitor/filesystem @capacitor/share
+        run: npm install jspdf html2canvas @capacitor/filesystem @capacitor/share @capacitor/app
       - name: Fix fetchEquipment export
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
