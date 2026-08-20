@@ -1,2 +1,83 @@
-import { useEffect,useState,useCallback } from 'react'; import { useNavigate,useParams } from 'react-router-dom'; import { CalendarClock,ChevronRight,ChevronLeft,Printer,TrendingUp,TrendingDown,Wallet } from 'lucide-react'; import { AppLayout } from '@/components/layout/AppLayout'; import { PageHeader } from '@/components/layout/PageHeader'; import { Card } from '@/components/ui/Card'; import { StatCard } from '@/components/dashboard/StatCard'; import { fetchEquipmentById,type Equipment } from '@/lib/equipment'; import { fetchMonthlyDays,calcMonthlySummary,arabicMonths,type MonthlyDay } from '@/lib/monthly'; import { fetchSettings } from '@/lib/settings'; import { generateMonthlyHTML,openPrintWindow } from '@/lib/pdf'; import { formatSAR } from '@/lib/format';
-export function MonthlyDetailPage(){const {id}=useParams();const nav=useNavigate();const now=new Date();const [eq,setEq]=useState<Equipment|null>(null),[days,setDays]=useState<MonthlyDay[]>([]),[year,setYear]=useState(now.getFullYear()),[month,setMonth]=useState(now.getMonth()+1),[loading,setLoading]=useState(true);const load=useCallback(async()=>{if(!id)return;setLoading(true);try{const [e,d]=await Promise.all([fetchEquipmentById(id),fetchMonthlyDays(id,year,month)]);setEq(e);setDays(d)}finally{setLoading(false)}},[id,year,month]);useEffect(()=>{load()},[load]);const s=calcMonthlySummary(days);function shift(n:number){let m=month+n,y=year;if(m<1){m=12;y--}if(m>12){m=1;y++}setMonth(m);setYear(y)}async function print(){if(!eq)return;openPrintWindow(generateMonthlyHTML(eq.name,days,s,year,month,await fetchSettings()))}return <AppLayout showHeader={false} showBottomNav={false}><div className="pt-4"><PageHeader title={eq?`حساب ${eq.name}`:'الحساب الشهري'} subtitle="كشف العمل اليومي والشهري" icon={CalendarClock} onBack={()=>nav('/monthly')} action={<button onClick={print} className="p-2.5 rounded-xl bg-white/5"><Printer className="w-5 h-5 text-slate-300"/></button>}/><Card className="p-3 mb-4"><div className="flex items-center justify-between"><button onClick={()=>shift(-1)} className="p-2"><ChevronRight className="text-slate-300"/></button><b className="text-white">{arabicMonths[month-1]} {year}</b><button onClick={()=>shift(1)} className="p-2"><ChevronLeft className="text-slate-300"/></button></div></Card>{loading?<Card className="p-8 text-center text-slate-400">جاري التحميل...</Card>:<><div className="grid grid-cols-3 gap-2 mb-4"><StatCard label="الدخل" amount={formatSAR(s.totalWorkAmount)} icon={TrendingUp} tone="income"/><StatCard label="المصروف" amount={formatSAR(s.totalExpenses)} icon={TrendingDown} tone="expense"/><StatCard label="الصافي" amount={formatSAR(s.netMonth)} icon={Wallet} tone="profit"/></div><Card className="p-4 mb-4"><div className="grid grid-cols-2 gap-3 text-sm"><div className="text-slate-400">أيام العمل <b className="text-white mr-2">{s.workDays}</b></div><div className="text-slate-400">المستحق <b className="text-receivable mr-2">{formatSAR(s.totalRemaining)}</b></div></div></Card><h3 className="text-sm font-bold text-white mb-3">السجل اليومي</h3>{days.length===0?<Card className="p-7 text-center text-slate-400">لا توجد سجلات لهذا الشهر بعد.</Card>:<div className="space-y-2">{days.map(d=><Card key={d.id} className="p-3"><div className="flex justify-between"><div><b className="text-white text-sm">{d.date}</b><p className="text-xs text-slate-500 mt-1">{d.customerName||d.jobType||'سجل يومي'} · {d.location||'—'}</p></div><div className="text-left"><b className="text-income text-sm">{formatSAR(d.workAmount)}</b><p className="text-xs text-expense mt-1">-{formatSAR(d.expenseAmount)}</p></div></div></Card>)}</div>}</>}</div></AppLayout>}
+import { useEffect, useState, useCallback, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+
+export function MonthlyDetailPage() {
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  // دالة إنشاء ملف PDF
+  const generatePDFFile = async () => {
+    const element = reportRef.current;
+    if (!element) return null;
+
+    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    
+    const pdfBlob = pdf.output('blob');
+    const file = new File([pdfBlob], `الحساب_الشهري_${new Date().toISOString().slice(0, 10)}.pdf`, {
+      type: 'application/pdf',
+    });
+
+    return { pdf, file };
+  };
+
+  // 1. تنزيل PDF
+  const handleDownloadPDF = async () => {
+    const result = await generatePDFFile();
+    if (result) result.pdf.save(result.file.name);
+  };
+
+  // 2. مشاركة إلى التطبيقات
+  const handleShareApp = async () => {
+    const result = await generatePDFFile();
+    if (!result) return;
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [result.file] })) {
+      await navigator.share({
+        title: 'تقرير الحساب الشهري',
+        text: 'مرفق تقرير الحساب الشهري',
+        files: [result.file],
+      });
+    } else {
+      handleDownloadPDF();
+    }
+  };
+
+  // 3. مشاركة عبر واتساب
+  const handleShareWhatsApp = async () => {
+    if (navigator.share) {
+      await handleShareApp();
+    } else {
+      const msg = encodeURIComponent('مرحباً، يمكنك الاطلاع على تقرير الحساب الشهري المرفق.');
+      window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+    }
+  };
+
+  return (
+    <div style={{ padding: '15px' }}>
+      {/* أزرار الحفظ والمشاركة */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' }}>
+        <button onClick={handleDownloadPDF} style={{ padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+          📄 حفظ PDF
+        </button>
+        <button onClick={handleShareApp} style={{ padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+          📲 مشاركة
+        </button>
+        <button onClick={handleShareWhatsApp} style={{ padding: '10px', borderRadius: '6px', backgroundColor: '#25D366', color: '#fff', border: 'none', cursor: 'pointer' }}>
+          💬 واتساب
+        </button>
+      </div>
+
+      {/* محتوى الحساب الشهري الذي سيتم تحويله إلى PDF */}
+      <div ref={reportRef} style={{ padding: '15px', backgroundColor: '#fff', color: '#000' }}>
+        <h2>تفاصيل الحساب الشهري</h2>
+        {/* سيظهر جدول المحاسبة الخاص بك هنا */}
+      </div>
+    </div>
+  );
+}
