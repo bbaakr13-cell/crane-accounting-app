@@ -473,51 +473,58 @@ export function MonthlyDetailPage() {
   }
 
   async function handleSavePdf() {
-    if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
-      return;
-    }
-
-    try {
-      setCreatingPdf(true);
-
-      const blob =
-        await createPdfBlob();
-
-      const url =
-        URL.createObjectURL(blob);
-
-      const link =
-        document.createElement('a');
-
-      link.href = url;
-      link.download =
-        getFileName();
-
-      document.body.appendChild(
-        link
-      );
-
-      link.click();
-      link.remove();
-
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 2000);
-    } catch (error) {
-      console.error(error);
-
-      alert(
-        'تعذر إنشاء ملف PDF'
-      );
-    } finally {
-      setCreatingPdf(false);
-    }
+  if (!equipmentId) {
+    alert('اختر المعدة أولاً');
+    return;
   }
 
-  async function handleShare() {
+  try {
+    setCreatingPdf(true);
+
+    const blob = await createPdfBlob();
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        const result = reader.result as string;
+
+        const data = result.includes(',')
+          ? result.split(',')[1]
+          : result;
+
+        resolve(data);
+      };
+
+      reader.onerror = () => {
+        reject(new Error('تعذر قراءة ملف PDF'));
+      };
+
+      reader.readAsDataURL(blob);
+    });
+
+    const fileName = getFileName();
+
+    const result = await Filesystem.writeFile({
+      path: fileName,
+      data: base64,
+      directory: Directory.Cache,
+    });
+
+    await Share.share({
+      title: 'الحساب الشهري',
+      text: `${equipmentName} - ${monthNames[month]} ${year}`,
+      url: result.uri,
+      dialogTitle: 'حفظ أو مشاركة كشف الحساب',
+    });
+  } catch (error) {
+    console.error('PDF ERROR:', error);
+
+    alert('تعذر إنشاء أو حفظ ملف PDF');
+  } finally {
+    setCreatingPdf(false);
+  }
+}
     if (!equipmentId) {
       alert(
         'اختر المعدة أولاً'
