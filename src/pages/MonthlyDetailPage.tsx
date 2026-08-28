@@ -933,8 +933,8 @@ export function MonthlyDetailPage() {
                 }}
               >
                 <th>اليوم</th>
-                <th>نوع الشغل</th>
-                <th>نوع المشاوير</th>
+                <th>نوع العمل</th>
+                <th>موقع العمل</th>
                 <th>سعر المشوار</th>
                 <th>مصاريف أخرى</th>
                 <th>ملاحظات</th>
