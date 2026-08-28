@@ -4,17 +4,27 @@ import React, {
   useRef,
   useState,
 } from 'react';
+
 import { useParams } from 'react-router-dom';
+
 import {
   Download,
   Share2,
   MessageCircle,
 } from 'lucide-react';
+
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+
+import {
+  Filesystem,
+  Directory,
+} from '@capacitor/filesystem';
+
 import { Share } from '@capacitor/share';
+
 import { AppLayout } from '@/components/layout/AppLayout';
+
 import {
   fetchEquipment,
   type Equipment,
@@ -48,38 +58,55 @@ const monthNames = [
 function normalizeArabicNumbers(value: string) {
   return value
     .replace(/[٠-٩]/g, (digit) =>
-      String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
+      String(
+        '٠١٢٣٤٥٦٧٨٩'.indexOf(digit)
+      )
     )
     .replace(/[۰-۹]/g, (digit) =>
-      String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))
+      String(
+        '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)
+      )
     )
     .replace(/٬/g, '')
     .replace(/,/g, '');
 }
 
 export function MonthlyDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } =
+    useParams<{ id: string }>();
+
   const now = new Date();
 
-  const reportRef = useRef<HTMLDivElement>(null);
+  const reportRef =
+    useRef<HTMLDivElement>(null);
 
-  const [equipmentList, setEquipmentList] =
-    useState<Equipment[]>([]);
+  const [
+    equipmentList,
+    setEquipmentList,
+  ] = useState<Equipment[]>([]);
 
-  const [equipmentId, setEquipmentId] =
-    useState(id || '');
+  const [
+    equipmentId,
+    setEquipmentId,
+  ] = useState(id || '');
 
-  const [equipmentLoading, setEquipmentLoading] =
-    useState(true);
+  const [
+    equipmentLoading,
+    setEquipmentLoading,
+  ] = useState(true);
 
-  const [year, setYear] =
-    useState(now.getFullYear());
+  const [year, setYear] = useState(
+    now.getFullYear()
+  );
 
-  const [month, setMonth] =
-    useState(now.getMonth());
+  const [month, setMonth] = useState(
+    now.getMonth()
+  );
 
-  const [creatingPdf, setCreatingPdf] =
-    useState(false);
+  const [
+    creatingPdf,
+    setCreatingPdf,
+  ] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,7 +115,8 @@ export function MonthlyDetailPage() {
       setEquipmentLoading(true);
 
       try {
-        const list = await fetchEquipment();
+        const list =
+          await fetchEquipment();
 
         if (cancelled) return;
 
@@ -98,7 +126,8 @@ export function MonthlyDetailPage() {
           id &&
           list.some(
             (item) =>
-              String(item.id) === String(id)
+              String(item.id) ===
+              String(id)
           )
         ) {
           setEquipmentId(String(id));
@@ -133,31 +162,37 @@ export function MonthlyDetailPage() {
     };
   }, [id]);
 
-  const selectedEquipment = useMemo(() => {
-    return (
-      equipmentList.find(
-        (item) =>
-          String(item.id) ===
-          String(equipmentId)
-      ) || null
-    );
-  }, [equipmentList, equipmentId]);
+  const selectedEquipment =
+    useMemo(() => {
+      return (
+        equipmentList.find(
+          (item) =>
+            String(item.id) ===
+            String(equipmentId)
+        ) || null
+      );
+    }, [
+      equipmentList,
+      equipmentId,
+    ]);
 
   const equipmentName =
     selectedEquipment?.name ||
     'لا توجد معدة محددة';
 
-  const daysInMonth = useMemo(() => {
-    return new Date(
-      year,
-      month + 1,
-      0
-    ).getDate();
-  }, [year, month]);
+  const daysInMonth =
+    useMemo(() => {
+      return new Date(
+        year,
+        month + 1,
+        0
+      ).getDate();
+    }, [year, month]);
 
-  const storageKey = equipmentId
-    ? `monthly-ledger-v3-${equipmentId}-${year}-${month}`
-    : `monthly-ledger-v3-no-equipment-${year}-${month}`;
+  const storageKey =
+    equipmentId
+      ? `monthly-ledger-v3-${equipmentId}-${year}-${month}`
+      : `monthly-ledger-v3-no-equipment-${year}-${month}`;
 
   function createEmptyRows(): DayRow[] {
     return Array.from(
@@ -175,7 +210,9 @@ export function MonthlyDetailPage() {
   }
 
   const [rows, setRows] =
-    useState<DayRow[]>(createEmptyRows());
+    useState<DayRow[]>(
+      createEmptyRows()
+    );
 
   useEffect(() => {
     if (!equipmentId) {
@@ -185,7 +222,9 @@ export function MonthlyDetailPage() {
 
     try {
       const saved =
-        localStorage.getItem(storageKey);
+        localStorage.getItem(
+          storageKey
+        );
 
       if (!saved) {
         setRows(createEmptyRows());
@@ -196,19 +235,22 @@ export function MonthlyDetailPage() {
         JSON.parse(saved) as DayRow[];
 
       const prepared =
-        createEmptyRows().map((row) => {
-          const found = parsed.find(
-            (item) =>
-              item.day === row.day
-          );
+        createEmptyRows().map(
+          (row) => {
+            const found =
+              parsed.find(
+                (item) =>
+                  item.day === row.day
+              );
 
-          if (!found) return row;
+            if (!found) return row;
 
-          return {
-            ...row,
-            ...found,
-          };
-        });
+            return {
+              ...row,
+              ...found,
+            };
+          }
+        );
 
       setRows(prepared);
     } catch {
@@ -281,7 +323,9 @@ export function MonthlyDetailPage() {
           ? {
               ...row,
               [field]:
-                Number.isFinite(numberValue)
+                Number.isFinite(
+                  numberValue
+                )
                   ? numberValue
                   : 0,
             }
@@ -312,7 +356,9 @@ export function MonthlyDetailPage() {
           sum.trips += 1;
         }
 
-        sum.income += row.tripPrice;
+        sum.income +=
+          row.tripPrice;
+
         sum.expense +=
           row.expenseAmount;
 
@@ -328,54 +374,55 @@ export function MonthlyDetailPage() {
   }, [rows]);
 
   const net =
-    totals.income - totals.expense;
+    totals.income -
+    totals.expense;
 
-  const inputStyle: React.CSSProperties =
-    {
-      width: '100%',
-      minWidth: 120,
-      padding: '10px 8px',
-      borderRadius: 10,
-      border:
-        '1px solid #26364f',
-      background: '#0a1424',
-      color: '#ffffff',
-      fontSize: 13,
-      boxSizing: 'border-box',
-      outline: 'none',
-    };
+  const inputStyle:
+    React.CSSProperties = {
+    width: '100%',
+    minWidth: 120,
+    padding: '10px 8px',
+    borderRadius: 10,
+    border:
+      '1px solid #26364f',
+    background: '#0a1424',
+    color: '#ffffff',
+    fontSize: 13,
+    boxSizing: 'border-box',
+    outline: 'none',
+  };
 
-  const selectStyle: React.CSSProperties =
-    {
-      ...inputStyle,
-      minWidth: 0,
-      padding: 12,
-    };
+  const selectStyle:
+    React.CSSProperties = {
+    ...inputStyle,
+    minWidth: 0,
+    padding: 12,
+  };
 
-  const summaryCard: React.CSSProperties =
-    {
-      background: '#0b1527',
-      border:
-        '1px solid #1d2d47',
-      borderRadius: 16,
-      padding: 14,
-      textAlign: 'center',
-    };
+  const summaryCard:
+    React.CSSProperties = {
+    background: '#0b1527',
+    border:
+      '1px solid #1d2d47',
+    borderRadius: 16,
+    padding: 14,
+    textAlign: 'center',
+  };
 
-  const buttonStyle: React.CSSProperties =
-    {
-      border: 'none',
-      borderRadius: 14,
-      padding: '14px 12px',
-      fontSize: 15,
-      fontWeight: 800,
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      color: '#ffffff',
-    };
+  const buttonStyle:
+    React.CSSProperties = {
+    border: 'none',
+    borderRadius: 14,
+    padding: '14px 10px',
+    fontSize: 14,
+    fontWeight: 800,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    color: '#ffffff',
+  };
 
   function getFileName() {
     const cleanEquipment =
@@ -384,31 +431,74 @@ export function MonthlyDetailPage() {
         '-'
       );
 
-    return `حساب-${cleanEquipment}-${monthNames[month]}-${year}.pdf`;
+    return (
+      `حساب-${cleanEquipment}-` +
+      `${monthNames[month]}-` +
+      `${year}.pdf`
+    );
+  }
+
+  async function blobToBase64(
+    blob: Blob
+  ): Promise<string> {
+    return new Promise(
+      (resolve, reject) => {
+        const reader =
+          new FileReader();
+
+        reader.onloadend = () => {
+          const result =
+            reader.result as string;
+
+          const base64 =
+            result.includes(',')
+              ? result.split(',')[1]
+              : result;
+
+          resolve(base64);
+        };
+
+        reader.onerror = () => {
+          reject(
+            new Error(
+              'تعذر قراءة ملف PDF'
+            )
+          );
+        };
+
+        reader.readAsDataURL(blob);
+      }
+    );
   }
 
   async function createPdfBlob() {
-    if (!reportRef.current) {
+    const report =
+      reportRef.current;
+
+    if (!report) {
       throw new Error(
         'تعذر العثور على التقرير'
       );
     }
 
     const canvas =
-      await html2canvas(
-        reportRef.current,
-        {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#07111f',
-          logging: false,
-        }
-      );
+      await html2canvas(report, {
+        scale: 1.25,
+        useCORS: true,
+        backgroundColor: '#07111f',
+        logging: false,
+        width: report.scrollWidth,
+        height: report.scrollHeight,
+        windowWidth:
+          report.scrollWidth,
+        windowHeight:
+          report.scrollHeight,
+      });
 
     const imageData =
       canvas.toDataURL(
         'image/jpeg',
-        0.95
+        0.88
       );
 
     const pdf = new jsPDF(
@@ -425,209 +515,159 @@ export function MonthlyDetailPage() {
 
     const margin = 6;
 
-    const imageWidth =
+    const printableWidth =
       pageWidth - margin * 2;
+
+    const printableHeight =
+      pageHeight - margin * 2;
 
     const imageHeight =
       (canvas.height *
-        imageWidth) /
+        printableWidth) /
       canvas.width;
 
-    let heightLeft = imageHeight;
     let position = margin;
+    let heightLeft =
+      imageHeight;
 
     pdf.addImage(
       imageData,
       'JPEG',
       margin,
       position,
-      imageWidth,
+      printableWidth,
       imageHeight
     );
 
     heightLeft -=
-      pageHeight - margin * 2;
+      printableHeight;
 
     while (heightLeft > 0) {
-      position =
-        heightLeft -
-        imageHeight +
-        margin;
-
       pdf.addPage();
+
+      position =
+        margin -
+        (imageHeight -
+          heightLeft);
 
       pdf.addImage(
         imageData,
         'JPEG',
         margin,
         position,
-        imageWidth,
+        printableWidth,
         imageHeight
       );
 
       heightLeft -=
-        pageHeight - margin * 2;
+        printableHeight;
     }
 
     return pdf.output('blob');
   }
 
+  async function createPdfFile() {
+    const blob =
+      await createPdfBlob();
+
+    const base64 =
+      await blobToBase64(blob);
+
+    const result =
+      await Filesystem.writeFile({
+        path: getFileName(),
+        data: base64,
+        directory:
+          Directory.Cache,
+      });
+
+    return result.uri;
+  }
+
   async function handleSavePdf() {
-  if (!equipmentId) {
-    alert('اختر المعدة أولاً');
-    return;
+    if (!equipmentId) {
+      alert(
+        'اختر المعدة أولاً'
+      );
+      return;
+    }
+
+    try {
+      setCreatingPdf(true);
+
+      const fileUri =
+        await createPdfFile();
+
+      await Share.share({
+        title:
+          'حفظ الحساب الشهري',
+        text:
+          `${equipmentName} - ` +
+          `${monthNames[month]} ` +
+          `${year}`,
+        url: fileUri,
+        dialogTitle:
+          'حفظ أو مشاركة كشف الحساب',
+      });
+    } catch (error) {
+      console.error(
+        'PDF ERROR:',
+        error
+      );
+
+      alert(
+        'تعذر إنشاء ملف PDF'
+      );
+    } finally {
+      setCreatingPdf(false);
+    }
   }
 
-  try {
-    setCreatingPdf(true);
+  async function handleShare() {
+    if (!equipmentId) {
+      alert(
+        'اختر المعدة أولاً'
+      );
+      return;
+    }
 
-    const blob = await createPdfBlob();
+    try {
+      setCreatingPdf(true);
 
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
+      const fileUri =
+        await createPdfFile();
 
-      reader.onloadend = () => {
-        const result = reader.result as string;
+      await Share.share({
+        title:
+          'الحساب الشهري',
 
-        const data = result.includes(',')
-          ? result.split(',')[1]
-          : result;
+        text:
+          `الحساب الشهري\n` +
+          `المعدة: ${equipmentName}\n` +
+          `الشهر: ${monthNames[month]} ${year}\n` +
+          `عدد المشاوير: ${totals.trips}\n` +
+          `إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
+          `إجمالي المصروفات: ${totals.expense.toLocaleString('en-US')} ر.س\n` +
+          `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
 
-        resolve(data);
-      };
+        url: fileUri,
 
-      reader.onerror = () => {
-        reject(new Error('تعذر قراءة ملف PDF'));
-      };
+        dialogTitle:
+          'مشاركة كشف الحساب',
+      });
+    } catch (error) {
+      console.error(
+        'SHARE ERROR:',
+        error
+      );
 
-      reader.readAsDataURL(blob);
-    });
-
-    const fileName = getFileName();
-
-    const result = await Filesystem.writeFile({
-      path: fileName,
-      data: base64,
-      directory: Directory.Cache,
-    });
-
-    await Share.share({
-      title: 'الحساب الشهري',
-      text: `${equipmentName} - ${monthNames[month]} ${year}`,
-      url: result.uri,
-      dialogTitle: 'حفظ أو مشاركة كشف الحساب',
-    });
-  } catch (error) {
-    console.error('PDF ERROR:', error);
-
-    alert('تعذر إنشاء أو حفظ ملف PDF');
-  } finally {async function handleSavePdf() {
-  if (!equipmentId) {
-    alert('اختر المعدة أولاً');
-    return;
+      alert(
+        'تعذر مشاركة كشف الحساب'
+      );
+    } finally {
+      setCreatingPdf(false);
+    }
   }
-
-  try {
-    setCreatingPdf(true);
-
-    const blob = await createPdfBlob();
-
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onloadend = () => {
-        const result = reader.result as string;
-
-        const data = result.includes(',')
-          ? result.split(',')[1]
-          : result;
-
-        resolve(data);
-      };
-
-      reader.onerror = () => {
-        reject(new Error('تعذر قراءة ملف PDF'));
-      };
-
-      reader.readAsDataURL(blob);
-    });
-
-    const result = await Filesystem.writeFile({
-      path: getFileName(),
-      data: base64,
-      directory: Directory.Cache,
-    });
-
-    await Share.share({
-      title: 'حفظ الحساب الشهري',
-      text: `${equipmentName} - ${monthNames[month]} ${year}`,
-      url: result.uri,
-      dialogTitle: 'حفظ أو مشاركة كشف الحساب',
-    });
-  } catch (error) {
-    console.error('PDF ERROR:', error);
-    alert('تعذر إنشاء ملف PDF');
-  } finally {
-    setCreatingPdf(false);
-  }
-}
-
-async function handleShare() {
-  if (!equipmentId) {
-    alert('اختر المعدة أولاً');
-    return;
-  }
-
-  try {
-    setCreatingPdf(true);
-
-    const blob = await createPdfBlob();
-
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onloadend = () => {
-        const result = reader.result as string;
-
-        const data = result.includes(',')
-          ? result.split(',')[1]
-          : result;
-
-        resolve(data);
-      };
-
-      reader.onerror = () => {
-        reject(new Error('تعذر قراءة ملف PDF'));
-      };
-
-      reader.readAsDataURL(blob);
-    });
-
-    const result = await Filesystem.writeFile({
-      path: getFileName(),
-      data: base64,
-      directory: Directory.Cache,
-    });
-
-    await Share.share({
-      title: 'الحساب الشهري',
-      text:
-        `الحساب الشهري\n` +
-        `المعدة: ${equipmentName}\n` +
-        `الشهر: ${monthNames[month]} ${year}\n` +
-        `إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
-        `إجمالي المصروفات: ${totals.expense.toLocaleString('en-US')} ر.س\n` +
-        `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
-      url: result.uri,
-      dialogTitle: 'مشاركة كشف الحساب',
-    });
-  } catch (error) {
-    console.error('SHARE ERROR:', error);
-    alert('تعذر مشاركة كشف الحساب');
-  } finally {
-    setCreatingPdf(false);
-  }
-}
 
   function handleWhatsApp() {
     if (!equipmentId) {
@@ -648,9 +688,8 @@ async function handleShare() {
       `📝 أيام مسجلة: ${totals.registeredDays}`;
 
     const url =
-      `https://wa.me/?text=${encodeURIComponent(
-        text
-      )}`;
+      `https://wa.me/?text=` +
+      encodeURIComponent(text);
 
     window.open(
       url,
@@ -693,14 +732,16 @@ async function handleShare() {
                 fontSize: 14,
               }}
             >
-              سجل أعمال ومشاوير ومصاريف{' '}
+              سجل أعمال ومشاوير
+              ومصاريف{' '}
               {equipmentName}
             </p>
           </div>
 
           <div
             style={{
-              background: '#0b1527',
+              background:
+                '#0b1527',
               border:
                 '1px solid #1d2d47',
               borderRadius: 18,
@@ -713,20 +754,25 @@ async function handleShare() {
             <label>
               <small
                 style={{
-                  color: '#94a3b8',
+                  color:
+                    '#94a3b8',
                 }}
               >
                 المعدة
               </small>
 
               <select
-                value={equipmentId}
+                value={
+                  equipmentId
+                }
                 onChange={(e) =>
                   setEquipmentId(
                     e.target.value
                   )
                 }
-                style={selectStyle}
+                style={
+                  selectStyle
+                }
                 disabled={
                   equipmentLoading ||
                   equipmentList.length ===
@@ -735,24 +781,29 @@ async function handleShare() {
               >
                 {equipmentLoading ? (
                   <option value="">
-                    جاري تحميل المعدات...
+                    جاري تحميل
+                    المعدات...
                   </option>
                 ) : equipmentList.length ===
                   0 ? (
                   <option value="">
-                    لا توجد معدات — أضف معدة
-                    أولاً
+                    لا توجد معدات —
+                    أضف معدة أولاً
                   </option>
                 ) : (
                   equipmentList.map(
                     (item) => (
                       <option
-                        key={item.id}
+                        key={
+                          item.id
+                        }
                         value={String(
                           item.id
                         )}
                       >
-                        {item.name}
+                        {
+                          item.name
+                        }
                       </option>
                     )
                   )
@@ -771,7 +822,8 @@ async function handleShare() {
               <label>
                 <small
                   style={{
-                    color: '#94a3b8',
+                    color:
+                      '#94a3b8',
                   }}
                 >
                   الشهر
@@ -782,17 +834,27 @@ async function handleShare() {
                   onChange={(e) =>
                     setMonth(
                       Number(
-                        e.target.value
+                        e.target
+                          .value
                       )
                     )
                   }
-                  style={selectStyle}
+                  style={
+                    selectStyle
+                  }
                 >
                   {monthNames.map(
-                    (name, index) => (
+                    (
+                      name,
+                      index
+                    ) => (
                       <option
-                        key={name}
-                        value={index}
+                        key={
+                          name
+                        }
+                        value={
+                          index
+                        }
                       >
                         {name}
                       </option>
@@ -804,7 +866,8 @@ async function handleShare() {
               <label>
                 <small
                   style={{
-                    color: '#94a3b8',
+                    color:
+                      '#94a3b8',
                   }}
                 >
                   السنة
@@ -815,15 +878,23 @@ async function handleShare() {
                   onChange={(e) =>
                     setYear(
                       Number(
-                        e.target.value
+                        e.target
+                          .value
                       )
                     )
                   }
-                  style={selectStyle}
+                  style={
+                    selectStyle
+                  }
                 >
                   {Array.from(
-                    { length: 7 },
-                    (_, index) => {
+                    {
+                      length: 7,
+                    },
+                    (
+                      _,
+                      index
+                    ) => {
                       const y =
                         now.getFullYear() -
                         2 +
@@ -853,10 +924,15 @@ async function handleShare() {
               marginBottom: 10,
             }}
           >
-            <div style={summaryCard}>
+            <div
+              style={
+                summaryCard
+              }
+            >
               <small
                 style={{
-                  color: '#94a3b8',
+                  color:
+                    '#94a3b8',
                 }}
               >
                 إجمالي المشاوير
@@ -865,17 +941,23 @@ async function handleShare() {
               <h2
                 style={{
                   marginBottom: 0,
-                  color: '#f5a623',
+                  color:
+                    '#f5a623',
                 }}
               >
                 {totals.trips}
               </h2>
             </div>
 
-            <div style={summaryCard}>
+            <div
+              style={
+                summaryCard
+              }
+            >
               <small
                 style={{
-                  color: '#94a3b8',
+                  color:
+                    '#94a3b8',
                 }}
               >
                 إجمالي الدخل
@@ -884,7 +966,8 @@ async function handleShare() {
               <h2
                 style={{
                   marginBottom: 0,
-                  color: '#22c55e',
+                  color:
+                    '#22c55e',
                 }}
               >
                 {totals.income.toLocaleString(
@@ -894,10 +977,15 @@ async function handleShare() {
               </h2>
             </div>
 
-            <div style={summaryCard}>
+            <div
+              style={
+                summaryCard
+              }
+            >
               <small
                 style={{
-                  color: '#94a3b8',
+                  color:
+                    '#94a3b8',
                 }}
               >
                 إجمالي المصروفات
@@ -906,7 +994,8 @@ async function handleShare() {
               <h2
                 style={{
                   marginBottom: 0,
-                  color: '#ef4444',
+                  color:
+                    '#ef4444',
                 }}
               >
                 {totals.expense.toLocaleString(
@@ -916,10 +1005,15 @@ async function handleShare() {
               </h2>
             </div>
 
-            <div style={summaryCard}>
+            <div
+              style={
+                summaryCard
+              }
+            >
               <small
                 style={{
-                  color: '#94a3b8',
+                  color:
+                    '#94a3b8',
                 }}
               >
                 صافي الشهر
@@ -950,7 +1044,8 @@ async function handleShare() {
           >
             <small
               style={{
-                color: '#94a3b8',
+                color:
+                  '#94a3b8',
               }}
             >
               أيام مسجلة
@@ -961,10 +1056,13 @@ async function handleShare() {
                 fontSize: 22,
                 fontWeight: 800,
                 marginTop: 5,
-                color: '#a78bfa',
+                color:
+                  '#a78bfa',
               }}
             >
-              {totals.registeredDays}
+              {
+                totals.registeredDays
+              }
             </div>
           </div>
 
@@ -976,7 +1074,8 @@ async function handleShare() {
             }}
           >
             {equipmentName} —{' '}
-            {monthNames[month]} {year}
+            {monthNames[month]}{' '}
+            {year}
           </div>
 
           <div
@@ -985,7 +1084,8 @@ async function handleShare() {
               borderRadius: 18,
               border:
                 '1px solid #1d2d47',
-              background: '#07111f',
+              background:
+                '#07111f',
             }}
           >
             <table
@@ -994,7 +1094,8 @@ async function handleShare() {
                 minWidth: 1050,
                 borderCollapse:
                   'collapse',
-                textAlign: 'center',
+                textAlign:
+                  'center',
               }}
             >
               <thead>
@@ -1055,199 +1156,237 @@ async function handleShare() {
               </thead>
 
               <tbody>
-                {rows.map((row) => (
-                  <tr
-                    key={row.day}
-                    style={{
-                      borderTop:
-                        '1px solid #1d2d47',
-                    }}
-                  >
-                    <td
+                {rows.map(
+                  (row) => (
+                    <tr
+                      key={
+                        row.day
+                      }
                       style={{
-                        padding: 11,
-                        fontWeight: 800,
-                        color:
-                          '#f5a623',
+                        borderTop:
+                          '1px solid #1d2d47',
                       }}
                     >
-                      {row.day}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 6,
-                      }}
-                    >
-                      <input
-                        type="text"
-                        value={
-                          row.workType
-                        }
-                        onChange={(e) =>
-                          updateTextRow(
-                            row.day,
-                            'workType',
-                            e.target.value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                        placeholder="مثال: رفع معدات"
-                        disabled={
-                          !equipmentId
-                        }
-                      />
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 6,
-                      }}
-                    >
-                      <input
-                        type="text"
-                        value={
-                          row.tripType
-                        }
-                        onChange={(e) =>
-                          updateTextRow(
-                            row.day,
-                            'tripType',
-                            e.target.value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                        placeholder="مثال: خميس - أبها"
-                        disabled={
-                          !equipmentId
-                        }
-                      />
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 6,
-                      }}
-                    >
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={
-                          row.tripPrice ||
-                          ''
-                        }
-                        onChange={(e) =>
-                          updateNumberRow(
-                            row.day,
-                            'tripPrice',
-                            e.target.value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                        placeholder="0"
-                        disabled={
-                          !equipmentId
-                        }
-                      />
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 6,
-                      }}
-                    >
-                      <div
+                      <td
                         style={{
-                          display: 'grid',
-                          gridTemplateColumns:
-                            '1.3fr 0.8fr',
-                          gap: 5,
-                          minWidth: 240,
+                          padding:
+                            11,
+                          fontWeight:
+                            800,
+                          color:
+                            '#f5a623',
+                        }}
+                      >
+                        {
+                          row.day
+                        }
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            6,
                         }}
                       >
                         <input
                           type="text"
                           value={
-                            row.expenseType
+                            row.workType
                           }
-                          onChange={(e) =>
+                          onChange={(
+                            e
+                          ) =>
                             updateTextRow(
                               row.day,
-                              'expenseType',
+                              'workType',
                               e.target
                                 .value
                             )
                           }
-                          style={{
-                            ...inputStyle,
-                            minWidth: 130,
-                          }}
-                          placeholder="ديزل / صيانة"
+                          style={
+                            inputStyle
+                          }
+                          placeholder="مثال: رفع معدات"
                           disabled={
                             !equipmentId
                           }
                         />
+                      </td>
 
+                      <td
+                        style={{
+                          padding:
+                            6,
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={
+                            row.tripType
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updateTextRow(
+                              row.day,
+                              'tripType',
+                              e.target
+                                .value
+                            )
+                          }
+                          style={
+                            inputStyle
+                          }
+                          placeholder="مثال: خميس - أبها"
+                          disabled={
+                            !equipmentId
+                          }
+                        />
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            6,
+                        }}
+                      >
                         <input
                           type="text"
                           inputMode="decimal"
                           value={
-                            row.expenseAmount ||
+                            row.tripPrice ||
                             ''
                           }
-                          onChange={(e) =>
+                          onChange={(
+                            e
+                          ) =>
                             updateNumberRow(
                               row.day,
-                              'expenseAmount',
+                              'tripPrice',
+                              e.target
+                                .value
+                            )
+                          }
+                          style={
+                            inputStyle
+                          }
+                          placeholder="0"
+                          disabled={
+                            !equipmentId
+                          }
+                        />
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            6,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display:
+                              'grid',
+                            gridTemplateColumns:
+                              '1.3fr 0.8fr',
+                            gap: 5,
+                            minWidth:
+                              240,
+                          }}
+                        >
+                          <input
+                            type="text"
+                            value={
+                              row.expenseType
+                            }
+                            onChange={(
+                              e
+                            ) =>
+                              updateTextRow(
+                                row.day,
+                                'expenseType',
+                                e
+                                  .target
+                                  .value
+                              )
+                            }
+                            style={{
+                              ...inputStyle,
+                              minWidth:
+                                130,
+                            }}
+                            placeholder="ديزل / صيانة"
+                            disabled={
+                              !equipmentId
+                            }
+                          />
+
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={
+                              row.expenseAmount ||
+                              ''
+                            }
+                            onChange={(
+                              e
+                            ) =>
+                              updateNumberRow(
+                                row.day,
+                                'expenseAmount',
+                                e
+                                  .target
+                                  .value
+                              )
+                            }
+                            style={{
+                              ...inputStyle,
+                              minWidth:
+                                90,
+                            }}
+                            placeholder="المبلغ"
+                            disabled={
+                              !equipmentId
+                            }
+                          />
+                        </div>
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            6,
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={
+                            row.notes
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updateTextRow(
+                              row.day,
+                              'notes',
                               e.target
                                 .value
                             )
                           }
                           style={{
                             ...inputStyle,
-                            minWidth: 90,
+                            minWidth:
+                              170,
                           }}
-                          placeholder="المبلغ"
+                          placeholder="اكتب ملاحظة"
                           disabled={
                             !equipmentId
                           }
                         />
-                      </div>
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 6,
-                      }}
-                    >
-                      <input
-                        type="text"
-                        value={row.notes}
-                        onChange={(e) =>
-                          updateTextRow(
-                            row.day,
-                            'notes',
-                            e.target.value
-                          )
-                        }
-                        style={{
-                          ...inputStyle,
-                          minWidth: 170,
-                        }}
-                        placeholder="اكتب ملاحظة"
-                        disabled={
-                          !equipmentId
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
@@ -1257,7 +1396,8 @@ async function handleShare() {
               marginTop: 18,
               padding: 16,
               borderRadius: 18,
-              background: '#0b1527',
+              background:
+                '#0b1527',
               border:
                 '1px solid #1d2d47',
             }}
@@ -1278,7 +1418,9 @@ async function handleShare() {
             >
               <div>
                 عدد المشاوير:{' '}
-                <b>{totals.trips}</b>
+                <b>
+                  {totals.trips}
+                </b>
               </div>
 
               <div>
@@ -1355,48 +1497,69 @@ async function handleShare() {
           }}
         >
           <button
-            onClick={handleSavePdf}
-            disabled={creatingPdf}
+            onClick={
+              handleSavePdf
+            }
+            disabled={
+              creatingPdf
+            }
             style={{
               ...buttonStyle,
-              background: '#2563eb',
+              background:
+                '#2563eb',
               opacity:
                 creatingPdf
                   ? 0.6
                   : 1,
             }}
           >
-            <Download size={19} />
+            <Download size={18} />
+
             {creatingPdf
               ? 'جاري...'
               : 'حفظ PDF'}
           </button>
 
           <button
-            onClick={handleShare}
-            disabled={creatingPdf}
+            onClick={
+              handleShare
+            }
+            disabled={
+              creatingPdf
+            }
             style={{
               ...buttonStyle,
-              background: '#7c3aed',
+              background:
+                '#7c3aed',
               opacity:
                 creatingPdf
                   ? 0.6
                   : 1,
             }}
           >
-            <Share2 size={19} />
+            <Share2 size={18} />
             مشاركة
           </button>
 
           <button
-            onClick={handleWhatsApp}
+            onClick={
+              handleWhatsApp
+            }
+            disabled={
+              creatingPdf
+            }
             style={{
               ...buttonStyle,
-              background: '#16a34a',
+              background:
+                '#16a34a',
+              opacity:
+                creatingPdf
+                  ? 0.6
+                  : 1,
             }}
           >
             <MessageCircle
-              size={19}
+              size={18}
             />
             واتساب
           </button>
@@ -1417,10 +1580,10 @@ async function handleShare() {
             fontWeight: 700,
           }}
         >
-          ✓ يتم حفظ البيانات تلقائيًا على
-          الجهاز
+          ✓ يتم حفظ البيانات تلقائيًا
+          على الجهاز
         </div>
       </div>
     </AppLayout>
   );
-            }
+    }
