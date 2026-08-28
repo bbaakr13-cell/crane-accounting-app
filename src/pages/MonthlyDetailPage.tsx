@@ -6,9 +6,10 @@ import { fetchEquipment, type Equipment } from '@/lib/equipment';
 type DayRow = {
   day: number;
   workType: string;
-  trips: number;
-  income: number;
-  expense: number;
+  tripType: string;
+  tripPrice: number;
+  expenseType: string;
+  expenseAmount: number;
   notes: string;
 };
 
@@ -51,12 +52,9 @@ export function MonthlyDetailPage() {
 
         setEquipmentList(list);
 
-        // اختيار نفس المعدة القادمة من صفحة المعدات
         if (
           id &&
-          list.some(
-            (item) => String(item.id) === String(id)
-          )
+          list.some((item) => String(item.id) === String(id))
         ) {
           setEquipmentId(String(id));
         } else if (list.length > 0) {
@@ -88,8 +86,7 @@ export function MonthlyDetailPage() {
   const selectedEquipment = useMemo(() => {
     return (
       equipmentList.find(
-        (item) =>
-          String(item.id) === String(equipmentId)
+        (item) => String(item.id) === String(equipmentId)
       ) || null
     );
   }, [equipmentList, equipmentId]);
@@ -98,16 +95,12 @@ export function MonthlyDetailPage() {
     selectedEquipment?.name || 'لا توجد معدة محددة';
 
   const daysInMonth = useMemo(() => {
-    return new Date(
-      year,
-      month + 1,
-      0
-    ).getDate();
+    return new Date(year, month + 1, 0).getDate();
   }, [year, month]);
 
   const storageKey = equipmentId
-    ? `monthly-ledger-equipment-${equipmentId}-${year}-${month}`
-    : `monthly-ledger-no-equipment-${year}-${month}`;
+    ? `monthly-ledger-v3-${equipmentId}-${year}-${month}`
+    : `monthly-ledger-v3-no-equipment-${year}-${month}`;
 
   function createEmptyRows(): DayRow[] {
     return Array.from(
@@ -115,16 +108,16 @@ export function MonthlyDetailPage() {
       (_, index) => ({
         day: index + 1,
         workType: '',
-        trips: 0,
-        income: 0,
-        expense: 0,
+        tripType: '',
+        tripPrice: 0,
+        expenseType: '',
+        expenseAmount: 0,
         notes: '',
       })
     );
   }
 
-  const [rows, setRows] =
-    useState<DayRow[]>(createEmptyRows());
+  const [rows, setRows] = useState<DayRow[]>(createEmptyRows());
 
   useEffect(() => {
     if (!equipmentId) {
@@ -133,25 +126,27 @@ export function MonthlyDetailPage() {
     }
 
     try {
-      const saved =
-        localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(storageKey);
 
       if (!saved) {
         setRows(createEmptyRows());
         return;
       }
 
-      const parsed =
-        JSON.parse(saved) as DayRow[];
+      const parsed = JSON.parse(saved) as DayRow[];
 
-      const prepared =
-        createEmptyRows().map((row) => {
-          const found = parsed.find(
-            (item) => item.day === row.day
-          );
+      const prepared = createEmptyRows().map((row) => {
+        const found = parsed.find(
+          (item) => item.day === row.day
+        );
 
-          return found || row;
-        });
+        if (!found) return row;
+
+        return {
+          ...row,
+          ...found,
+        };
+      });
 
       setRows(prepared);
     } catch {
@@ -183,23 +178,23 @@ export function MonthlyDetailPage() {
     field: keyof DayRow,
     value: string
   ) {
-    setRows((old) =>
-      old.map((row) => {
+    setRows((oldRows) =>
+      oldRows.map((row) => {
         if (row.day !== day) return row;
 
         if (
-          field === 'workType' ||
-          field === 'notes'
+          field === 'tripPrice' ||
+          field === 'expenseAmount'
         ) {
           return {
             ...row,
-            [field]: value,
+            [field]: Number(value || 0),
           };
         }
 
         return {
           ...row,
-          [field]: Number(value || 0),
+          [field]: value,
         };
       })
     );
@@ -208,10 +203,26 @@ export function MonthlyDetailPage() {
   const totals = useMemo(() => {
     return rows.reduce(
       (sum, row) => {
-        sum.trips += row.trips;
-        sum.income += row.income;
-        sum.expense += row.expense;
-        sum.net += row.income - row.expense;
+        if (
+          row.workType.trim() ||
+          row.tripType.trim() ||
+          row.tripPrice > 0 ||
+          row.expenseType.trim() ||
+          row.expenseAmount > 0 ||
+          row.notes.trim()
+        ) {
+          sum.registeredDays += 1;
+        }
+
+        if (
+          row.tripType.trim() ||
+          row.tripPrice > 0
+        ) {
+          sum.trips += 1;
+        }
+
+        sum.income += row.tripPrice;
+        sum.expense += row.expenseAmount;
 
         return sum;
       },
@@ -219,14 +230,16 @@ export function MonthlyDetailPage() {
         trips: 0,
         income: 0,
         expense: 0,
-        net: 0,
+        registeredDays: 0,
       }
     );
   }, [rows]);
 
+  const net = totals.income - totals.expense;
+
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    minWidth: 85,
+    minWidth: 120,
     padding: '10px 8px',
     borderRadius: 10,
     border: '1px solid #26364f',
@@ -234,6 +247,7 @@ export function MonthlyDetailPage() {
     color: '#ffffff',
     fontSize: 13,
     boxSizing: 'border-box',
+    outline: 'none',
   };
 
   const selectStyle: React.CSSProperties = {
@@ -256,7 +270,7 @@ export function MonthlyDetailPage() {
         dir="rtl"
         style={{
           padding: 18,
-          paddingBottom: 100,
+          paddingBottom: 110,
           maxWidth: 1100,
           margin: 'auto',
           color: '#ffffff',
@@ -267,6 +281,7 @@ export function MonthlyDetailPage() {
             style={{
               margin: 0,
               fontSize: 27,
+              fontWeight: 800,
             }}
           >
             الحساب الشهري
@@ -279,7 +294,7 @@ export function MonthlyDetailPage() {
               fontSize: 14,
             }}
           >
-            الحساب الشهري الخاص بـ {equipmentName}
+            سجل أعمال ومشاوير ومصاريف {equipmentName}
           </p>
         </div>
 
@@ -295,11 +310,7 @@ export function MonthlyDetailPage() {
           }}
         >
           <label>
-            <small
-              style={{
-                color: '#94a3b8',
-              }}
-            >
+            <small style={{ color: '#94a3b8' }}>
               المعدة
             </small>
 
@@ -343,51 +354,37 @@ export function MonthlyDetailPage() {
             }}
           >
             <label>
-              <small
-                style={{
-                  color: '#94a3b8',
-                }}
-              >
+              <small style={{ color: '#94a3b8' }}>
                 الشهر
               </small>
 
               <select
                 value={month}
                 onChange={(e) =>
-                  setMonth(
-                    Number(e.target.value)
-                  )
+                  setMonth(Number(e.target.value))
                 }
                 style={selectStyle}
               >
-                {monthNames.map(
-                  (name, index) => (
-                    <option
-                      key={name}
-                      value={index}
-                    >
-                      {name}
-                    </option>
-                  )
-                )}
+                {monthNames.map((name, index) => (
+                  <option
+                    key={name}
+                    value={index}
+                  >
+                    {name}
+                  </option>
+                ))}
               </select>
             </label>
 
             <label>
-              <small
-                style={{
-                  color: '#94a3b8',
-                }}
-              >
+              <small style={{ color: '#94a3b8' }}>
                 السنة
               </small>
 
               <select
                 value={year}
                 onChange={(e) =>
-                  setYear(
-                    Number(e.target.value)
-                  )
+                  setYear(Number(e.target.value))
                 }
                 style={selectStyle}
               >
@@ -395,9 +392,7 @@ export function MonthlyDetailPage() {
                   { length: 7 },
                   (_, index) => {
                     const y =
-                      now.getFullYear() -
-                      2 +
-                      index;
+                      now.getFullYear() - 2 + index;
 
                     return (
                       <option
@@ -418,22 +413,19 @@ export function MonthlyDetailPage() {
           style={{
             display: 'grid',
             gridTemplateColumns:
-              'repeat(2, 1fr)',
+              'repeat(2, minmax(0, 1fr))',
             gap: 10,
-            marginBottom: 18,
+            marginBottom: 10,
           }}
         >
           <div style={summaryCard}>
-            <small
-              style={{
-                color: '#94a3b8',
-              }}
-            >
+            <small style={{ color: '#94a3b8' }}>
               إجمالي المشاوير
             </small>
 
             <h2
               style={{
+                marginBottom: 0,
                 color: '#f5a623',
               }}
             >
@@ -442,93 +434,98 @@ export function MonthlyDetailPage() {
           </div>
 
           <div style={summaryCard}>
-            <small
-              style={{
-                color: '#94a3b8',
-              }}
-            >
+            <small style={{ color: '#94a3b8' }}>
               إجمالي الدخل
             </small>
 
             <h2
               style={{
+                marginBottom: 0,
                 color: '#22c55e',
               }}
             >
-              {totals.income.toLocaleString(
-                'en-US'
-              )}{' '}
-              ر.س
+              {totals.income.toLocaleString('en-US')} ر.س
             </h2>
           </div>
 
           <div style={summaryCard}>
-            <small
-              style={{
-                color: '#94a3b8',
-              }}
-            >
+            <small style={{ color: '#94a3b8' }}>
               إجمالي المصروفات
             </small>
 
             <h2
               style={{
+                marginBottom: 0,
                 color: '#ef4444',
               }}
             >
-              {totals.expense.toLocaleString(
-                'en-US'
-              )}{' '}
-              ر.س
+              {totals.expense.toLocaleString('en-US')} ر.س
             </h2>
           </div>
 
           <div style={summaryCard}>
-            <small
-              style={{
-                color: '#94a3b8',
-              }}
-            >
+            <small style={{ color: '#94a3b8' }}>
               صافي الشهر
             </small>
 
             <h2
               style={{
-                color: '#3b82f6',
+                marginBottom: 0,
+                color:
+                  net >= 0
+                    ? '#3b82f6'
+                    : '#ef4444',
               }}
             >
-              {totals.net.toLocaleString(
-                'en-US'
-              )}{' '}
-              ر.س
+              {net.toLocaleString('en-US')} ر.س
             </h2>
+          </div>
+        </div>
+
+        <div
+          style={{
+            ...summaryCard,
+            marginBottom: 18,
+          }}
+        >
+          <small style={{ color: '#94a3b8' }}>
+            أيام مسجلة
+          </small>
+
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              marginTop: 5,
+              color: '#a78bfa',
+            }}
+          >
+            {totals.registeredDays}
           </div>
         </div>
 
         <div
           style={{
             marginBottom: 12,
-            fontWeight: 'bold',
+            fontWeight: 800,
             fontSize: 18,
           }}
         >
-          {equipmentName} — {monthNames[month]}{' '}
-          {year}
+          {equipmentName} — {monthNames[month]} {year}
         </div>
 
         <div
           style={{
             overflowX: 'auto',
             borderRadius: 18,
-            border:
-              '1px solid #1d2d47',
+            border: '1px solid #1d2d47',
             background: '#07111f',
           }}
         >
           <table
             style={{
               width: '100%',
-              minWidth: 900,
+              minWidth: 1050,
               borderCollapse: 'collapse',
               textAlign: 'center',
             }}
@@ -548,19 +545,15 @@ export function MonthlyDetailPage() {
                 </th>
 
                 <th style={{ padding: 13 }}>
-                  المشاوير
+                  نوع المشاوير
                 </th>
 
                 <th style={{ padding: 13 }}>
-                  الدخل
+                  سعر المشوار
                 </th>
 
                 <th style={{ padding: 13 }}>
-                  المصروف
-                </th>
-
-                <th style={{ padding: 13 }}>
-                  الصافي
+                  مصاريف أخرى
                 </th>
 
                 <th style={{ padding: 13 }}>
@@ -570,161 +563,150 @@ export function MonthlyDetailPage() {
             </thead>
 
             <tbody>
-              {rows.map((row) => {
-                const net =
-                  row.income - row.expense;
-
-                return (
-                  <tr
-                    key={row.day}
+              {rows.map((row) => (
+                <tr
+                  key={row.day}
+                  style={{
+                    borderTop:
+                      '1px solid #1d2d47',
+                  }}
+                >
+                  <td
                     style={{
-                      borderTop:
-                        '1px solid #1d2d47',
+                      padding: 11,
+                      fontWeight: 800,
+                      color: '#f5a623',
                     }}
                   >
-                    <td
+                    {row.day}
+                  </td>
+
+                  <td style={{ padding: 6 }}>
+                    <input
+                      type="text"
+                      value={row.workType}
+                      onChange={(e) =>
+                        updateRow(
+                          row.day,
+                          'workType',
+                          e.target.value
+                        )
+                      }
+                      style={inputStyle}
+                      placeholder="مثال: رفع معدات"
+                      disabled={!equipmentId}
+                    />
+                  </td>
+
+                  <td style={{ padding: 6 }}>
+                    <input
+                      type="text"
+                      value={row.tripType}
+                      onChange={(e) =>
+                        updateRow(
+                          row.day,
+                          'tripType',
+                          e.target.value
+                        )
+                      }
+                      style={inputStyle}
+                      placeholder="مثال: خميس - أبها"
+                      disabled={!equipmentId}
+                    />
+                  </td>
+
+                  <td style={{ padding: 6 }}>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      value={row.tripPrice || ''}
+                      onChange={(e) =>
+                        updateRow(
+                          row.day,
+                          'tripPrice',
+                          e.target.value
+                        )
+                      }
+                      style={inputStyle}
+                      placeholder="0"
+                      disabled={!equipmentId}
+                    />
+                  </td>
+
+                  <td style={{ padding: 6 }}>
+                    <div
                       style={{
-                        padding: 11,
-                        fontWeight: 'bold',
-                        color: '#f5a623',
+                        display: 'grid',
+                        gridTemplateColumns:
+                          '1.3fr 0.8fr',
+                        gap: 5,
+                        minWidth: 240,
                       }}
                     >
-                      {row.day}
-                    </td>
-
-                    <td style={{ padding: 6 }}>
-                      <select
-                        value={row.workType}
-                        onChange={(e) =>
-                          updateRow(
-                            row.day,
-                            'workType',
-                            e.target.value
-                          )
-                        }
-                        style={inputStyle}
-                        disabled={!equipmentId}
-                      >
-                        <option value="">
-                          لا يوجد شغل
-                        </option>
-
-                        <option value="مشوار">
-                          مشوار
-                        </option>
-
-                        <option value="يومية">
-                          يومية
-                        </option>
-
-                        <option value="ساعة">
-                          ساعة
-                        </option>
-
-                        <option value="أسبوع">
-                          أسبوع
-                        </option>
-
-                        <option value="شهري">
-                          شهري
-                        </option>
-                      </select>
-                    </td>
-
-                    <td style={{ padding: 6 }}>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        value={row.trips || ''}
-                        onChange={(e) =>
-                          updateRow(
-                            row.day,
-                            'trips',
-                            e.target.value
-                          )
-                        }
-                        style={inputStyle}
-                        placeholder="0"
-                        disabled={!equipmentId}
-                      />
-                    </td>
-
-                    <td style={{ padding: 6 }}>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        value={row.income || ''}
-                        onChange={(e) =>
-                          updateRow(
-                            row.day,
-                            'income',
-                            e.target.value
-                          )
-                        }
-                        style={inputStyle}
-                        placeholder="0"
-                        disabled={!equipmentId}
-                      />
-                    </td>
-
-                    <td style={{ padding: 6 }}>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        value={row.expense || ''}
-                        onChange={(e) =>
-                          updateRow(
-                            row.day,
-                            'expense',
-                            e.target.value
-                          )
-                        }
-                        style={inputStyle}
-                        placeholder="0"
-                        disabled={!equipmentId}
-                      />
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 10,
-                        fontWeight: 'bold',
-                        color:
-                          net >= 0
-                            ? '#22c55e'
-                            : '#ef4444',
-                      }}
-                    >
-                      {net.toLocaleString(
-                        'en-US'
-                      )}
-                    </td>
-
-                    <td style={{ padding: 6 }}>
                       <input
                         type="text"
-                        value={row.notes}
+                        value={row.expenseType}
                         onChange={(e) =>
                           updateRow(
                             row.day,
-                            'notes',
+                            'expenseType',
                             e.target.value
                           )
                         }
                         style={{
                           ...inputStyle,
-                          minWidth: 150,
+                          minWidth: 130,
                         }}
-                        placeholder="ملاحظات"
+                        placeholder="ديزل / صيانة"
                         disabled={!equipmentId}
                       />
-                    </td>
-                  </tr>
-                );
-              })}
+
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        value={
+                          row.expenseAmount || ''
+                        }
+                        onChange={(e) =>
+                          updateRow(
+                            row.day,
+                            'expenseAmount',
+                            e.target.value
+                          )
+                        }
+                        style={{
+                          ...inputStyle,
+                          minWidth: 90,
+                        }}
+                        placeholder="المبلغ"
+                        disabled={!equipmentId}
+                      />
+                    </div>
+                  </td>
+
+                  <td style={{ padding: 6 }}>
+                    <input
+                      type="text"
+                      value={row.notes}
+                      onChange={(e) =>
+                        updateRow(
+                          row.day,
+                          'notes',
+                          e.target.value
+                        )
+                      }
+                      style={{
+                        ...inputStyle,
+                        minWidth: 170,
+                      }}
+                      placeholder="اكتب ملاحظة"
+                      disabled={!equipmentId}
+                    />
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -735,16 +717,21 @@ export function MonthlyDetailPage() {
             padding: 16,
             borderRadius: 18,
             background: '#0b1527',
-            border:
-              '1px solid #1d2d47',
+            border: '1px solid #1d2d47',
           }}
         >
-          <strong>ملخص الشهر</strong>
+          <strong
+            style={{
+              fontSize: 17,
+            }}
+          >
+            ملخص الشهر
+          </strong>
 
           <div
             style={{
               marginTop: 10,
-              lineHeight: 2,
+              lineHeight: 2.1,
             }}
           >
             <div>
@@ -754,29 +741,15 @@ export function MonthlyDetailPage() {
 
             <div>
               إجمالي الدخل:{' '}
-              <b
-                style={{
-                  color: '#22c55e',
-                }}
-              >
-                {totals.income.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
+              <b style={{ color: '#22c55e' }}>
+                {totals.income.toLocaleString('en-US')} ر.س
               </b>
             </div>
 
             <div>
-              إجمالي المصروف:{' '}
-              <b
-                style={{
-                  color: '#ef4444',
-                }}
-              >
-                {totals.expense.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
+              إجمالي المصروفات:{' '}
+              <b style={{ color: '#ef4444' }}>
+                {totals.expense.toLocaleString('en-US')} ر.س
               </b>
             </div>
 
@@ -784,16 +757,41 @@ export function MonthlyDetailPage() {
               صافي الشهر:{' '}
               <b
                 style={{
-                  color: '#3b82f6',
+                  color:
+                    net >= 0
+                      ? '#3b82f6'
+                      : '#ef4444',
                 }}
               >
-                {totals.net.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
+                {net.toLocaleString('en-US')} ر.س
+              </b>
+            </div>
+
+            <div>
+              أيام مسجلة:{' '}
+              <b style={{ color: '#a78bfa' }}>
+                {totals.registeredDays}
               </b>
             </div>
           </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            padding: 12,
+            borderRadius: 14,
+            background:
+              'rgba(34, 197, 94, 0.08)',
+            border:
+              '1px solid rgba(34, 197, 94, 0.20)',
+            color: '#86efac',
+            textAlign: 'center',
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          ✓ يتم حفظ البيانات تلقائيًا على الجهاز
         </div>
       </div>
     </AppLayout>
