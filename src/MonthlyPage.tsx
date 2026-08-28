@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 
 type DayRow = {
@@ -39,16 +40,30 @@ const monthNames = [
 export function MonthlyPage() {
   const now = new Date();
 
-  const [equipment, setEquipment] = useState(equipmentList[0]);
+  const [searchParams] = useSearchParams();
+
+  const equipmentFromUrl =
+    searchParams.get('equipment') || equipmentList[0];
+
+  const [equipment, setEquipment] = useState(equipmentFromUrl);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+
+  useEffect(() => {
+    const selectedEquipment = searchParams.get('equipment');
+
+    if (selectedEquipment) {
+      setEquipment(selectedEquipment);
+    }
+  }, [searchParams]);
 
   const daysInMonth = useMemo(
     () => new Date(year, month + 1, 0).getDate(),
     [year, month]
   );
 
-  const storageKey = `monthly-ledger-v2-${equipment}-${year}-${month}`;
+  const storageKey =
+    `monthly-ledger-v2-${equipment}-${year}-${month}`;
 
   function createEmptyRows(): DayRow[] {
     return Array.from({ length: daysInMonth }, (_, index) => ({
@@ -83,7 +98,7 @@ export function MonthlyPage() {
     } catch {
       setRows(createEmptyRows());
     }
-  }, [equipment, year, month, daysInMonth]);
+  }, [equipment, year, month, daysInMonth, storageKey]);
 
   useEffect(() => {
     try {
@@ -158,6 +173,15 @@ export function MonthlyPage() {
     textAlign: 'center',
   };
 
+  const availableEquipment = useMemo(() => {
+    return Array.from(
+      new Set([
+        equipment,
+        ...equipmentList,
+      ])
+    );
+  }, [equipment]);
+
   return (
     <AppLayout>
       <div
@@ -207,7 +231,7 @@ export function MonthlyPage() {
               onChange={(e) => setEquipment(e.target.value)}
               style={selectStyle}
             >
-              {equipmentList.map((item) => (
+              {availableEquipment.map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>
@@ -276,6 +300,7 @@ export function MonthlyPage() {
             <small style={{ color: '#94a3b8' }}>
               الأيام المسجلة
             </small>
+
             <h2 style={{ color: '#f5a623' }}>
               {workedDays}
             </h2>
@@ -285,8 +310,14 @@ export function MonthlyPage() {
             <small style={{ color: '#94a3b8' }}>
               إجمالي المبلغ
             </small>
-            <h2 style={{ color: '#22c55e' }}>
-              {totalAmount.toLocaleString()} ر.س
+
+            <h2
+              style={{
+                color: '#22c55e',
+                direction: 'ltr',
+              }}
+            >
+              {totalAmount.toLocaleString('en-US')} ر.س
             </h2>
           </div>
         </div>
@@ -319,7 +350,9 @@ export function MonthlyPage() {
           >
             <thead>
               <tr style={{ background: '#101b2e' }}>
-                <th style={{ padding: 13 }}>اليوم</th>
+                <th style={{ padding: 13 }}>
+                  اليوم
+                </th>
 
                 <th style={{ padding: 13 }}>
                   نوع الشغل
@@ -409,12 +442,29 @@ export function MonthlyPage() {
                       }
                       style={inputStyle}
                     >
-                      <option value="">لا يوجد شغل</option>
-                      <option value="مشوار">مشوار</option>
-                      <option value="يومية">يومية</option>
-                      <option value="ساعة">ساعة</option>
-                      <option value="أسبوع">أسبوع</option>
-                      <option value="شهري">شهري</option>
+                      <option value="">
+                        لا يوجد شغل
+                      </option>
+
+                      <option value="مشوار">
+                        مشوار
+                      </option>
+
+                      <option value="يومية">
+                        يومية
+                      </option>
+
+                      <option value="ساعة">
+                        ساعة
+                      </option>
+
+                      <option value="أسبوع">
+                        أسبوع
+                      </option>
+
+                      <option value="شهري">
+                        شهري
+                      </option>
                     </select>
                   </td>
 
@@ -453,6 +503,7 @@ export function MonthlyPage() {
                       style={{
                         ...inputStyle,
                         minWidth: 110,
+                        direction: 'ltr',
                       }}
                       placeholder="0"
                     />
@@ -520,28 +571,14 @@ export function MonthlyPage() {
               fontSize: 14,
             }}
           >
-            <div>
-              • تفصيل العمل يكتب بحروف.
-            </div>
-
-            <div>
-              • المبلغ يكتب بالأرقام فقط.
-            </div>
-
-            <div>
-              • مصروف / خرج يكتب بحروف.
-            </div>
-
-            <div>
-              • الملاحظات تكتب بحروف.
-            </div>
-
-            <div>
-              • البيانات تحفظ تلقائيًا على الجهاز.
-            </div>
+            <div>• تفصيل العمل يكتب بحروف.</div>
+            <div>• المبلغ يكتب بالأرقام فقط.</div>
+            <div>• مصروف / خرج يكتب بحروف.</div>
+            <div>• الملاحظات تكتب بحروف.</div>
+            <div>• البيانات تحفظ تلقائيًا على الجهاز.</div>
           </div>
         </div>
       </div>
     </AppLayout>
   );
-            }
+                  }
