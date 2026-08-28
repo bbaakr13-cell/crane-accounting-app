@@ -1138,379 +1138,723 @@ export function MonthlyDetailPage() {
           </button>
         </div>
 
-        {/* تقرير PDF المخفي */}
-        <div
-          ref={reportRef}
-          dir="rtl"
+        {/* تقرير PDF الاحترافي */}
+<div
+  ref={reportRef}
+  dir="rtl"
+  style={{
+    position: 'fixed',
+    left: '-10000px',
+    top: 0,
+    width: 1000,
+    height: 1414,
+    background: '#ffffff',
+    color: '#111827',
+    padding: '18px',
+    boxSizing: 'border-box',
+    fontFamily: 'Arial, Tahoma, sans-serif',
+  }}
+>
+  {/* رأس الكشف */}
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: '220px 1fr 245px',
+      alignItems: 'center',
+      gap: 18,
+      marginBottom: 14,
+    }}
+  >
+    {/* الشعار */}
+    <div
+      style={{
+        textAlign: 'center',
+        color: '#0b3b82',
+      }}
+    >
+      <div
+        style={{
+          width: 90,
+          height: 90,
+          margin: '0 auto 5px',
+          borderRadius: '50%',
+          border: '8px solid #0b3b82',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 42,
+          fontWeight: 900,
+        }}
+      >
+        🏗️
+      </div>
+
+      <div
+        style={{
+          fontSize: 24,
+          fontWeight: 900,
+        }}
+      >
+        BAAKR PRO
+      </div>
+
+      <div
+        style={{
+          fontSize: 12,
+          color: '#334155',
+          marginTop: 3,
+        }}
+      >
+        إدارة معدات النقل والمشاريع
+      </div>
+    </div>
+
+    {/* العنوان */}
+    <div
+      style={{
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 40,
+          fontWeight: 900,
+          color: '#0b3b82',
+          letterSpacing: 1,
+        }}
+      >
+        BAAKR PRO
+      </div>
+
+      <div
+        style={{
+          fontSize: 37,
+          fontWeight: 900,
+          color: '#102f61',
+          marginTop: 6,
+        }}
+      >
+        كشف الحساب الشهري
+      </div>
+
+      <div
+        style={{
+          width: '72%',
+          height: 3,
+          background: '#0b3b82',
+          margin: '10px auto',
+        }}
+      />
+
+      <div
+        style={{
+          fontSize: 15,
+          color: '#334155',
+        }}
+      >
+        تقرير شامل للأعمال والمشاوير والمصاريف
+      </div>
+    </div>
+
+    {/* بيانات الكشف */}
+    <div
+      style={{
+        border: '1px solid #cbd5e1',
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 13,
+        lineHeight: 2.1,
+      }}
+    >
+      <div>
+        <b>رقم الكشف:</b>{' '}
+        {`${year}${String(month + 1).padStart(2, '0')}`}
+      </div>
+
+      <div>
+        <b>تاريخ الإصدار:</b>{' '}
+        {new Date().toLocaleDateString('en-GB')}
+      </div>
+
+      <div>
+        <b>وقت الإصدار:</b>{' '}
+        {new Date().toLocaleTimeString('ar-SA', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}
+      </div>
+
+      <div>
+        <b>إصدار بواسطة:</b> BAAKR PRO
+      </div>
+    </div>
+  </div>
+
+  {/* المعدة والشهر والسنة */}
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: '1.4fr 1fr 1fr',
+      border: '1px solid #cbd5e1',
+      borderRadius: 10,
+      marginBottom: 12,
+      overflow: 'hidden',
+    }}
+  >
+    <div
+      style={{
+        padding: 12,
+        textAlign: 'center',
+        borderLeft: '1px solid #e2e8f0',
+      }}
+    >
+      <div
+        style={{
+          color: '#0b3b82',
+          fontWeight: 800,
+          fontSize: 14,
+        }}
+      >
+        المعدة
+      </div>
+
+      <div
+        style={{
+          fontSize: 19,
+          fontWeight: 900,
+          marginTop: 4,
+        }}
+      >
+        {equipmentName}
+      </div>
+    </div>
+
+    <div
+      style={{
+        padding: 12,
+        textAlign: 'center',
+        borderLeft: '1px solid #e2e8f0',
+      }}
+    >
+      <div
+        style={{
+          color: '#0b3b82',
+          fontWeight: 800,
+          fontSize: 14,
+        }}
+      >
+        الشهر
+      </div>
+
+      <div
+        style={{
+          fontSize: 19,
+          fontWeight: 900,
+          marginTop: 4,
+        }}
+      >
+        {monthNames[month]}
+      </div>
+    </div>
+
+    <div
+      style={{
+        padding: 12,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          color: '#0b3b82',
+          fontWeight: 800,
+          fontSize: 14,
+        }}
+      >
+        السنة
+      </div>
+
+      <div
+        style={{
+          fontSize: 19,
+          fontWeight: 900,
+          marginTop: 4,
+        }}
+      >
+        {year}
+      </div>
+    </div>
+  </div>
+
+  {/* جدول الأيام */}
+  <table
+    style={{
+      width: '100%',
+      borderCollapse: 'collapse',
+      tableLayout: 'fixed',
+      fontSize: 11,
+      textAlign: 'center',
+    }}
+  >
+    <thead>
+      <tr
+        style={{
+          background: '#073b7a',
+          color: '#ffffff',
+        }}
+      >
+        <th
           style={{
-            position: 'fixed',
-            left: '-10000px',
-            top: 0,
-            width: 900,
-            background: '#ffffff',
-            color: '#111827',
-            padding: 35,
-            boxSizing: 'border-box',
-            fontFamily:
-              'Arial, sans-serif',
+            width: '6%',
+            padding: '8px 3px',
+            border: '1px solid #d1d5db',
           }}
         >
-          <div
-            style={{
-              textAlign: 'center',
-              borderBottom:
-                '4px solid #1d4ed8',
-              paddingBottom: 20,
-              marginBottom: 25,
-            }}
-          >
-            <div
+          اليوم
+        </th>
+
+        <th
+          style={{
+            width: '17%',
+            padding: '8px 3px',
+            border: '1px solid #d1d5db',
+          }}
+        >
+          نوع العمل
+        </th>
+
+        <th
+          style={{
+            width: '18%',
+            padding: '8px 3px',
+            border: '1px solid #d1d5db',
+          }}
+        >
+          موقع العمل
+        </th>
+
+        <th
+          style={{
+            width: '14%',
+            padding: '8px 3px',
+            border: '1px solid #d1d5db',
+          }}
+        >
+          سعر المشوار
+        </th>
+
+        <th
+          style={{
+            width: '14%',
+            padding: '8px 3px',
+            border: '1px solid #d1d5db',
+          }}
+        >
+          بيان المصروف
+        </th>
+
+        <th
+          style={{
+            width: '12%',
+            padding: '8px 3px',
+            border: '1px solid #d1d5db',
+          }}
+        >
+          المبلغ
+        </th>
+
+        <th
+          style={{
+            width: '19%',
+            padding: '8px 3px',
+            border: '1px solid #d1d5db',
+          }}
+        >
+          ملاحظات
+        </th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {Array.from({ length: 31 }, (_, index) => {
+        const day = index + 1;
+
+        const row =
+          rows.find((item) => item.day === day) || {
+            day,
+            workType: '',
+            tripType: '',
+            tripPrice: 0,
+            expenseType: '',
+            expenseAmount: 0,
+            notes: '',
+          };
+
+        return (
+          <tr key={day}>
+            <td
               style={{
-                fontSize: 24,
+                height: 25,
+                padding: '2px 3px',
+                border: '1px solid #d1d5db',
                 fontWeight: 900,
-                color: '#1d4ed8',
+                fontSize: 12,
               }}
             >
-              BAAKR PRO
-            </div>
+              {day}
+            </td>
 
-            <div
+            <td
               style={{
-                fontSize: 34,
-                fontWeight: 900,
-                marginTop: 8,
+                padding: '2px 4px',
+                border: '1px solid #d1d5db',
               }}
             >
-              كشف الحساب الشهري
-            </div>
-          </div>
+              {row.workType || ''}
+            </td>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                '1fr 1fr 1fr',
-              gap: 12,
-              marginBottom: 25,
-            }}
-          >
-            {[
-              [
-                'المعدة',
-                equipmentName,
-              ],
-              [
-                'الشهر',
-                monthNames[month],
-              ],
-              [
-                'السنة',
-                year,
-              ],
-            ].map(
-              ([label, value]) => (
-                <div
-                  key={String(label)}
-                  style={{
-                    border:
-                      '1px solid #d1d5db',
-                    borderRadius: 10,
-                    padding: 12,
-                    textAlign:
-                      'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color:
-                        '#6b7280',
-                    }}
-                  >
-                    {label}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 19,
-                      fontWeight: 800,
-                      marginTop: 5,
-                    }}
-                  >
-                    {value}
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-
-          <table
-            style={{
-              width: '100%',
-              borderCollapse:
-                'collapse',
-              fontSize: 14,
-              textAlign: 'center',
-            }}
-          >
-            <thead>
-              <tr
-                style={{
-                  background:
-                    '#1d4ed8',
-                  color: '#ffffff',
-                }}
-              >
-                {[
-                  'اليوم',
-                  'نوع العمل',
-                  'موقع العمل',
-                  'سعر المشوار',
-                  'المصروفات',
-                  'ملاحظات',
-                ].map((title) => (
-                  <th
-                    key={title}
-                    style={{
-                      padding:
-                        '12px 7px',
-                      border:
-                        '1px solid #d1d5db',
-                    }}
-                  >
-                    {title}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {activeRows.length >
-              0 ? (
-                activeRows.map(
-                  (row) => (
-                    <tr
-                      key={row.day}
-                    >
-                      <td
-                        style={{
-                          padding: 10,
-                          border:
-                            '1px solid #d1d5db',
-                          fontWeight:
-                            800,
-                        }}
-                      >
-                        {row.day}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: 10,
-                          border:
-                            '1px solid #d1d5db',
-                        }}
-                      >
-                        {row.workType ||
-                          '-'}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: 10,
-                          border:
-                            '1px solid #d1d5db',
-                        }}
-                      >
-                        {row.tripType ||
-                          '-'}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: 10,
-                          border:
-                            '1px solid #d1d5db',
-                        }}
-                      >
-                        {row.tripPrice
-                          ? `${row.tripPrice.toLocaleString('en-US')} ر.س`
-                          : '-'}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: 10,
-                          border:
-                            '1px solid #d1d5db',
-                        }}
-                      >
-                        {row.expenseType ||
-                          '-'}
-                        {row.expenseAmount >
-                          0 &&
-                          ` - ${row.expenseAmount.toLocaleString('en-US')} ر.س`}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: 10,
-                          border:
-                            '1px solid #d1d5db',
-                        }}
-                      >
-                        {row.notes ||
-                          '-'}
-                      </td>
-                    </tr>
-                  )
-                )
-              ) : (
-                <tr>
-                  <td
-                    colSpan={6}
-                    style={{
-                      padding: 30,
-                      border:
-                        '1px solid #d1d5db',
-                      color:
-                        '#6b7280',
-                    }}
-                  >
-                    لا توجد بيانات
-                    مسجلة لهذا الشهر
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                'repeat(4,1fr)',
-              gap: 10,
-              marginTop: 25,
-            }}
-          >
-            <div
+            <td
               style={{
-                padding: 14,
-                border:
-                  '1px solid #d1d5db',
-                borderRadius: 10,
-                textAlign: 'center',
+                padding: '2px 4px',
+                border: '1px solid #d1d5db',
               }}
             >
-              <small>
-                المشاوير
-              </small>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}
-              >
-                {totals.trips}
-              </div>
-            </div>
+              {row.tripType || ''}
+            </td>
 
-            <div
+            <td
               style={{
-                padding: 14,
-                border:
-                  '1px solid #d1d5db',
-                borderRadius: 10,
-                textAlign: 'center',
+                padding: '2px 4px',
+                border: '1px solid #d1d5db',
+                fontWeight: row.tripPrice ? 700 : 400,
               }}
             >
-              <small>
-                إجمالي الدخل
-              </small>
-              <div
-                style={{
-                  fontSize: 19,
-                  fontWeight: 900,
-                  color: '#15803d',
-                }}
-              >
-                {totals.income.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </div>
-            </div>
+              {row.tripPrice > 0
+                ? `${row.tripPrice.toLocaleString('en-US')} ر.س`
+                : ''}
+            </td>
 
-            <div
+            <td
               style={{
-                padding: 14,
-                border:
-                  '1px solid #d1d5db',
-                borderRadius: 10,
-                textAlign: 'center',
+                padding: '2px 4px',
+                border: '1px solid #d1d5db',
               }}
             >
-              <small>
-                المصروفات
-              </small>
-              <div
-                style={{
-                  fontSize: 19,
-                  fontWeight: 900,
-                  color: '#dc2626',
-                }}
-              >
-                {totals.expense.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </div>
-            </div>
+              {row.expenseType || ''}
+            </td>
 
-            <div
+            <td
               style={{
-                padding: 14,
-                border:
-                  '2px solid #1d4ed8',
-                borderRadius: 10,
-                textAlign: 'center',
+                padding: '2px 4px',
+                border: '1px solid #d1d5db',
               }}
             >
-              <small>
-                صافي الشهر
-              </small>
-              <div
-                style={{
-                  fontSize: 19,
-                  fontWeight: 900,
-                  color:
-                    net >= 0
-                      ? '#1d4ed8'
-                      : '#dc2626',
-                }}
-              >
-                {net.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </div>
-            </div>
-          </div>
+              {row.expenseAmount > 0
+                ? `${row.expenseAmount.toLocaleString('en-US')} ر.س`
+                : ''}
+            </td>
 
-          <div
-            style={{
-              marginTop: 30,
-              textAlign: 'center',
-              fontSize: 12,
-              color: '#9ca3af',
-            }}
-          >
-            تم إنشاء كشف الحساب بواسطة
-            BAAKR PRO
-          </div>
-        </div>
+            <td
+              style={{
+                padding: '2px 4px',
+                border: '1px solid #d1d5db',
+              }}
+            >
+              {row.notes || ''}
+            </td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+
+  {/* الملخص */}
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(5, 1fr)',
+      gap: 8,
+      marginTop: 12,
+    }}
+  >
+    <div
+      style={{
+        border: '1.5px solid #16a34a',
+        borderRadius: 9,
+        padding: 9,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          color: '#15803d',
+          fontWeight: 800,
+        }}
+      >
+        إجمالي الدخل
       </div>
-    </AppLayout>
-  );
-                   }
+
+      <div
+        style={{
+          fontSize: 21,
+          fontWeight: 900,
+          color: '#15803d',
+          marginTop: 5,
+        }}
+      >
+        {totals.income.toLocaleString('en-US')}
+      </div>
+
+      <small>ر.س</small>
+    </div>
+
+    <div
+      style={{
+        border: '1.5px solid #ef4444',
+        borderRadius: 9,
+        padding: 9,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          color: '#dc2626',
+          fontWeight: 800,
+        }}
+      >
+        إجمالي المصروفات
+      </div>
+
+      <div
+        style={{
+          fontSize: 21,
+          fontWeight: 900,
+          color: '#dc2626',
+          marginTop: 5,
+        }}
+      >
+        {totals.expense.toLocaleString('en-US')}
+      </div>
+
+      <small>ر.س</small>
+    </div>
+
+    <div
+      style={{
+        border: '1.5px solid #2563eb',
+        borderRadius: 9,
+        padding: 9,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          color: '#1d4ed8',
+          fontWeight: 800,
+        }}
+      >
+        صافي الشهر
+      </div>
+
+      <div
+        style={{
+          fontSize: 21,
+          fontWeight: 900,
+          color:
+            net >= 0
+              ? '#1d4ed8'
+              : '#dc2626',
+          marginTop: 5,
+        }}
+      >
+        {net.toLocaleString('en-US')}
+      </div>
+
+      <small>ر.س</small>
+    </div>
+
+    <div
+      style={{
+        border: '1.5px solid #f59e0b',
+        borderRadius: 9,
+        padding: 9,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          color: '#b45309',
+          fontWeight: 800,
+        }}
+      >
+        أيام مسجلة
+      </div>
+
+      <div
+        style={{
+          fontSize: 21,
+          fontWeight: 900,
+          color: '#b45309',
+          marginTop: 5,
+        }}
+      >
+        {totals.registeredDays}
+      </div>
+
+      <small>يوم</small>
+    </div>
+
+    <div
+      style={{
+        border: '1.5px solid #7c3aed',
+        borderRadius: 9,
+        padding: 9,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          color: '#6d28d9',
+          fontWeight: 800,
+        }}
+      >
+        إجمالي المشاوير
+      </div>
+
+      <div
+        style={{
+          fontSize: 21,
+          fontWeight: 900,
+          color: '#6d28d9',
+          marginTop: 5,
+        }}
+      >
+        {totals.trips}
+      </div>
+
+      <small>مشاوير</small>
+    </div>
+  </div>
+
+  {/* الملاحظات والاعتماد */}
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 180px 1fr',
+      gap: 10,
+      marginTop: 12,
+    }}
+  >
+    <div
+      style={{
+        border: '1px solid #cbd5e1',
+        borderRadius: 9,
+        padding: 10,
+        minHeight: 80,
+      }}
+    >
+      <div
+        style={{
+          fontWeight: 900,
+          textAlign: 'center',
+          marginBottom: 8,
+          color: '#102f61',
+        }}
+      >
+        ملاحظات عامة
+      </div>
+
+      <div
+        style={{
+          borderBottom: '1px dotted #94a3b8',
+          height: 20,
+        }}
+      />
+
+      <div
+        style={{
+          borderBottom: '1px dotted #94a3b8',
+          height: 20,
+        }}
+      />
+    </div>
+
+    <div
+      style={{
+        border: '1px solid #cbd5e1',
+        borderRadius: 9,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#0b3b82',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 30,
+        }}
+      >
+        ▦
+      </div>
+
+      <strong>
+        BAAKR PRO
+      </strong>
+    </div>
+
+    <div
+      style={{
+        border: '1px solid #cbd5e1',
+        borderRadius: 9,
+        padding: 10,
+        minHeight: 80,
+      }}
+    >
+      <div
+        style={{
+          fontWeight: 900,
+          textAlign: 'center',
+          marginBottom: 10,
+          color: '#102f61',
+        }}
+      >
+        اعتماد
+      </div>
+
+      <div
+        style={{
+          marginBottom: 14,
+        }}
+      >
+        الاسم:
+        ______________________
+      </div>
+
+      <div>
+        التوقيع:
+        ____________________
+      </div>
+    </div>
+  </div>
+
+  {/* التذييل */}
+  <div
+    style={{
+      position: 'absolute',
+      bottom: 8,
+      right: 18,
+      left: 18,
+      height: 28,
+      background: '#073b7a',
+      color: '#ffffff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 12,
+      fontWeight: 700,
+      borderRadius: '3px 3px 0 0',
+    }}
+  >
+    ◆　تم إعداد هذا الكشف بواسطة BAAKR PRO　◆
+  </div>
+</div>
