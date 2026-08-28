@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { fetchEquipment, type Equipment } from '@/lib/equipment';
 
@@ -26,11 +27,12 @@ const monthNames = [
   'ديسمبر',
 ];
 
-export function MonthlyPage() {
+export function MonthlyDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const now = new Date();
 
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
-  const [equipment, setEquipment] = useState('');
+  const [equipmentId, setEquipmentId] = useState(id || '');
   const [equipmentLoading, setEquipmentLoading] = useState(true);
 
   const [year, setYear] = useState(now.getFullYear());
@@ -49,19 +51,19 @@ export function MonthlyPage() {
 
         setEquipmentList(list);
 
-        setEquipment((current) => {
-          if (current && list.some((item) => item.name === current)) {
-            return current;
-          }
-
-          return list[0]?.name ?? '';
-        });
+        if (id && list.some((item) => String(item.id) === String(id))) {
+          setEquipmentId(String(id));
+        } else if (list.length > 0) {
+          setEquipmentId(String(list[0].id));
+        } else {
+          setEquipmentId('');
+        }
       } catch (error) {
         console.error('تعذر تحميل المعدات:', error);
 
         if (!cancelled) {
           setEquipmentList([]);
-          setEquipment('');
+          setEquipmentId('');
         }
       } finally {
         if (!cancelled) {
@@ -75,19 +77,30 @@ export function MonthlyPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [id]);
+
+  const selectedEquipment = useMemo(() => {
+    return (
+      equipmentList.find(
+        (item) => String(item.id) === String(equipmentId)
+      ) || null
+    );
+  }, [equipmentList, equipmentId]);
+
+  const equipmentName =
+    selectedEquipment?.name || 'لا توجد معدة محددة';
 
   const daysInMonth = useMemo(
     () => new Date(year, month + 1, 0).getDate(),
     [year, month]
   );
 
-  const storageKey = equipment
-    ? `monthly-ledger-${equipment}-${year}-${month}`
+  const storageKey = equipmentId
+    ? `monthly-ledger-equipment-${equipmentId}-${year}-${month}`
     : `monthly-ledger-no-equipment-${year}-${month}`;
 
-  const emptyRows = (): DayRow[] =>
-    Array.from({ length: daysInMonth }, (_, index) => ({
+  function emptyRows(): DayRow[] {
+    return Array.from({ length: daysInMonth }, (_, index) => ({
       day: index + 1,
       workType: '',
       trips: 0,
@@ -95,11 +108,12 @@ export function MonthlyPage() {
       expense: 0,
       notes: '',
     }));
+  }
 
   const [rows, setRows] = useState<DayRow[]>(emptyRows());
 
   useEffect(() => {
-    if (!equipment) {
+    if (!equipmentId) {
       setRows(emptyRows());
       return;
     }
@@ -110,25 +124,41 @@ export function MonthlyPage() {
       if (saved) {
         const parsed = JSON.parse(saved) as DayRow[];
 
-        const newRows = emptyRows().map((row) => {
-          const found = parsed.find((item) => item.day === row.day);
+        const prepared = emptyRows().map((row) => {
+          const found = parsed.find(
+            (item) => item.day === row.day
+          );
+
           return found || row;
         });
 
-        setRows(newRows);
+        setRows(prepared);
       } else {
         setRows(emptyRows());
       }
     } catch {
       setRows(emptyRows());
     }
-  }, [equipment, year, month, daysInMonth, storageKey]);
+  }, [
+    equipmentId,
+    year,
+    month,
+    daysInMonth,
+    storageKey,
+  ]);
 
   useEffect(() => {
-    if (!equipment) return;
+    if (!equipmentId) return;
 
-    localStorage.setItem(storageKey, JSON.stringify(rows));
-  }, [rows, storageKey, equipment]);
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(rows)
+      );
+    } catch {
+      // تجاهل خطأ الحفظ
+    }
+  }, [rows, storageKey, equipmentId]);
 
   function updateRow(
     day: number,
@@ -157,6 +187,7 @@ export function MonthlyPage() {
         sum.income += row.income;
         sum.expense += row.expense;
         sum.net += row.income - row.expense;
+
         return sum;
       },
       {
@@ -199,7 +230,7 @@ export function MonthlyPage() {
       <div
         dir="rtl"
         style={{
-          padding: '18px',
+          padding: 18,
           paddingBottom: 100,
           maxWidth: 1100,
           margin: 'auto',
@@ -218,7 +249,7 @@ export function MonthlyPage() {
               fontSize: 14,
             }}
           >
-            سجل يومي من اليوم 1 حتى نهاية الشهر
+            الحساب الشهري الخاص بـ {equipmentName}
           </p>
         </div>
 
@@ -235,22 +266,32 @@ export function MonthlyPage() {
         >
           <label>
             <small style={{ color: '#94a3b8' }}>
-              اختر المعدة
+              المعدة
             </small>
 
             <select
-              value={equipment}
-              onChange={(e) => setEquipment(e.target.value)}
+              value={equipmentId}
+              onChange={(e) => setEquipmentId(e.target.value)}
               style={selectStyle}
-              disabled={equipmentLoading || equipmentList.length === 0}
+              disabled={
+                equipmentLoading ||
+                equipmentList.length === 0
+              }
             >
               {equipmentLoading ? (
-                <option value="">جاري تحميل المعدات...</option>
+                <option value="">
+                  جاري تحميل المعدات...
+                </option>
               ) : equipmentList.length === 0 ? (
-                <option value="">لا توجد معدات — أضف معدة أولاً</option>
+                <option value="">
+                  لا توجد معدات
+                </option>
               ) : (
                 equipmentList.map((item) => (
-                  <option key={item.id} value={item.name}>
+                  <option
+                    key={item.id}
+                    value={String(item.id)}
+                  >
                     {item.name}
                   </option>
                 ))
@@ -272,7 +313,9 @@ export function MonthlyPage() {
 
               <select
                 value={month}
-                onChange={(e) => setMonth(Number(e.target.value))}
+                onChange={(e) =>
+                  setMonth(Number(e.target.value))
+                }
                 style={selectStyle}
               >
                 {monthNames.map((name, index) => (
@@ -290,11 +333,14 @@ export function MonthlyPage() {
 
               <select
                 value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
+                onChange={(e) =>
+                  setYear(Number(e.target.value))
+                }
                 style={selectStyle}
               >
                 {Array.from({ length: 7 }, (_, index) => {
-                  const y = now.getFullYear() - 2 + index;
+                  const y =
+                    now.getFullYear() - 2 + index;
 
                   return (
                     <option key={y} value={y}>
@@ -319,6 +365,7 @@ export function MonthlyPage() {
             <small style={{ color: '#94a3b8' }}>
               إجمالي المشاوير
             </small>
+
             <h2 style={{ color: '#f5a623' }}>
               {totals.trips}
             </h2>
@@ -328,8 +375,9 @@ export function MonthlyPage() {
             <small style={{ color: '#94a3b8' }}>
               إجمالي الدخل
             </small>
+
             <h2 style={{ color: '#22c55e' }}>
-              {totals.income.toLocaleString()} ر.س
+              {totals.income.toLocaleString('en-US')} ر.س
             </h2>
           </div>
 
@@ -337,8 +385,9 @@ export function MonthlyPage() {
             <small style={{ color: '#94a3b8' }}>
               إجمالي المصروفات
             </small>
+
             <h2 style={{ color: '#ef4444' }}>
-              {totals.expense.toLocaleString()} ر.س
+              {totals.expense.toLocaleString('en-US')} ر.س
             </h2>
           </div>
 
@@ -346,8 +395,9 @@ export function MonthlyPage() {
             <small style={{ color: '#94a3b8' }}>
               صافي الشهر
             </small>
+
             <h2 style={{ color: '#3b82f6' }}>
-              {totals.net.toLocaleString()} ر.س
+              {totals.net.toLocaleString('en-US')} ر.س
             </h2>
           </div>
         </div>
@@ -359,7 +409,7 @@ export function MonthlyPage() {
             fontSize: 18,
           }}
         >
-          {equipment || 'لا توجد معدة محددة'} — {monthNames[month]} {year}
+          {equipmentName} — {monthNames[month]} {year}
         </div>
 
         <div
@@ -392,13 +442,15 @@ export function MonthlyPage() {
 
             <tbody>
               {rows.map((row) => {
-                const net = row.income - row.expense;
+                const net =
+                  row.income - row.expense;
 
                 return (
                   <tr
                     key={row.day}
                     style={{
-                      borderTop: '1px solid #1d2d47',
+                      borderTop:
+                        '1px solid #1d2d47',
                     }}
                   >
                     <td
@@ -422,20 +474,33 @@ export function MonthlyPage() {
                           )
                         }
                         style={inputStyle}
-                        disabled={!equipment}
+                        disabled={!equipmentId}
                       >
-                        <option value="">لا يوجد شغل</option>
-                        <option value="مشوار">مشوار</option>
-                        <option value="يومية">يومية</option>
-                        <option value="ساعة">ساعة</option>
-                        <option value="أسبوع">أسبوع</option>
-                        <option value="شهري">شهري</option>
+                        <option value="">
+                          لا يوجد شغل
+                        </option>
+                        <option value="مشوار">
+                          مشوار
+                        </option>
+                        <option value="يومية">
+                          يومية
+                        </option>
+                        <option value="ساعة">
+                          ساعة
+                        </option>
+                        <option value="أسبوع">
+                          أسبوع
+                        </option>
+                        <option value="شهري">
+                          شهري
+                        </option>
                       </select>
                     </td>
 
                     <td style={{ padding: 6 }}>
                       <input
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         value={row.trips || ''}
                         onChange={(e) =>
@@ -447,13 +512,14 @@ export function MonthlyPage() {
                         }
                         style={inputStyle}
                         placeholder="0"
-                        disabled={!equipment}
+                        disabled={!equipmentId}
                       />
                     </td>
 
                     <td style={{ padding: 6 }}>
                       <input
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         value={row.income || ''}
                         onChange={(e) =>
@@ -465,13 +531,14 @@ export function MonthlyPage() {
                         }
                         style={inputStyle}
                         placeholder="0"
-                        disabled={!equipment}
+                        disabled={!equipmentId}
                       />
                     </td>
 
                     <td style={{ padding: 6 }}>
                       <input
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         value={row.expense || ''}
                         onChange={(e) =>
@@ -483,7 +550,7 @@ export function MonthlyPage() {
                         }
                         style={inputStyle}
                         placeholder="0"
-                        disabled={!equipment}
+                        disabled={!equipmentId}
                       />
                     </td>
 
@@ -492,14 +559,17 @@ export function MonthlyPage() {
                         padding: 10,
                         fontWeight: 'bold',
                         color:
-                          net >= 0 ? '#22c55e' : '#ef4444',
+                          net >= 0
+                            ? '#22c55e'
+                            : '#ef4444',
                       }}
                     >
-                      {net.toLocaleString()}
+                      {net.toLocaleString('en-US')}
                     </td>
 
                     <td style={{ padding: 6 }}>
                       <input
+                        type="text"
                         value={row.notes}
                         onChange={(e) =>
                           updateRow(
@@ -513,7 +583,7 @@ export function MonthlyPage() {
                           minWidth: 150,
                         }}
                         placeholder="ملاحظات"
-                        disabled={!equipment}
+                        disabled={!equipmentId}
                       />
                     </td>
                   </tr>
@@ -534,7 +604,12 @@ export function MonthlyPage() {
         >
           <strong>ملخص الشهر</strong>
 
-          <div style={{ marginTop: 10, lineHeight: 2 }}>
+          <div
+            style={{
+              marginTop: 10,
+              lineHeight: 2,
+            }}
+          >
             <div>
               عدد المشاوير: <b>{totals.trips}</b>
             </div>
@@ -542,21 +617,21 @@ export function MonthlyPage() {
             <div>
               إجمالي الدخل:{' '}
               <b style={{ color: '#22c55e' }}>
-                {totals.income.toLocaleString()} ر.س
+                {totals.income.toLocaleString('en-US')} ر.س
               </b>
             </div>
 
             <div>
               إجمالي المصروف:{' '}
               <b style={{ color: '#ef4444' }}>
-                {totals.expense.toLocaleString()} ر.س
+                {totals.expense.toLocaleString('en-US')} ر.س
               </b>
             </div>
 
             <div>
               صافي الشهر:{' '}
               <b style={{ color: '#3b82f6' }}>
-                {totals.net.toLocaleString()} ر.س
+                {totals.net.toLocaleString('en-US')} ر.س
               </b>
             </div>
           </div>
@@ -564,4 +639,4 @@ export function MonthlyPage() {
       </div>
     </AppLayout>
   );
-    }    
+                            }
