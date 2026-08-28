@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { AppLayout } from '@/components/layout/AppLayout';
 import {
   fetchEquipment,
