@@ -17,7 +17,7 @@ import { InvoicesPage } from '@/pages/InvoicesPage-2-final-polished-FINAL';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
-import { DriversPage } from '@/pages/DriversPage';
+import { DriversPage } from '@/pages/DriversPage-1';
 import { QuotationPage } from '@/pages/QuotationPage';
 import AboutPage from '@/pages/AboutPage';
 function App() {
