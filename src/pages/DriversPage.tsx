@@ -758,37 +758,864 @@ export function DriversPage() {
                         border: '1px solid #475569',
                         borderRadius: 12,
                         background: '#172033',
-                        color: '#dbeafe',
-                        fontWeight: 800,
-                        fontSize: 13,
-                      }}
-                    >
-                      ↗ مشاركة
-                    </button>
+function buildStatementMarkup(driver: Driver) {
+  const remaining = getRemaining(driver);
 
-                    <button
-                      onClick={() =>
-                        alert('يمكنك تعديل بيانات السائق مباشرة من الخانات الموجودة أعلى هذه الأزرار، ويتم الحفظ تلقائيًا.')
-                      }
-                      style={{
-                        padding: '12px 8px',
-                        border: '1px solid #8a651d',
-                        borderRadius: 12,
-                        background: '#3b2d0e',
-                        color: '#f8c85a',
-                        fontWeight: 800,
-                        fontSize: 13,
-                      }}
-                    >
-                      ✏️ تعديل البيانات
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+  const now = new Date();
+
+  const issueDate = now.toLocaleDateString('ar-SA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const issueTime = now.toLocaleTimeString('ar-SA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const money = (value: number) =>
+    `${Number(value || 0).toLocaleString('ar-SA')} ر.س`;
+
+  return `
+    <div
+      dir="rtl"
+      style="
+        width:794px;
+        height:1123px;
+        background:#ffffff;
+        color:#10233f;
+        font-family:Tahoma,Arial,sans-serif;
+        box-sizing:border-box;
+        overflow:hidden;
+        position:relative;
+      "
+    >
+
+      <!-- الهيدر العلوي -->
+      <div
+        style="
+          height:18px;
+          background:#072b55;
+        "
+      ></div>
+
+      <div
+        style="
+          position:absolute;
+          top:18px;
+          left:50%;
+          transform:translateX(-50%);
+          background:#082f5d;
+          color:#d8a83e;
+          padding:10px 42px 12px;
+          border-radius:0 0 28px 28px;
+          font-size:15px;
+          font-weight:900;
+          border-bottom:3px solid #d8a83e;
+        "
+      >
+        كشف حساب
       </div>
+
+      <!-- معلومات الإصدار + معلومات السائق -->
+      <div
+        style="
+          display:grid;
+          grid-template-columns:160px 1fr 190px;
+          gap:18px;
+          padding:52px 28px 0;
+          align-items:start;
+        "
+      >
+
+        <!-- الإصدار -->
+        <div
+          style="
+            border:1px solid #dce3ec;
+            border-radius:18px;
+            padding:14px 16px;
+            background:#ffffff;
+          "
+        >
+          <div
+            style="
+              font-size:10px;
+              color:#7b8799;
+              margin-bottom:4px;
+            "
+          >
+            رقم النسخ
+          </div>
+
+          <div
+            style="
+              font-size:16px;
+              font-weight:900;
+              color:#102e54;
+              margin-bottom:12px;
+            "
+          >
+            01
+          </div>
+
+          <div
+            style="
+              height:1px;
+              background:#edf0f4;
+              margin-bottom:10px;
+            "
+          ></div>
+
+          <div
+            style="
+              font-size:10px;
+              color:#7b8799;
+              margin-bottom:4px;
+            "
+          >
+            تاريخ الإصدار
+          </div>
+
+          <div
+            style="
+              font-size:13px;
+              font-weight:800;
+              color:#102e54;
+              margin-bottom:12px;
+            "
+          >
+            ${issueDate}
+          </div>
+
+          <div
+            style="
+              height:1px;
+              background:#edf0f4;
+              margin-bottom:10px;
+            "
+          ></div>
+
+          <div
+            style="
+              font-size:10px;
+              color:#7b8799;
+              margin-bottom:4px;
+            "
+          >
+            وقت الإصدار
+          </div>
+
+          <div
+            style="
+              font-size:13px;
+              font-weight:800;
+              color:#102e54;
+            "
+          >
+            ${issueTime}
+          </div>
+        </div>
+
+        <!-- العنوان -->
+        <div
+          style="
+            text-align:center;
+            padding-top:14px;
+          "
+        >
+          <div
+            style="
+              font-size:30px;
+              line-height:1.4;
+              font-weight:900;
+              color:#082f5d;
+              margin-bottom:5px;
+            "
+          >
+            ملخص حساب السائق / المشغل
+          </div>
+
+          <div
+            style="
+              font-size:13px;
+              color:#607086;
+              margin-bottom:18px;
+            "
+          >
+            ملخص المستحقات والسحوبات
+          </div>
+
+          <div
+            style="
+              width:180px;
+              height:2px;
+              margin:auto;
+              background:linear-gradient(
+                90deg,
+                transparent,
+                #d3a13a,
+                #d3a13a,
+                transparent
+              );
+            "
+          ></div>
+        </div>
+
+        <!-- بيانات السائق -->
+        <div
+          style="
+            border:1px solid #dce3ec;
+            border-radius:18px;
+            padding:16px;
+            background:#ffffff;
+            min-height:136px;
+          "
+        >
+          <div
+            style="
+              font-size:10px;
+              color:#7b8799;
+              margin-bottom:5px;
+            "
+          >
+            اسم السائق / المشغل
+          </div>
+
+          <div
+            style="
+              font-size:18px;
+              font-weight:900;
+              color:#102e54;
+              margin-bottom:18px;
+              word-break:break-word;
+            "
+          >
+            ${driver.name}
+          </div>
+
+          <div
+            style="
+              font-size:10px;
+              color:#7b8799;
+              margin-bottom:5px;
+            "
+          >
+            رقم الجوال
+          </div>
+
+          <div
+            style="
+              font-size:14px;
+              font-weight:800;
+              color:#102e54;
+            "
+          >
+            ${driver.phone || '-'}
+          </div>
+        </div>
+      </div>
+
+      <!-- المعدة والتاريخ -->
+      <div
+        style="
+          margin:20px 28px 0;
+          background:#f8fafc;
+          border:1px solid #dce3ec;
+          border-radius:17px;
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          min-height:76px;
+          overflow:hidden;
+        "
+      >
+        <div
+          style="
+            padding:15px 22px;
+            border-left:1px solid #dfe5ec;
+          "
+        >
+          <div
+            style="
+              font-size:10px;
+              color:#7b8799;
+              margin-bottom:5px;
+            "
+          >
+            المعدة
+          </div>
+
+          <div
+            style="
+              font-size:19px;
+              font-weight:900;
+              color:#102e54;
+              word-break:break-word;
+            "
+          >
+            ${driver.equipment || '-'}
+          </div>
+        </div>
+
+        <div
+          style="
+            padding:15px 22px;
+          "
+        >
+          <div
+            style="
+              font-size:10px;
+              color:#7b8799;
+              margin-bottom:5px;
+            "
+          >
+            تاريخ إصدار الملخص
+          </div>
+
+          <div
+            style="
+              font-size:19px;
+              font-weight:900;
+              color:#102e54;
+            "
+          >
+            ${issueDate}
+          </div>
+        </div>
+      </div>
+
+      <!-- البطاقات -->
+      <div
+        style="
+          margin:18px 28px 0;
+          display:grid;
+          grid-template-columns:repeat(4,1fr);
+          gap:11px;
+        "
+      >
+
+        <!-- الراتب -->
+        <div
+          style="
+            min-height:135px;
+            border:1px solid #cddcf1;
+            border-radius:18px;
+            background:linear-gradient(180deg,#ffffff,#f4f8fe);
+            text-align:center;
+            padding:15px 8px;
+            box-sizing:border-box;
+          "
+        >
+          <div
+            style="
+              color:#174f94;
+              font-size:12px;
+              font-weight:800;
+            "
+          >
+            الراتب الشهري
+          </div>
+
+          <div
+            style="
+              width:43px;
+              height:43px;
+              border-radius:50%;
+              background:#e2ecfa;
+              margin:13px auto 9px;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-size:22px;
+            "
+          >
+            💼
+          </div>
+
+          <div
+            style="
+              color:#124e97;
+              font-size:22px;
+              font-weight:900;
+            "
+          >
+            ${driver.salary.toLocaleString('ar-SA')}
+          </div>
+
+          <div
+            style="
+              color:#245a94;
+              font-size:11px;
+              font-weight:800;
+              margin-top:3px;
+            "
+          >
+            ر.س
+          </div>
+        </div>
+
+        <!-- الإضافي -->
+        <div
+          style="
+            min-height:135px;
+            border:1px solid #cee6d8;
+            border-radius:18px;
+            background:linear-gradient(180deg,#ffffff,#f2fbf6);
+            text-align:center;
+            padding:15px 8px;
+            box-sizing:border-box;
+          "
+        >
+          <div
+            style="
+              color:#187449;
+              font-size:12px;
+              font-weight:800;
+            "
+          >
+            العمل الإضافي
+          </div>
+
+          <div
+            style="
+              width:43px;
+              height:43px;
+              border-radius:50%;
+              background:#e3f4eb;
+              margin:13px auto 9px;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-size:22px;
+            "
+          >
+            ⏱
+          </div>
+
+          <div
+            style="
+              color:#0f7b49;
+              font-size:22px;
+              font-weight:900;
+            "
+          >
+            ${driver.extraAmount.toLocaleString('ar-SA')}
+          </div>
+
+          <div
+            style="
+              color:#21754d;
+              font-size:11px;
+              font-weight:800;
+              margin-top:3px;
+            "
+          >
+            ر.س
+          </div>
+        </div>
+
+        <!-- السحوبات -->
+        <div
+          style="
+            min-height:135px;
+            border:1px solid #ead9b5;
+            border-radius:18px;
+            background:linear-gradient(180deg,#ffffff,#fff9ed);
+            text-align:center;
+            padding:15px 8px;
+            box-sizing:border-box;
+          "
+        >
+          <div
+            style="
+              color:#9c660c;
+              font-size:12px;
+              font-weight:800;
+            "
+          >
+            السحوبات / السلف
+          </div>
+
+          <div
+            style="
+              width:43px;
+              height:43px;
+              border-radius:50%;
+              background:#f8edd4;
+              margin:13px auto 9px;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-size:22px;
+            "
+          >
+            💵
+          </div>
+
+          <div
+            style="
+              color:#b47810;
+              font-size:22px;
+              font-weight:900;
+            "
+          >
+            ${driver.withdrawals.toLocaleString('ar-SA')}
+          </div>
+
+          <div
+            style="
+              color:#9c660c;
+              font-size:11px;
+              font-weight:800;
+              margin-top:3px;
+            "
+          >
+            ر.س
+          </div>
+        </div>
+
+        <!-- الغياب -->
+        <div
+          style="
+            min-height:135px;
+            border:1px solid #efd1d1;
+            border-radius:18px;
+            background:linear-gradient(180deg,#ffffff,#fff5f5);
+            text-align:center;
+            padding:15px 8px;
+            box-sizing:border-box;
+          "
+        >
+          <div
+            style="
+              color:#b43939;
+              font-size:12px;
+              font-weight:800;
+            "
+          >
+            أيام الغياب
+          </div>
+
+          <div
+            style="
+              width:43px;
+              height:43px;
+              border-radius:50%;
+              background:#fae3e3;
+              margin:13px auto 9px;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-size:22px;
+            "
+          >
+            📅
+          </div>
+
+          <div
+            style="
+              color:#c22f2f;
+              font-size:22px;
+              font-weight:900;
+            "
+          >
+            ${driver.absentDays}
+          </div>
+
+          <div
+            style="
+              color:#b43939;
+              font-size:11px;
+              font-weight:800;
+              margin-top:3px;
+            "
+          >
+            يوم
+          </div>
+        </div>
+      </div>
+
+      <!-- تفاصيل الحساب -->
+      <div
+        style="
+          margin:18px 28px 0;
+          border:1px solid #dce3ec;
+          border-radius:17px;
+          overflow:hidden;
+        "
+      >
+        <div
+          style="
+            background:#082f5d;
+            color:#ffffff;
+            text-align:center;
+            font-size:16px;
+            font-weight:900;
+            padding:11px;
+          "
+        >
+          تفاصيل الحساب
+        </div>
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:80px 1.2fr .9fr 1.25fr;
+            background:#0d3f73;
+            color:#ffffff;
+            font-size:12px;
+            font-weight:800;
+          "
+        >
+          <div style="padding:10px;text-align:center;">م</div>
+          <div style="padding:10px;text-align:center;">البيان</div>
+          <div style="padding:10px;text-align:center;">القيمة</div>
+          <div style="padding:10px;text-align:center;">التفاصيل</div>
+        </div>
+
+        ${[
+          [
+            '1',
+            'الراتب الشهري',
+            money(driver.salary),
+            `أيام العمل: ${driver.workDays}`,
+          ],
+          [
+            '2',
+            'العمل الإضافي',
+            money(driver.extraAmount),
+            'إضافة على المستحق',
+          ],
+          [
+            '3',
+            'السحوبات / السلف',
+            money(driver.withdrawals),
+            'خصم من المستحق',
+          ],
+          [
+            '4',
+            'أيام الغياب',
+            `${driver.absentDays} يوم`,
+            'للمتابعة',
+          ],
+        ]
+          .map(
+            (row, index) => `
+              <div
+                style="
+                  display:grid;
+                  grid-template-columns:80px 1.2fr .9fr 1.25fr;
+                  background:${index % 2 === 0 ? '#ffffff' : '#f8fafc'};
+                  border-top:1px solid #e5e9ef;
+                  color:#24344c;
+                  font-size:12px;
+                "
+              >
+                <div
+                  style="
+                    padding:11px 8px;
+                    text-align:center;
+                    font-weight:800;
+                  "
+                >
+                  ${row[0]}
+                </div>
+
+                <div
+                  style="
+                    padding:11px 8px;
+                    text-align:center;
+                    font-weight:800;
+                    border-right:1px solid #edf0f4;
+                  "
+                >
+                  ${row[1]}
+                </div>
+
+                <div
+                  style="
+                    padding:11px 8px;
+                    text-align:center;
+                    font-weight:900;
+                    border-right:1px solid #edf0f4;
+                  "
+                >
+                  ${row[2]}
+                </div>
+
+                <div
+                  style="
+                    padding:11px 8px;
+                    text-align:center;
+                    color:#758296;
+                    border-right:1px solid #edf0f4;
+                  "
+                >
+                  ${row[3]}
+                </div>
+              </div>
+            `
+          )
+          .join('')}
+      </div>
+
+      <!-- الصافي -->
+      <div
+        style="
+          margin:18px 28px 0;
+          background:linear-gradient(135deg,#062b55,#0b4078);
+          border-radius:18px;
+          min-height:88px;
+          padding:16px 24px;
+          box-sizing:border-box;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          color:#ffffff;
+          border-bottom:4px solid #d4a13a;
+        "
+      >
+        <div>
+          <div
+            style="
+              font-size:15px;
+              font-weight:900;
+              margin-bottom:5px;
+            "
+          >
+            صافي المبلغ المتبقي
+          </div>
+
+          <div
+            style="
+              font-size:10px;
+              color:#cad7e5;
+            "
+          >
+            الراتب + الإضافي - السحوبات
+          </div>
+        </div>
+
+        <div
+          style="
+            font-size:31px;
+            line-height:1;
+            font-weight:900;
+            color:#e2b34d;
+          "
+        >
+          ${remaining.toLocaleString('ar-SA')}
+          <span
+            style="
+              font-size:14px;
+              color:#ffffff;
+            "
+          >
+            ر.س
+          </span>
+        </div>
+      </div>
+
+      <!-- التوقيعات -->
+      <div
+        style="
+          margin:22px 28px 0;
+          border:1px solid #dce3ec;
+          border-radius:16px;
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:40px;
+          padding:20px 30px 18px;
+          text-align:center;
+          min-height:78px;
+          box-sizing:border-box;
+        "
+      >
+        <div>
+          <div
+            style="
+              font-size:12px;
+              font-weight:800;
+              color:#30415a;
+              margin-bottom:23px;
+            "
+          >
+            توقيع السائق / المشغل
+          </div>
+
+          <div
+            style="
+              border-top:1px dashed #9da9b8;
+            "
+          ></div>
+        </div>
+
+        <div>
+          <div
+            style="
+              font-size:12px;
+              font-weight:800;
+              color:#30415a;
+              margin-bottom:23px;
+            "
+          >
+            توقيع الإدارة
+          </div>
+
+          <div
+            style="
+              border-top:1px dashed #9da9b8;
+            "
+          ></div>
+        </div>
+      </div>
+
+      <!-- الفوتر -->
+      <div
+        style="
+          position:absolute;
+          left:0;
+          right:0;
+          bottom:0;
+        "
+      >
+        <div
+          style="
+            padding:0 30px 7px;
+            display:flex;
+            justify-content:space-between;
+            color:#8b98a9;
+            font-size:9px;
+          "
+        >
+          <span>
+            تاريخ الإصدار: ${issueDate}
+          </span>
+
+          <span>
+            ملخص حساب السائق / المشغل
+          </span>
+        </div>
+
+        <div
+          style="
+            background:#062b55;
+            color:#ffffff;
+            text-align:center;
+            padding:13px;
+            font-size:14px;
+            font-weight:900;
+            border-top:3px solid #d4a13a;
+          "
+        >
+          <span style="color:#d4a13a;">—</span>
+          &nbsp;&nbsp;
+          شكراً لتعاملكم معنا
+          &nbsp;&nbsp;
+          <span style="color:#d4a13a;">—</span>
+        </div>
+      </div>
+
     </div>
-  );
+  `;
 }
