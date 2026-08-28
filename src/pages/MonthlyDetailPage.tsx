@@ -521,99 +521,113 @@ export function MonthlyDetailPage() {
     console.error('PDF ERROR:', error);
 
     alert('تعذر إنشاء أو حفظ ملف PDF');
+  } finally {async function handleSavePdf() {
+  if (!equipmentId) {
+    alert('اختر المعدة أولاً');
+    return;
+  }
+
+  try {
+    setCreatingPdf(true);
+
+    const blob = await createPdfBlob();
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        const result = reader.result as string;
+
+        const data = result.includes(',')
+          ? result.split(',')[1]
+          : result;
+
+        resolve(data);
+      };
+
+      reader.onerror = () => {
+        reject(new Error('تعذر قراءة ملف PDF'));
+      };
+
+      reader.readAsDataURL(blob);
+    });
+
+    const result = await Filesystem.writeFile({
+      path: getFileName(),
+      data: base64,
+      directory: Directory.Cache,
+    });
+
+    await Share.share({
+      title: 'حفظ الحساب الشهري',
+      text: `${equipmentName} - ${monthNames[month]} ${year}`,
+      url: result.uri,
+      dialogTitle: 'حفظ أو مشاركة كشف الحساب',
+    });
+  } catch (error) {
+    console.error('PDF ERROR:', error);
+    alert('تعذر إنشاء ملف PDF');
   } finally {
     setCreatingPdf(false);
   }
 }
-    if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
-      return;
-    }
 
-    try {
-      setCreatingPdf(true);
+async function handleShare() {
+  if (!equipmentId) {
+    alert('اختر المعدة أولاً');
+    return;
+  }
 
-      const blob =
-        await createPdfBlob();
+  try {
+    setCreatingPdf(true);
 
-      const file = new File(
-        [blob],
-        getFileName(),
-        {
-          type: 'application/pdf',
-        }
-      );
+    const blob = await createPdfBlob();
 
-      const shareData = {
-        title: 'الحساب الشهري',
-        text:
-          `الحساب الشهري\n` +
-          `${equipmentName}\n` +
-          `${monthNames[month]} ${year}`,
-        files: [file],
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        const result = reader.result as string;
+
+        const data = result.includes(',')
+          ? result.split(',')[1]
+          : result;
+
+        resolve(data);
       };
 
-      const nav =
-        navigator as Navigator & {
-          canShare?: (
-            data?: ShareData
-          ) => boolean;
-        };
+      reader.onerror = () => {
+        reject(new Error('تعذر قراءة ملف PDF'));
+      };
 
-      if (
-        navigator.share &&
-        (!nav.canShare ||
-          nav.canShare(shareData))
-      ) {
-        await navigator.share(
-          shareData
-        );
-        return;
-      }
+      reader.readAsDataURL(blob);
+    });
 
-      const text =
+    const result = await Filesystem.writeFile({
+      path: getFileName(),
+      data: base64,
+      directory: Directory.Cache,
+    });
+
+    await Share.share({
+      title: 'الحساب الشهري',
+      text:
         `الحساب الشهري\n` +
         `المعدة: ${equipmentName}\n` +
         `الشهر: ${monthNames[month]} ${year}\n` +
         `إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
         `إجمالي المصروفات: ${totals.expense.toLocaleString('en-US')} ر.س\n` +
-        `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`;
-
-      if (navigator.share) {
-        await navigator.share({
-          title:
-            'الحساب الشهري',
-          text,
-        });
-      } else {
-        await navigator.clipboard.writeText(
-          text
-        );
-
-        alert(
-          'تم نسخ ملخص الحساب'
-        );
-      }
-    } catch (error) {
-      const maybeError =
-        error as Error;
-
-      if (
-        maybeError?.name !==
-        'AbortError'
-      ) {
-        console.error(error);
-
-        alert(
-          'تعذر فتح المشاركة'
-        );
-      }
-    } finally {
-      setCreatingPdf(false);
-    }
+        `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
+      url: result.uri,
+      dialogTitle: 'مشاركة كشف الحساب',
+    });
+  } catch (error) {
+    console.error('SHARE ERROR:', error);
+    alert('تعذر مشاركة كشف الحساب');
+  } finally {
+    setCreatingPdf(false);
   }
+}
 
   function handleWhatsApp() {
     if (!equipmentId) {
