@@ -155,83 +155,88 @@ export function DriversPage() {
   function buildStatementMarkup(driver: Driver) {
     const remaining = getRemaining(driver);
     const issueDate = new Date().toLocaleDateString('ar-SA');
+    const money = (value: number) => `${value.toLocaleString()} ر.س`;
 
     return `
-      <div dir="rtl" style="width:794px;background:#ffffff;color:#111827;font-family:Arial,Tahoma,sans-serif;padding:42px;box-sizing:border-box;">
-        <div style="height:10px;border-radius:99px;background:linear-gradient(90deg,#0f3f78,#1d5fa8);margin-bottom:24px;"></div>
+      <div dir="rtl" style="width:794px;min-height:1123px;background:#f6f8fb;color:#172033;font-family:Tahoma,Arial,sans-serif;padding:34px;box-sizing:border-box;">
+        <div style="background:#ffffff;border:1px solid #e3e8f0;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(15,35,65,.08);">
+          <div style="height:8px;background:#123f73;"></div>
 
-        <div style="text-align:center;margin-bottom:26px;">
-          <div style="display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:#edf4ff;color:#0f3f78;font-size:28px;margin-bottom:12px;">👷</div>
-          <h1 style="margin:0;color:#0f3f78;font-size:30px;line-height:1.4;">ملخص حساب السائق / المشغل</h1>
-          <div style="margin-top:7px;color:#64748b;font-size:14px;">كشف حساب مختصر وواضح للمستحقات والسحوبات</div>
-        </div>
+          <div style="padding:28px 30px 20px;text-align:center;border-bottom:1px solid #edf0f5;">
+            <div style="display:inline-block;background:#eef4fb;color:#123f73;border-radius:14px;padding:8px 16px;font-size:12px;font-weight:700;margin-bottom:10px;">كشف حساب</div>
+            <h1 style="margin:0;color:#102f55;font-size:28px;line-height:1.5;font-weight:900;">ملخص حساب السائق / المشغل</h1>
+            <div style="margin-top:5px;color:#8290a3;font-size:12px;">ملخص المستحقات والسحوبات</div>
+          </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
-          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">اسم السائق / المشغل</div>
-            <div style="font-size:19px;font-weight:800;color:#0f172a;">${driver.name}</div>
+          <div style="padding:22px 30px 0;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+              ${[
+                ['اسم السائق / المشغل', driver.name],
+                ['رقم الجوال', driver.phone || '-'],
+                ['المعدة', driver.equipment || '-'],
+                ['تاريخ إصدار الملخص', issueDate],
+              ].map(([label, value]) => `
+                <div style="background:#fafbfd;border:1px solid #e3e8f0;border-radius:14px;padding:14px 16px;min-height:55px;box-sizing:border-box;">
+                  <div style="font-size:11px;color:#8995a6;margin-bottom:5px;">${label}</div>
+                  <div style="font-size:17px;font-weight:800;color:#172033;">${value}</div>
+                </div>`).join('')}
+            </div>
           </div>
-          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">رقم الجوال</div>
-            <div style="font-size:18px;font-weight:800;color:#0f172a;">${driver.phone || '-'}</div>
-          </div>
-          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">المعدة</div>
-            <div style="font-size:18px;font-weight:800;color:#0f172a;">${driver.equipment || '-'}</div>
-          </div>
-          <div style="border:1px solid #d9e2ee;border-radius:15px;padding:15px;background:#fbfdff;">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">تاريخ إصدار الملخص</div>
-            <div style="font-size:18px;font-weight:800;color:#0f172a;">${issueDate}</div>
-          </div>
-        </div>
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;">
-          <div style="border-radius:15px;padding:15px;text-align:center;background:#eef5ff;border:1px solid #cddff8;">
-            <div style="font-size:12px;color:#5b6b82;">الراتب الشهري</div>
-            <div style="font-size:20px;font-weight:900;color:#0f3f78;margin-top:8px;">${driver.salary.toLocaleString()} ر.س</div>
+          <div style="padding:16px 30px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:9px;">
+            <div style="background:#edf4fc;border:1px solid #d7e5f5;border-radius:14px;padding:14px 8px;text-align:center;">
+              <div style="font-size:11px;color:#64748b;">الراتب الشهري</div>
+              <div style="font-size:18px;font-weight:900;color:#174d86;margin-top:7px;">${money(driver.salary)}</div>
+            </div>
+            <div style="background:#edf9f3;border:1px solid #d5eddf;border-radius:14px;padding:14px 8px;text-align:center;">
+              <div style="font-size:11px;color:#64748b;">العمل الإضافي</div>
+              <div style="font-size:18px;font-weight:900;color:#16805a;margin-top:7px;">${money(driver.extraAmount)}</div>
+            </div>
+            <div style="background:#fff8eb;border:1px solid #f2e4c3;border-radius:14px;padding:14px 8px;text-align:center;">
+              <div style="font-size:11px;color:#64748b;">السحوبات / السلف</div>
+              <div style="font-size:18px;font-weight:900;color:#a96a08;margin-top:7px;">${money(driver.withdrawals)}</div>
+            </div>
+            <div style="background:#fff1f1;border:1px solid #f1d8d8;border-radius:14px;padding:14px 8px;text-align:center;">
+              <div style="font-size:11px;color:#64748b;">أيام الغياب</div>
+              <div style="font-size:18px;font-weight:900;color:#b13b3b;margin-top:7px;">${driver.absentDays} يوم</div>
+            </div>
           </div>
-          <div style="border-radius:15px;padding:15px;text-align:center;background:#eefbf4;border:1px solid #c8ead7;">
-            <div style="font-size:12px;color:#5b6b82;">العمل الإضافي</div>
-            <div style="font-size:20px;font-weight:900;color:#15824f;margin-top:8px;">${driver.extraAmount.toLocaleString()} ر.س</div>
-          </div>
-          <div style="border-radius:15px;padding:15px;text-align:center;background:#fff7e8;border:1px solid #f0ddb2;">
-            <div style="font-size:12px;color:#5b6b82;">السحوبات / السلف</div>
-            <div style="font-size:20px;font-weight:900;color:#b66a00;margin-top:8px;">${driver.withdrawals.toLocaleString()} ر.س</div>
-          </div>
-          <div style="border-radius:15px;padding:15px;text-align:center;background:#fff0f0;border:1px solid #f1cccc;">
-            <div style="font-size:12px;color:#5b6b82;">أيام الغياب</div>
-            <div style="font-size:20px;font-weight:900;color:#b83232;margin-top:8px;">${driver.absentDays} يوم</div>
-          </div>
-        </div>
 
-        <div style="border:1px solid #d9e2ee;border-radius:16px;overflow:hidden;margin-bottom:18px;">
-          <div style="display:grid;grid-template-columns:1.3fr .8fr 1fr;background:#0f3f78;color:white;font-weight:800;font-size:14px;">
-            <div style="padding:13px;text-align:center;">البيان</div><div style="padding:13px;text-align:center;">القيمة</div><div style="padding:13px;text-align:center;">التفاصيل</div>
+          <div style="padding:18px 30px 0;">
+            <div style="border:1px solid #dfe5ed;border-radius:14px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:1.2fr .85fr 1.15fr;background:#123f73;color:#ffffff;font-size:13px;font-weight:800;">
+                <div style="padding:12px;text-align:center;">البيان</div>
+                <div style="padding:12px;text-align:center;border-right:1px solid rgba(255,255,255,.12);">القيمة</div>
+                <div style="padding:12px;text-align:center;border-right:1px solid rgba(255,255,255,.12);">التفاصيل</div>
+              </div>
+              ${[
+                ['الراتب الشهري', money(driver.salary), `أيام العمل: ${driver.workDays}`],
+                ['العمل الإضافي', money(driver.extraAmount), 'إضافة على المستحق'],
+                ['السحوبات / السلف', money(driver.withdrawals), 'تخصم من المستحق'],
+                ['أيام الغياب', `${driver.absentDays} يوم`, 'للمتابعة'],
+              ].map((r, i) => `<div style="display:grid;grid-template-columns:1.2fr .85fr 1.15fr;background:${i % 2 ? '#fafbfd' : '#ffffff'};border-top:1px solid #e7ebf1;font-size:13px;"><div style="padding:12px;text-align:center;font-weight:700;color:#25324a;">${r[0]}</div><div style="padding:12px;text-align:center;font-weight:700;color:#25324a;border-right:1px solid #edf0f4;">${r[1]}</div><div style="padding:12px;text-align:center;color:#7a8799;border-right:1px solid #edf0f4;">${r[2]}</div></div>`).join('')}
+            </div>
           </div>
-          ${[
-            ['الراتب الشهري', `${driver.salary.toLocaleString()} ر.س`, `أيام العمل: ${driver.workDays}`],
-            ['العمل الإضافي', `${driver.extraAmount.toLocaleString()} ر.س`, 'إضافة على المستحق'],
-            ['السحوبات / السلف', `${driver.withdrawals.toLocaleString()} ر.س`, 'تخصم من المستحق'],
-            ['أيام الغياب', `${driver.absentDays} يوم`, 'للمتابعة'],
-          ].map((r, i) => `<div style="display:grid;grid-template-columns:1.3fr .8fr 1fr;background:${i % 2 ? '#fbfdff' : '#ffffff'};border-top:1px solid #e5eaf0;font-size:14px;"><div style="padding:13px;text-align:center;font-weight:700;">${r[0]}</div><div style="padding:13px;text-align:center;">${r[1]}</div><div style="padding:13px;text-align:center;color:#64748b;">${r[2]}</div></div>`).join('')}
-        </div>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;border:2px solid #28a36a;background:#edfaf3;border-radius:18px;padding:20px 22px;margin-bottom:10px;">
-          <div>
-            <div style="font-size:14px;color:#4b6358;margin-bottom:5px;">صافي المبلغ المتبقي</div>
-            <div style="font-size:12px;color:#718177;">الراتب + الإضافي - السحوبات</div>
+          <div style="padding:18px 30px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#ecf8f2;border:1.5px solid #48a97d;border-radius:16px;padding:18px 20px;">
+              <div>
+                <div style="font-size:14px;font-weight:800;color:#2d5e49;">صافي المبلغ المتبقي</div>
+                <div style="font-size:11px;color:#729080;margin-top:4px;">الراتب + الإضافي - السحوبات</div>
+              </div>
+              <div style="font-size:27px;font-weight:900;color:#16805a;">${money(remaining)}</div>
+            </div>
           </div>
-          <div style="font-size:30px;font-weight:900;color:#168754;">${remaining.toLocaleString()} ر.س</div>
-        </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:58px;text-align:center;color:#334155;font-size:14px;">
-          <div><div style="border-top:1px dashed #64748b;padding-top:10px;">توقيع السائق / المشغل</div></div>
-          <div><div style="border-top:1px dashed #64748b;padding-top:10px;">توقيع الإدارة</div></div>
-        </div>
+          <div style="padding:50px 30px 28px;display:grid;grid-template-columns:1fr 1fr;gap:70px;text-align:center;color:#566579;font-size:12px;">
+            <div style="border-top:1px dashed #9aa6b5;padding-top:9px;">توقيع السائق / المشغل</div>
+            <div style="border-top:1px dashed #9aa6b5;padding-top:9px;">توقيع الإدارة</div>
+          </div>
 
-        <div style="margin-top:46px;border-top:2px solid #0f3f78;padding-top:12px;display:flex;justify-content:space-between;color:#64748b;font-size:11px;">
-          <span>تاريخ الإصدار: ${issueDate}</span>
-          <span>ملخص حساب السائقين والمشغلين</span>
+          <div style="margin:0 30px;border-top:1px solid #e4e9ef;padding:13px 0 18px;display:flex;justify-content:space-between;color:#9aa5b4;font-size:10px;">
+            <span>تاريخ الإصدار: ${issueDate}</span>
+            <span>ملخص حساب السائقين والمشغلين</span>
+          </div>
         </div>
       </div>`;
   }
