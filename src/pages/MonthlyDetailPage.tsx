@@ -58,22 +58,17 @@ const monthNames = [
 function normalizeArabicNumbers(value: string) {
   return value
     .replace(/[٠-٩]/g, (digit) =>
-      String(
-        '٠١٢٣٤٥٦٧٨٩'.indexOf(digit)
-      )
+      String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
     )
     .replace(/[۰-۹]/g, (digit) =>
-      String(
-        '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)
-      )
+      String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))
     )
     .replace(/٬/g, '')
     .replace(/,/g, '');
 }
 
 export function MonthlyDetailPage() {
-  const { id } =
-    useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
 
   const now = new Date();
 
@@ -273,7 +268,7 @@ export function MonthlyDetailPage() {
         JSON.stringify(rows)
       );
     } catch {
-      // تجاهل خطأ الحفظ
+      // تجاهل
     }
   }, [
     rows,
@@ -373,6 +368,20 @@ export function MonthlyDetailPage() {
     );
   }, [rows]);
 
+  const activeRows =
+    useMemo(() => {
+      return rows.filter((row) => {
+        return (
+          row.workType.trim() ||
+          row.tripType.trim() ||
+          row.tripPrice > 0 ||
+          row.expenseType.trim() ||
+          row.expenseAmount > 0 ||
+          row.notes.trim()
+        );
+      });
+    }, [rows]);
+
   const net =
     totals.income -
     totals.expense;
@@ -432,7 +441,7 @@ export function MonthlyDetailPage() {
       );
 
     return (
-      `حساب-${cleanEquipment}-` +
+      `BAAKR-PRO-${cleanEquipment}-` +
       `${monthNames[month]}-` +
       `${year}.pdf`
     );
@@ -458,13 +467,12 @@ export function MonthlyDetailPage() {
           resolve(base64);
         };
 
-        reader.onerror = () => {
+        reader.onerror = () =>
           reject(
             new Error(
               'تعذر قراءة ملف PDF'
             )
           );
-        };
 
         reader.readAsDataURL(blob);
       }
@@ -472,33 +480,28 @@ export function MonthlyDetailPage() {
   }
 
   async function createPdfBlob() {
-    const report =
-      reportRef.current;
-
-    if (!report) {
+    if (!reportRef.current) {
       throw new Error(
         'تعذر العثور على التقرير'
       );
     }
 
     const canvas =
-      await html2canvas(report, {
-        scale: 1.25,
-        useCORS: true,
-        backgroundColor: '#07111f',
-        logging: false,
-        width: report.scrollWidth,
-        height: report.scrollHeight,
-        windowWidth:
-          report.scrollWidth,
-        windowHeight:
-          report.scrollHeight,
-      });
+      await html2canvas(
+        reportRef.current,
+        {
+          scale: 1.7,
+          useCORS: true,
+          backgroundColor:
+            '#ffffff',
+          logging: false,
+        }
+      );
 
     const imageData =
       canvas.toDataURL(
         'image/jpeg',
-        0.88
+        0.95
       );
 
     const pdf = new jsPDF(
@@ -513,33 +516,32 @@ export function MonthlyDetailPage() {
     const pageHeight =
       pdf.internal.pageSize.getHeight();
 
-    const margin = 6;
+    const margin = 8;
 
-    const printableWidth =
+    const imageWidth =
       pageWidth - margin * 2;
+
+    const imageHeight =
+      (canvas.height *
+        imageWidth) /
+      canvas.width;
 
     const printableHeight =
       pageHeight - margin * 2;
 
-    const imageHeight =
-      (canvas.height *
-        printableWidth) /
-      canvas.width;
-
     let position = margin;
-    let heightLeft =
-      imageHeight;
 
     pdf.addImage(
       imageData,
       'JPEG',
       margin,
       position,
-      printableWidth,
+      imageWidth,
       imageHeight
     );
 
-    heightLeft -=
+    let heightLeft =
+      imageHeight -
       printableHeight;
 
     while (heightLeft > 0) {
@@ -555,7 +557,7 @@ export function MonthlyDetailPage() {
         'JPEG',
         margin,
         position,
-        printableWidth,
+        imageWidth,
         imageHeight
       );
 
@@ -602,9 +604,7 @@ export function MonthlyDetailPage() {
         title:
           'حفظ الحساب الشهري',
         text:
-          `${equipmentName} - ` +
-          `${monthNames[month]} ` +
-          `${year}`,
+          `${equipmentName} - ${monthNames[month]} ${year}`,
         url: fileUri,
         dialogTitle:
           'حفظ أو مشاركة كشف الحساب',
@@ -640,18 +640,13 @@ export function MonthlyDetailPage() {
       await Share.share({
         title:
           'الحساب الشهري',
-
         text:
-          `الحساب الشهري\n` +
           `المعدة: ${equipmentName}\n` +
           `الشهر: ${monthNames[month]} ${year}\n` +
-          `عدد المشاوير: ${totals.trips}\n` +
           `إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
           `إجمالي المصروفات: ${totals.expense.toLocaleString('en-US')} ر.س\n` +
           `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
-
         url: fileUri,
-
         dialogTitle:
           'مشاركة كشف الحساب',
       });
@@ -678,7 +673,8 @@ export function MonthlyDetailPage() {
     }
 
     const text =
-      `📊 الحساب الشهري\n\n` +
+      `📊 BAAKR PRO\n` +
+      `الحساب الشهري\n\n` +
       `🏗️ المعدة: ${equipmentName}\n` +
       `📅 الشهر: ${monthNames[month]} ${year}\n\n` +
       `🚚 عدد المشاوير: ${totals.trips}\n` +
@@ -687,12 +683,10 @@ export function MonthlyDetailPage() {
       `✅ صافي الشهر: ${net.toLocaleString('en-US')} ر.س\n` +
       `📝 أيام مسجلة: ${totals.registeredDays}`;
 
-    const url =
-      `https://wa.me/?text=` +
-      encodeURIComponent(text);
-
     window.open(
-      url,
+      `https://wa.me/?text=${encodeURIComponent(
+        text
+      )}`,
       '_blank'
     );
   }
@@ -709,782 +703,377 @@ export function MonthlyDetailPage() {
           color: '#ffffff',
         }}
       >
-        <div ref={reportRef}>
-          <div
-            style={{
-              marginBottom: 20,
-            }}
-          >
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 27,
-                fontWeight: 800,
-              }}
-            >
-              الحساب الشهري
-            </h1>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 27,
+            fontWeight: 800,
+          }}
+        >
+          الحساب الشهري
+        </h1>
 
-            <p
+        <p
+          style={{
+            color: '#94a3b8',
+            marginTop: 7,
+          }}
+        >
+          سجل أعمال ومشاوير ومصاريف{' '}
+          {equipmentName}
+        </p>
+
+        <div
+          style={{
+            background: '#0b1527',
+            border:
+              '1px solid #1d2d47',
+            borderRadius: 18,
+            padding: 14,
+            marginBottom: 18,
+            display: 'grid',
+            gap: 10,
+          }}
+        >
+          <label>
+            <small
               style={{
                 color: '#94a3b8',
-                marginTop: 7,
-                fontSize: 14,
               }}
             >
-              سجل أعمال ومشاوير
-              ومصاريف{' '}
-              {equipmentName}
-            </p>
-          </div>
+              المعدة
+            </small>
 
-          <div
-            style={{
-              background:
-                '#0b1527',
-              border:
-                '1px solid #1d2d47',
-              borderRadius: 18,
-              padding: 14,
-              marginBottom: 18,
-              display: 'grid',
-              gap: 10,
-            }}
-          >
-            <label>
-              <small
-                style={{
-                  color:
-                    '#94a3b8',
-                }}
-              >
-                المعدة
-              </small>
-
-              <select
-                value={
-                  equipmentId
-                }
-                onChange={(e) =>
-                  setEquipmentId(
-                    e.target.value
-                  )
-                }
-                style={
-                  selectStyle
-                }
-                disabled={
-                  equipmentLoading ||
-                  equipmentList.length ===
-                    0
-                }
-              >
-                {equipmentLoading ? (
-                  <option value="">
-                    جاري تحميل
-                    المعدات...
-                  </option>
-                ) : equipmentList.length ===
-                  0 ? (
-                  <option value="">
-                    لا توجد معدات —
-                    أضف معدة أولاً
-                  </option>
-                ) : (
-                  equipmentList.map(
-                    (item) => (
-                      <option
-                        key={
-                          item.id
-                        }
-                        value={String(
-                          item.id
-                        )}
-                      >
-                        {
-                          item.name
-                        }
-                      </option>
-                    )
-                  )
-                )}
-              </select>
-            </label>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns:
-                  '1fr 1fr',
-                gap: 10,
-              }}
+            <select
+              value={equipmentId}
+              onChange={(e) =>
+                setEquipmentId(
+                  e.target.value
+                )
+              }
+              style={selectStyle}
+              disabled={
+                equipmentLoading ||
+                equipmentList.length ===
+                  0
+              }
             >
-              <label>
-                <small
-                  style={{
-                    color:
-                      '#94a3b8',
-                  }}
-                >
-                  الشهر
-                </small>
-
-                <select
-                  value={month}
-                  onChange={(e) =>
-                    setMonth(
-                      Number(
-                        e.target
-                          .value
-                      )
-                    )
-                  }
-                  style={
-                    selectStyle
-                  }
-                >
-                  {monthNames.map(
-                    (
-                      name,
-                      index
-                    ) => (
-                      <option
-                        key={
-                          name
-                        }
-                        value={
-                          index
-                        }
-                      >
-                        {name}
-                      </option>
-                    )
-                  )}
-                </select>
-              </label>
-
-              <label>
-                <small
-                  style={{
-                    color:
-                      '#94a3b8',
-                  }}
-                >
-                  السنة
-                </small>
-
-                <select
-                  value={year}
-                  onChange={(e) =>
-                    setYear(
-                      Number(
-                        e.target
-                          .value
-                      )
-                    )
-                  }
-                  style={
-                    selectStyle
-                  }
-                >
-                  {Array.from(
-                    {
-                      length: 7,
-                    },
-                    (
-                      _,
-                      index
-                    ) => {
-                      const y =
-                        now.getFullYear() -
-                        2 +
-                        index;
-
-                      return (
-                        <option
-                          key={y}
-                          value={y}
-                        >
-                          {y}
-                        </option>
-                      );
-                    }
-                  )}
-                </select>
-              </label>
-            </div>
-          </div>
+              {equipmentLoading ? (
+                <option value="">
+                  جاري تحميل المعدات...
+                </option>
+              ) : equipmentList.length ===
+                0 ? (
+                <option value="">
+                  لا توجد معدات
+                </option>
+              ) : (
+                equipmentList.map(
+                  (item) => (
+                    <option
+                      key={item.id}
+                      value={String(
+                        item.id
+                      )}
+                    >
+                      {item.name}
+                    </option>
+                  )
+                )
+              )}
+            </select>
+          </label>
 
           <div
             style={{
               display: 'grid',
               gridTemplateColumns:
-                'repeat(2, minmax(0, 1fr))',
+                '1fr 1fr',
               gap: 10,
-              marginBottom: 10,
             }}
           >
-            <div
-              style={
-                summaryCard
+            <select
+              value={month}
+              onChange={(e) =>
+                setMonth(
+                  Number(
+                    e.target.value
+                  )
+                )
               }
+              style={selectStyle}
             >
-              <small
-                style={{
-                  color:
-                    '#94a3b8',
-                }}
-              >
-                إجمالي المشاوير
-              </small>
+              {monthNames.map(
+                (name, index) => (
+                  <option
+                    key={name}
+                    value={index}
+                  >
+                    {name}
+                  </option>
+                )
+              )}
+            </select>
 
-              <h2
-                style={{
-                  marginBottom: 0,
-                  color:
-                    '#f5a623',
-                }}
-              >
-                {totals.trips}
-              </h2>
-            </div>
-
-            <div
-              style={
-                summaryCard
+            <select
+              value={year}
+              onChange={(e) =>
+                setYear(
+                  Number(
+                    e.target.value
+                  )
+                )
               }
+              style={selectStyle}
             >
-              <small
-                style={{
-                  color:
-                    '#94a3b8',
-                }}
-              >
-                إجمالي الدخل
-              </small>
+              {Array.from(
+                { length: 7 },
+                (_, index) => {
+                  const y =
+                    now.getFullYear() -
+                    2 +
+                    index;
 
-              <h2
-                style={{
-                  marginBottom: 0,
-                  color:
-                    '#22c55e',
-                }}
-              >
-                {totals.income.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </h2>
-            </div>
+                  return (
+                    <option
+                      key={y}
+                      value={y}
+                    >
+                      {y}
+                    </option>
+                  );
+                }
+              )}
+            </select>
+          </div>
+        </div>
 
-            <div
-              style={
-                summaryCard
-              }
-            >
-              <small
-                style={{
-                  color:
-                    '#94a3b8',
-                }}
-              >
-                إجمالي المصروفات
-              </small>
-
-              <h2
-                style={{
-                  marginBottom: 0,
-                  color:
-                    '#ef4444',
-                }}
-              >
-                {totals.expense.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </h2>
-            </div>
-
-            <div
-              style={
-                summaryCard
-              }
-            >
-              <small
-                style={{
-                  color:
-                    '#94a3b8',
-                }}
-              >
-                صافي الشهر
-              </small>
-
-              <h2
-                style={{
-                  marginBottom: 0,
-                  color:
-                    net >= 0
-                      ? '#3b82f6'
-                      : '#ef4444',
-                }}
-              >
-                {net.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </h2>
-            </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns:
+              'repeat(2, 1fr)',
+            gap: 10,
+            marginBottom: 18,
+          }}
+        >
+          <div style={summaryCard}>
+            إجمالي المشاوير
+            <h2>{totals.trips}</h2>
           </div>
 
-          <div
-            style={{
-              ...summaryCard,
-              marginBottom: 18,
-            }}
-          >
-            <small
+          <div style={summaryCard}>
+            إجمالي الدخل
+            <h2
+              style={{
+                color: '#22c55e',
+              }}
+            >
+              {totals.income.toLocaleString(
+                'en-US'
+              )}{' '}
+              ر.س
+            </h2>
+          </div>
+
+          <div style={summaryCard}>
+            إجمالي المصروفات
+            <h2
+              style={{
+                color: '#ef4444',
+              }}
+            >
+              {totals.expense.toLocaleString(
+                'en-US'
+              )}{' '}
+              ر.س
+            </h2>
+          </div>
+
+          <div style={summaryCard}>
+            صافي الشهر
+            <h2
               style={{
                 color:
-                  '#94a3b8',
+                  net >= 0
+                    ? '#3b82f6'
+                    : '#ef4444',
               }}
             >
-              أيام مسجلة
-            </small>
-
-            <div
-              style={{
-                fontSize: 22,
-                fontWeight: 800,
-                marginTop: 5,
-                color:
-                  '#a78bfa',
-              }}
-            >
-              {
-                totals.registeredDays
-              }
-            </div>
+              {net.toLocaleString(
+                'en-US'
+              )}{' '}
+              ر.س
+            </h2>
           </div>
+        </div>
 
-          <div
+        <div
+          style={{
+            overflowX: 'auto',
+            border:
+              '1px solid #1d2d47',
+            borderRadius: 18,
+          }}
+        >
+          <table
             style={{
-              marginBottom: 12,
-              fontWeight: 800,
-              fontSize: 18,
+              width: '100%',
+              minWidth: 1050,
+              borderCollapse:
+                'collapse',
+              textAlign: 'center',
             }}
           >
-            {equipmentName} —{' '}
-            {monthNames[month]}{' '}
-            {year}
-          </div>
+            <thead>
+              <tr
+                style={{
+                  background:
+                    '#101b2e',
+                }}
+              >
+                <th>اليوم</th>
+                <th>نوع الشغل</th>
+                <th>نوع المشاوير</th>
+                <th>سعر المشوار</th>
+                <th>مصاريف أخرى</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
 
-          <div
-            style={{
-              overflowX: 'auto',
-              borderRadius: 18,
-              border:
-                '1px solid #1d2d47',
-              background:
-                '#07111f',
-            }}
-          >
-            <table
-              style={{
-                width: '100%',
-                minWidth: 1050,
-                borderCollapse:
-                  'collapse',
-                textAlign:
-                  'center',
-              }}
-            >
-              <thead>
+            <tbody>
+              {rows.map((row) => (
                 <tr
+                  key={row.day}
                   style={{
-                    background:
-                      '#101b2e',
+                    borderTop:
+                      '1px solid #1d2d47',
                   }}
                 >
-                  <th
-                    style={{
-                      padding: 13,
-                    }}
-                  >
-                    اليوم
-                  </th>
+                  <td>{row.day}</td>
 
-                  <th
-                    style={{
-                      padding: 13,
-                    }}
-                  >
-                    نوع الشغل
-                  </th>
-
-                  <th
-                    style={{
-                      padding: 13,
-                    }}
-                  >
-                    نوع المشاوير
-                  </th>
-
-                  <th
-                    style={{
-                      padding: 13,
-                    }}
-                  >
-                    سعر المشوار
-                  </th>
-
-                  <th
-                    style={{
-                      padding: 13,
-                    }}
-                  >
-                    مصاريف أخرى
-                  </th>
-
-                  <th
-                    style={{
-                      padding: 13,
-                    }}
-                  >
-                    ملاحظات
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {rows.map(
-                  (row) => (
-                    <tr
-                      key={
-                        row.day
+                  <td>
+                    <input
+                      value={
+                        row.workType
                       }
+                      onChange={(e) =>
+                        updateTextRow(
+                          row.day,
+                          'workType',
+                          e.target.value
+                        )
+                      }
+                      style={
+                        inputStyle
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      value={
+                        row.tripType
+                      }
+                      onChange={(e) =>
+                        updateTextRow(
+                          row.day,
+                          'tripType',
+                          e.target.value
+                        )
+                      }
+                      style={
+                        inputStyle
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={
+                        row.tripPrice ||
+                        ''
+                      }
+                      onChange={(e) =>
+                        updateNumberRow(
+                          row.day,
+                          'tripPrice',
+                          e.target.value
+                        )
+                      }
+                      style={
+                        inputStyle
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <div
                       style={{
-                        borderTop:
-                          '1px solid #1d2d47',
+                        display:
+                          'flex',
+                        gap: 5,
                       }}
                     >
-                      <td
-                        style={{
-                          padding:
-                            11,
-                          fontWeight:
-                            800,
-                          color:
-                            '#f5a623',
-                        }}
-                      >
-                        {
-                          row.day
+                      <input
+                        value={
+                          row.expenseType
                         }
-                      </td>
+                        onChange={(e) =>
+                          updateTextRow(
+                            row.day,
+                            'expenseType',
+                            e.target.value
+                          )
+                        }
+                        style={
+                          inputStyle
+                        }
+                      />
 
-                      <td
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={
+                          row.expenseAmount ||
+                          ''
+                        }
+                        onChange={(e) =>
+                          updateNumberRow(
+                            row.day,
+                            'expenseAmount',
+                            e.target.value
+                          )
+                        }
                         style={{
-                          padding:
-                            6,
+                          ...inputStyle,
+                          minWidth: 80,
                         }}
-                      >
-                        <input
-                          type="text"
-                          value={
-                            row.workType
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateTextRow(
-                              row.day,
-                              'workType',
-                              e.target
-                                .value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                          placeholder="مثال: رفع معدات"
-                          disabled={
-                            !equipmentId
-                          }
-                        />
-                      </td>
+                      />
+                    </div>
+                  </td>
 
-                      <td
-                        style={{
-                          padding:
-                            6,
-                        }}
-                      >
-                        <input
-                          type="text"
-                          value={
-                            row.tripType
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateTextRow(
-                              row.day,
-                              'tripType',
-                              e.target
-                                .value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                          placeholder="مثال: خميس - أبها"
-                          disabled={
-                            !equipmentId
-                          }
-                        />
-                      </td>
-
-                      <td
-                        style={{
-                          padding:
-                            6,
-                        }}
-                      >
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={
-                            row.tripPrice ||
-                            ''
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateNumberRow(
-                              row.day,
-                              'tripPrice',
-                              e.target
-                                .value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                          placeholder="0"
-                          disabled={
-                            !equipmentId
-                          }
-                        />
-                      </td>
-
-                      <td
-                        style={{
-                          padding:
-                            6,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display:
-                              'grid',
-                            gridTemplateColumns:
-                              '1.3fr 0.8fr',
-                            gap: 5,
-                            minWidth:
-                              240,
-                          }}
-                        >
-                          <input
-                            type="text"
-                            value={
-                              row.expenseType
-                            }
-                            onChange={(
-                              e
-                            ) =>
-                              updateTextRow(
-                                row.day,
-                                'expenseType',
-                                e
-                                  .target
-                                  .value
-                              )
-                            }
-                            style={{
-                              ...inputStyle,
-                              minWidth:
-                                130,
-                            }}
-                            placeholder="ديزل / صيانة"
-                            disabled={
-                              !equipmentId
-                            }
-                          />
-
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                              row.expenseAmount ||
-                              ''
-                            }
-                            onChange={(
-                              e
-                            ) =>
-                              updateNumberRow(
-                                row.day,
-                                'expenseAmount',
-                                e
-                                  .target
-                                  .value
-                              )
-                            }
-                            style={{
-                              ...inputStyle,
-                              minWidth:
-                                90,
-                            }}
-                            placeholder="المبلغ"
-                            disabled={
-                              !equipmentId
-                            }
-                          />
-                        </div>
-                      </td>
-
-                      <td
-                        style={{
-                          padding:
-                            6,
-                        }}
-                      >
-                        <input
-                          type="text"
-                          value={
-                            row.notes
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateTextRow(
-                              row.day,
-                              'notes',
-                              e.target
-                                .value
-                            )
-                          }
-                          style={{
-                            ...inputStyle,
-                            minWidth:
-                              170,
-                          }}
-                          placeholder="اكتب ملاحظة"
-                          disabled={
-                            !equipmentId
-                          }
-                        />
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              padding: 16,
-              borderRadius: 18,
-              background:
-                '#0b1527',
-              border:
-                '1px solid #1d2d47',
-            }}
-          >
-            <strong
-              style={{
-                fontSize: 17,
-              }}
-            >
-              ملخص الشهر
-            </strong>
-
-            <div
-              style={{
-                marginTop: 10,
-                lineHeight: 2.1,
-              }}
-            >
-              <div>
-                عدد المشاوير:{' '}
-                <b>
-                  {totals.trips}
-                </b>
-              </div>
-
-              <div>
-                إجمالي الدخل:{' '}
-                <b
-                  style={{
-                    color:
-                      '#22c55e',
-                  }}
-                >
-                  {totals.income.toLocaleString(
-                    'en-US'
-                  )}{' '}
-                  ر.س
-                </b>
-              </div>
-
-              <div>
-                إجمالي المصروفات:{' '}
-                <b
-                  style={{
-                    color:
-                      '#ef4444',
-                  }}
-                >
-                  {totals.expense.toLocaleString(
-                    'en-US'
-                  )}{' '}
-                  ر.س
-                </b>
-              </div>
-
-              <div>
-                صافي الشهر:{' '}
-                <b
-                  style={{
-                    color:
-                      net >= 0
-                        ? '#3b82f6'
-                        : '#ef4444',
-                  }}
-                >
-                  {net.toLocaleString(
-                    'en-US'
-                  )}{' '}
-                  ر.س
-                </b>
-              </div>
-
-              <div>
-                أيام مسجلة:{' '}
-                <b
-                  style={{
-                    color:
-                      '#a78bfa',
-                  }}
-                >
-                  {
-                    totals.registeredDays
-                  }
-                </b>
-              </div>
-            </div>
-          </div>
+                  <td>
+                    <input
+                      value={row.notes}
+                      onChange={(e) =>
+                        updateTextRow(
+                          row.day,
+                          'notes',
+                          e.target.value
+                        )
+                      }
+                      style={
+                        inputStyle
+                      }
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div
@@ -1492,7 +1081,7 @@ export function MonthlyDetailPage() {
             marginTop: 18,
             display: 'grid',
             gridTemplateColumns:
-              'repeat(3, 1fr)',
+              'repeat(3,1fr)',
             gap: 8,
           }}
         >
@@ -1507,14 +1096,9 @@ export function MonthlyDetailPage() {
               ...buttonStyle,
               background:
                 '#2563eb',
-              opacity:
-                creatingPdf
-                  ? 0.6
-                  : 1,
             }}
           >
             <Download size={18} />
-
             {creatingPdf
               ? 'جاري...'
               : 'حفظ PDF'}
@@ -1531,10 +1115,6 @@ export function MonthlyDetailPage() {
               ...buttonStyle,
               background:
                 '#7c3aed',
-              opacity:
-                creatingPdf
-                  ? 0.6
-                  : 1,
             }}
           >
             <Share2 size={18} />
@@ -1545,17 +1125,10 @@ export function MonthlyDetailPage() {
             onClick={
               handleWhatsApp
             }
-            disabled={
-              creatingPdf
-            }
             style={{
               ...buttonStyle,
               background:
                 '#16a34a',
-              opacity:
-                creatingPdf
-                  ? 0.6
-                  : 1,
             }}
           >
             <MessageCircle
@@ -1565,25 +1138,379 @@ export function MonthlyDetailPage() {
           </button>
         </div>
 
+        {/* تقرير PDF المخفي */}
         <div
+          ref={reportRef}
+          dir="rtl"
           style={{
-            marginTop: 12,
-            padding: 12,
-            borderRadius: 14,
-            background:
-              'rgba(34, 197, 94, 0.08)',
-            border:
-              '1px solid rgba(34, 197, 94, 0.20)',
-            color: '#86efac',
-            textAlign: 'center',
-            fontSize: 13,
-            fontWeight: 700,
+            position: 'fixed',
+            left: '-10000px',
+            top: 0,
+            width: 900,
+            background: '#ffffff',
+            color: '#111827',
+            padding: 35,
+            boxSizing: 'border-box',
+            fontFamily:
+              'Arial, sans-serif',
           }}
         >
-          ✓ يتم حفظ البيانات تلقائيًا
-          على الجهاز
+          <div
+            style={{
+              textAlign: 'center',
+              borderBottom:
+                '4px solid #1d4ed8',
+              paddingBottom: 20,
+              marginBottom: 25,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 24,
+                fontWeight: 900,
+                color: '#1d4ed8',
+              }}
+            >
+              BAAKR PRO
+            </div>
+
+            <div
+              style={{
+                fontSize: 34,
+                fontWeight: 900,
+                marginTop: 8,
+              }}
+            >
+              كشف الحساب الشهري
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                '1fr 1fr 1fr',
+              gap: 12,
+              marginBottom: 25,
+            }}
+          >
+            {[
+              [
+                'المعدة',
+                equipmentName,
+              ],
+              [
+                'الشهر',
+                monthNames[month],
+              ],
+              [
+                'السنة',
+                year,
+              ],
+            ].map(
+              ([label, value]) => (
+                <div
+                  key={String(label)}
+                  style={{
+                    border:
+                      '1px solid #d1d5db',
+                    borderRadius: 10,
+                    padding: 12,
+                    textAlign:
+                      'center',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color:
+                        '#6b7280',
+                    }}
+                  >
+                    {label}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 19,
+                      fontWeight: 800,
+                      marginTop: 5,
+                    }}
+                  >
+                    {value}
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+
+          <table
+            style={{
+              width: '100%',
+              borderCollapse:
+                'collapse',
+              fontSize: 14,
+              textAlign: 'center',
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  background:
+                    '#1d4ed8',
+                  color: '#ffffff',
+                }}
+              >
+                {[
+                  'اليوم',
+                  'نوع الشغل',
+                  'نوع المشاوير',
+                  'سعر المشوار',
+                  'المصروفات',
+                  'ملاحظات',
+                ].map((title) => (
+                  <th
+                    key={title}
+                    style={{
+                      padding:
+                        '12px 7px',
+                      border:
+                        '1px solid #d1d5db',
+                    }}
+                  >
+                    {title}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {activeRows.length >
+              0 ? (
+                activeRows.map(
+                  (row) => (
+                    <tr
+                      key={row.day}
+                    >
+                      <td
+                        style={{
+                          padding: 10,
+                          border:
+                            '1px solid #d1d5db',
+                          fontWeight:
+                            800,
+                        }}
+                      >
+                        {row.day}
+                      </td>
+
+                      <td
+                        style={{
+                          padding: 10,
+                          border:
+                            '1px solid #d1d5db',
+                        }}
+                      >
+                        {row.workType ||
+                          '-'}
+                      </td>
+
+                      <td
+                        style={{
+                          padding: 10,
+                          border:
+                            '1px solid #d1d5db',
+                        }}
+                      >
+                        {row.tripType ||
+                          '-'}
+                      </td>
+
+                      <td
+                        style={{
+                          padding: 10,
+                          border:
+                            '1px solid #d1d5db',
+                        }}
+                      >
+                        {row.tripPrice
+                          ? `${row.tripPrice.toLocaleString('en-US')} ر.س`
+                          : '-'}
+                      </td>
+
+                      <td
+                        style={{
+                          padding: 10,
+                          border:
+                            '1px solid #d1d5db',
+                        }}
+                      >
+                        {row.expenseType ||
+                          '-'}
+                        {row.expenseAmount >
+                          0 &&
+                          ` - ${row.expenseAmount.toLocaleString('en-US')} ر.س`}
+                      </td>
+
+                      <td
+                        style={{
+                          padding: 10,
+                          border:
+                            '1px solid #d1d5db',
+                        }}
+                      >
+                        {row.notes ||
+                          '-'}
+                      </td>
+                    </tr>
+                  )
+                )
+              ) : (
+                <tr>
+                  <td
+                    colSpan={6}
+                    style={{
+                      padding: 30,
+                      border:
+                        '1px solid #d1d5db',
+                      color:
+                        '#6b7280',
+                    }}
+                  >
+                    لا توجد بيانات
+                    مسجلة لهذا الشهر
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(4,1fr)',
+              gap: 10,
+              marginTop: 25,
+            }}
+          >
+            <div
+              style={{
+                padding: 14,
+                border:
+                  '1px solid #d1d5db',
+                borderRadius: 10,
+                textAlign: 'center',
+              }}
+            >
+              <small>
+                المشاوير
+              </small>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}
+              >
+                {totals.trips}
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: 14,
+                border:
+                  '1px solid #d1d5db',
+                borderRadius: 10,
+                textAlign: 'center',
+              }}
+            >
+              <small>
+                إجمالي الدخل
+              </small>
+              <div
+                style={{
+                  fontSize: 19,
+                  fontWeight: 900,
+                  color: '#15803d',
+                }}
+              >
+                {totals.income.toLocaleString(
+                  'en-US'
+                )}{' '}
+                ر.س
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: 14,
+                border:
+                  '1px solid #d1d5db',
+                borderRadius: 10,
+                textAlign: 'center',
+              }}
+            >
+              <small>
+                المصروفات
+              </small>
+              <div
+                style={{
+                  fontSize: 19,
+                  fontWeight: 900,
+                  color: '#dc2626',
+                }}
+              >
+                {totals.expense.toLocaleString(
+                  'en-US'
+                )}{' '}
+                ر.س
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: 14,
+                border:
+                  '2px solid #1d4ed8',
+                borderRadius: 10,
+                textAlign: 'center',
+              }}
+            >
+              <small>
+                صافي الشهر
+              </small>
+              <div
+                style={{
+                  fontSize: 19,
+                  fontWeight: 900,
+                  color:
+                    net >= 0
+                      ? '#1d4ed8'
+                      : '#dc2626',
+                }}
+              >
+                {net.toLocaleString(
+                  'en-US'
+                )}{' '}
+                ر.س
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 30,
+              textAlign: 'center',
+              fontSize: 12,
+              color: '#9ca3af',
+            }}
+          >
+            تم إنشاء كشف الحساب بواسطة
+            BAAKR PRO
+          </div>
         </div>
       </div>
     </AppLayout>
   );
-    }
+                   }
