@@ -99,7 +99,6 @@ export function DriversPage() {
 
   function deleteDriver(id: number) {
     const ok = confirm('هل تريد حذف هذا السائق؟');
-
     if (!ok) return;
 
     setDrivers((old) => old.filter((driver) => driver.id !== id));
@@ -127,9 +126,13 @@ export function DriversPage() {
     );
   }
 
-
   function getRemaining(driver: Driver) {
     return driver.salary + driver.extraAmount - driver.withdrawals;
+  }
+
+  // عرض الأرقام بالإنجليزية
+  function englishNumber(value: number) {
+    return Number(value || 0).toLocaleString('en-US');
   }
 
   function getDriverSummaryText(driver: Driver) {
@@ -142,95 +145,643 @@ export function DriversPage() {
       `رقم الجوال: ${driver.phone || '-'}`,
       `المعدة: ${driver.equipment || '-'}`,
       '',
-      `الراتب الشهري: ${driver.salary.toLocaleString()} ر.س`,
-      `أيام العمل: ${driver.workDays}`,
-      `أيام الغياب: ${driver.absentDays}`,
-      `العمل الإضافي: ${driver.extraAmount.toLocaleString()} ر.س`,
-      `السحوبات / السلف: ${driver.withdrawals.toLocaleString()} ر.س`,
+      `الراتب الشهري: ${englishNumber(driver.salary)} ر.س`,
+      `أيام العمل: ${englishNumber(driver.workDays)}`,
+      `أيام الغياب: ${englishNumber(driver.absentDays)}`,
+      `العمل الإضافي: ${englishNumber(driver.extraAmount)} ر.س`,
+      `السحوبات / السلف: ${englishNumber(driver.withdrawals)} ر.س`,
       '━━━━━━━━━━━━━━━━━━',
-      `صافي المتبقي: ${remaining.toLocaleString()} ر.س`,
+      `صافي المتبقي: ${englishNumber(remaining)} ر.س`,
     ].join('\n');
   }
 
   function buildStatementMarkup(driver: Driver) {
     const remaining = getRemaining(driver);
     const now = new Date();
-    const issueDate = now.toLocaleDateString('ar-SA');
-    const issueTime = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
 
-    const row = (label: string, value: string, detail: string, index: number) => `
-      <div style="display:grid;grid-template-columns:1.25fr .8fr 1.05fr;background:${index % 2 ? '#fbfcfe' : '#ffffff'};border-top:1px solid #e7ebf1;font-size:14px;">
-        <div style="padding:14px 12px;text-align:center;font-weight:800;color:#10233f;">${label}</div>
-        <div style="padding:14px 12px;text-align:center;font-weight:800;color:#172033;">${value}</div>
-        <div style="padding:14px 12px;text-align:center;color:#667085;">${detail}</div>
+    // التاريخ والوقت بأرقام إنجليزية
+    const issueDate = now.toLocaleDateString('en-GB');
+
+    const issueTime = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const money = (value: number) =>
+      `${englishNumber(value)} ر.س`;
+
+    const row = (
+      label: string,
+      value: string,
+      detail: string,
+      index: number
+    ) => `
+      <div style="
+        display:grid;
+        grid-template-columns:1.25fr .8fr 1.05fr;
+        background:${index % 2 ? '#fbfcfe' : '#ffffff'};
+        border-top:1px solid #e7ebf1;
+        font-size:14px;
+      ">
+        <div style="
+          padding:14px 12px;
+          text-align:center;
+          font-weight:800;
+          color:#10233f;
+        ">${label}</div>
+
+        <div style="
+          padding:14px 12px;
+          text-align:center;
+          font-weight:800;
+          color:#172033;
+        ">${value}</div>
+
+        <div style="
+          padding:14px 12px;
+          text-align:center;
+          color:#667085;
+        ">${detail}</div>
       </div>`;
 
     return `
-      <div dir="rtl" style="width:794px;min-height:1123px;background:#ffffff;color:#111827;font-family:Arial,Tahoma,sans-serif;box-sizing:border-box;position:relative;overflow:hidden;padding:0 30px 28px;">
-        <div style="height:18px;background:#062c57;margin:0 -30px 0;"></div>
-        <div style="height:4px;background:#d3a43b;margin:0 -30px 0;"></div>
+      <div
+        dir="rtl"
+        style="
+          width:794px;
+          min-height:1123px;
+          background:#ffffff;
+          color:#111827;
+          font-family:Arial,Tahoma,sans-serif;
+          box-sizing:border-box;
+          position:relative;
+          overflow:hidden;
+          padding:0 30px 28px;
+        "
+      >
+        <div style="
+          height:18px;
+          background:#062c57;
+          margin:0 -30px 0;
+        "></div>
 
-        <div style="display:flex;justify-content:center;margin-top:-1px;">
-          <div style="background:#062c57;color:#e9bd57;border-radius:0 0 28px 28px;padding:12px 42px 13px;font-size:18px;font-weight:900;border-bottom:3px solid #d3a43b;">كشف حساب</div>
+        <div style="
+          height:4px;
+          background:#d3a43b;
+          margin:0 -30px 0;
+        "></div>
+
+        <div style="
+          display:flex;
+          justify-content:center;
+          margin-top:-1px;
+        ">
+          <div style="
+            background:#062c57;
+            color:#e9bd57;
+            border-radius:0 0 28px 28px;
+            padding:12px 42px 13px;
+            font-size:18px;
+            font-weight:900;
+            border-bottom:3px solid #d3a43b;
+          ">
+            كشف حساب
+          </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:170px 1fr 190px;gap:18px;align-items:start;margin-top:14px;">
-          <div style="border:1px solid #dce2ea;border-radius:16px;padding:15px 16px;background:#fff;box-shadow:0 4px 14px rgba(15,35,65,.04);font-size:12px;">
-            <div style="color:#667085;margin-bottom:5px;">تاريخ الإصدار</div><div style="font-weight:900;color:#10233f;font-size:15px;">${issueDate}</div>
-            <div style="height:1px;background:#edf0f4;margin:12px 0;"></div>
-            <div style="color:#667085;margin-bottom:5px;">وقت الإصدار</div><div style="font-weight:900;color:#10233f;font-size:15px;">${issueTime}</div>
+        <div style="
+          display:grid;
+          grid-template-columns:170px 1fr 190px;
+          gap:18px;
+          align-items:start;
+          margin-top:14px;
+        ">
+
+          <div style="
+            border:1px solid #dce2ea;
+            border-radius:16px;
+            padding:15px 16px;
+            background:#fff;
+            box-shadow:0 4px 14px rgba(15,35,65,.04);
+            font-size:12px;
+          ">
+            <div style="color:#667085;margin-bottom:5px;">
+              تاريخ الإصدار
+            </div>
+
+            <div style="
+              font-weight:900;
+              color:#10233f;
+              font-size:15px;
+              direction:ltr;
+            ">
+              ${issueDate}
+            </div>
+
+            <div style="
+              height:1px;
+              background:#edf0f4;
+              margin:12px 0;
+            "></div>
+
+            <div style="color:#667085;margin-bottom:5px;">
+              وقت الإصدار
+            </div>
+
+            <div style="
+              font-weight:900;
+              color:#10233f;
+              font-size:15px;
+              direction:ltr;
+            ">
+              ${issueTime}
+            </div>
           </div>
 
           <div style="text-align:center;padding-top:16px;">
-            <h1 style="margin:0;color:#082f5d;font-size:31px;line-height:1.35;font-weight:900;">ملخص حساب السائق / المشغل</h1>
-            <div style="margin-top:8px;color:#53657a;font-size:14px;">ملخص المستحقات والسحوبات</div>
-            <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:15px;"><span style="height:1px;width:70px;background:#d3a43b;"></span><span style="width:7px;height:7px;border-radius:50%;background:#d3a43b;"></span><span style="height:1px;width:70px;background:#d3a43b;"></span></div>
+            <h1 style="
+              margin:0;
+              color:#082f5d;
+              font-size:31px;
+              line-height:1.35;
+              font-weight:900;
+            ">
+              ملخص حساب السائق / المشغل
+            </h1>
+
+            <div style="
+              margin-top:8px;
+              color:#53657a;
+              font-size:14px;
+            ">
+              ملخص المستحقات والسحوبات
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:center;
+              align-items:center;
+              gap:8px;
+              margin-top:15px;
+            ">
+              <span style="
+                height:1px;
+                width:70px;
+                background:#d3a43b;
+              "></span>
+
+              <span style="
+                width:7px;
+                height:7px;
+                border-radius:50%;
+                background:#d3a43b;
+              "></span>
+
+              <span style="
+                height:1px;
+                width:70px;
+                background:#d3a43b;
+              "></span>
+            </div>
           </div>
 
-          <div style="border:1px solid #dce2ea;border-radius:16px;padding:15px 16px;background:#fff;box-shadow:0 4px 14px rgba(15,35,65,.04);font-size:12px;">
-            <div style="color:#667085;margin-bottom:5px;">اسم السائق / المشغل</div><div style="font-weight:900;color:#10233f;font-size:17px;">${driver.name}</div>
-            <div style="height:1px;background:#edf0f4;margin:12px 0;"></div>
-            <div style="color:#667085;margin-bottom:5px;">رقم الجوال</div><div style="font-weight:900;color:#10233f;font-size:15px;">${driver.phone || '-'}</div>
+          <div style="
+            border:1px solid #dce2ea;
+            border-radius:16px;
+            padding:15px 16px;
+            background:#fff;
+            box-shadow:0 4px 14px rgba(15,35,65,.04);
+            font-size:12px;
+          ">
+            <div style="color:#667085;margin-bottom:5px;">
+              اسم السائق / المشغل
+            </div>
+
+            <div style="
+              font-weight:900;
+              color:#10233f;
+              font-size:17px;
+            ">
+              ${driver.name}
+            </div>
+
+            <div style="
+              height:1px;
+              background:#edf0f4;
+              margin:12px 0;
+            "></div>
+
+            <div style="color:#667085;margin-bottom:5px;">
+              رقم الجوال
+            </div>
+
+            <div style="
+              font-weight:900;
+              color:#10233f;
+              font-size:15px;
+              direction:ltr;
+            ">
+              ${driver.phone || '-'}
+            </div>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #dce2ea;border-radius:16px;background:#fbfcfe;margin-top:18px;overflow:hidden;">
-          <div style="padding:16px 22px;border-left:1px solid #e5e9ef;"><div style="font-size:12px;color:#667085;">المعدة</div><div style="font-size:20px;font-weight:900;color:#10233f;margin-top:5px;">${driver.equipment || '-'}</div></div>
-          <div style="padding:16px 22px;"><div style="font-size:12px;color:#667085;">تاريخ إصدار الملخص</div><div style="font-size:20px;font-weight:900;color:#10233f;margin-top:5px;">${issueDate}</div></div>
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:0;
+          border:1px solid #dce2ea;
+          border-radius:16px;
+          background:#fbfcfe;
+          margin-top:18px;
+          overflow:hidden;
+        ">
+          <div style="
+            padding:16px 22px;
+            border-left:1px solid #e5e9ef;
+          ">
+            <div style="font-size:12px;color:#667085;">
+              المعدة
+            </div>
+
+            <div style="
+              font-size:20px;
+              font-weight:900;
+              color:#10233f;
+              margin-top:5px;
+            ">
+              ${driver.equipment || '-'}
+            </div>
+          </div>
+
+          <div style="padding:16px 22px;">
+            <div style="font-size:12px;color:#667085;">
+              تاريخ إصدار الملخص
+            </div>
+
+            <div style="
+              font-size:20px;
+              font-weight:900;
+              color:#10233f;
+              margin-top:5px;
+              direction:ltr;
+            ">
+              ${issueDate}
+            </div>
+          </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;">
-          <div style="border-radius:16px;padding:16px 10px;text-align:center;background:#f3f7ff;border:1px solid #cfdcf1;"><div style="font-size:13px;font-weight:800;color:#174d96;">الراتب الشهري</div><div style="font-size:27px;font-weight:900;color:#174d96;margin-top:14px;">${driver.salary.toLocaleString()}</div><div style="font-size:13px;font-weight:800;color:#174d96;margin-top:4px;">ر.س</div></div>
-          <div style="border-radius:16px;padding:16px 10px;text-align:center;background:#f2fbf6;border:1px solid #cce8d8;"><div style="font-size:13px;font-weight:800;color:#168152;">العمل الإضافي</div><div style="font-size:27px;font-weight:900;color:#168152;margin-top:14px;">${driver.extraAmount.toLocaleString()}</div><div style="font-size:13px;font-weight:800;color:#168152;margin-top:4px;">ر.س</div></div>
-          <div style="border-radius:16px;padding:16px 10px;text-align:center;background:#fff9ed;border:1px solid #ead9ad;"><div style="font-size:13px;font-weight:800;color:#b47b13;">السحوبات / السلف</div><div style="font-size:27px;font-weight:900;color:#b47b13;margin-top:14px;">${driver.withdrawals.toLocaleString()}</div><div style="font-size:13px;font-weight:800;color:#b47b13;margin-top:4px;">ر.س</div></div>
-          <div style="border-radius:16px;padding:16px 10px;text-align:center;background:#fff5f5;border:1px solid #efcccc;"><div style="font-size:13px;font-weight:800;color:#c12b2b;">أيام الغياب</div><div style="font-size:27px;font-weight:900;color:#c12b2b;margin-top:14px;">${driver.absentDays}</div><div style="font-size:13px;font-weight:800;color:#c12b2b;margin-top:4px;">يوم</div></div>
+        <div style="
+          display:grid;
+          grid-template-columns:repeat(4,1fr);
+          gap:12px;
+          margin-top:18px;
+        ">
+
+          <div style="
+            border-radius:16px;
+            padding:16px 10px;
+            text-align:center;
+            background:#f3f7ff;
+            border:1px solid #cfdcf1;
+          ">
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#174d96;
+            ">
+              الراتب الشهري
+            </div>
+
+            <div style="
+              font-size:27px;
+              font-weight:900;
+              color:#174d96;
+              margin-top:14px;
+              direction:ltr;
+            ">
+              ${englishNumber(driver.salary)}
+            </div>
+
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#174d96;
+              margin-top:4px;
+            ">
+              ر.س
+            </div>
+          </div>
+
+          <div style="
+            border-radius:16px;
+            padding:16px 10px;
+            text-align:center;
+            background:#f2fbf6;
+            border:1px solid #cce8d8;
+          ">
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#168152;
+            ">
+              العمل الإضافي
+            </div>
+
+            <div style="
+              font-size:27px;
+              font-weight:900;
+              color:#168152;
+              margin-top:14px;
+              direction:ltr;
+            ">
+              ${englishNumber(driver.extraAmount)}
+            </div>
+
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#168152;
+              margin-top:4px;
+            ">
+              ر.س
+            </div>
+          </div>
+
+          <div style="
+            border-radius:16px;
+            padding:16px 10px;
+            text-align:center;
+            background:#fff9ed;
+            border:1px solid #ead9ad;
+          ">
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#b47b13;
+            ">
+              السحوبات / السلف
+            </div>
+
+            <div style="
+              font-size:27px;
+              font-weight:900;
+              color:#b47b13;
+              margin-top:14px;
+              direction:ltr;
+            ">
+              ${englishNumber(driver.withdrawals)}
+            </div>
+
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#b47b13;
+              margin-top:4px;
+            ">
+              ر.س
+            </div>
+          </div>
+
+          <div style="
+            border-radius:16px;
+            padding:16px 10px;
+            text-align:center;
+            background:#fff5f5;
+            border:1px solid #efcccc;
+          ">
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#c12b2b;
+            ">
+              أيام الغياب
+            </div>
+
+            <div style="
+              font-size:27px;
+              font-weight:900;
+              color:#c12b2b;
+              margin-top:14px;
+              direction:ltr;
+            ">
+              ${englishNumber(driver.absentDays)}
+            </div>
+
+            <div style="
+              font-size:13px;
+              font-weight:800;
+              color:#c12b2b;
+              margin-top:4px;
+            ">
+              يوم
+            </div>
+          </div>
         </div>
 
-        <div style="border:1px solid #d8dee8;border-radius:16px;overflow:hidden;margin-top:18px;box-shadow:0 4px 14px rgba(15,35,65,.035);">
-          <div style="background:#062c57;color:#fff;text-align:center;font-size:18px;font-weight:900;padding:12px;border-bottom:2px solid #d3a43b;">تفاصيل الحساب</div>
-          <div style="display:grid;grid-template-columns:1.25fr .8fr 1.05fr;background:#0b3c70;color:white;font-weight:900;font-size:14px;"><div style="padding:12px;text-align:center;">البيان</div><div style="padding:12px;text-align:center;border-right:1px solid rgba(255,255,255,.16);border-left:1px solid rgba(255,255,255,.16);">القيمة</div><div style="padding:12px;text-align:center;">التفاصيل</div></div>
-          ${row('الراتب الشهري', `${driver.salary.toLocaleString()} ر.س`, `أيام العمل: ${driver.workDays}`, 0)}
-          ${row('العمل الإضافي', `${driver.extraAmount.toLocaleString()} ر.س`, 'إضافة على المستحق', 1)}
-          ${row('السحوبات / السلف', `${driver.withdrawals.toLocaleString()} ر.س`, 'خصم من المستحق', 2)}
-          ${row('أيام الغياب', `${driver.absentDays} يوم`, 'للمتابعة', 3)}
+        <div style="
+          border:1px solid #d8dee8;
+          border-radius:16px;
+          overflow:hidden;
+          margin-top:18px;
+          box-shadow:0 4px 14px rgba(15,35,65,.035);
+        ">
+          <div style="
+            background:#062c57;
+            color:#fff;
+            text-align:center;
+            font-size:18px;
+            font-weight:900;
+            padding:12px;
+            border-bottom:2px solid #d3a43b;
+          ">
+            تفاصيل الحساب
+          </div>
+
+          <div style="
+            display:grid;
+            grid-template-columns:1.25fr .8fr 1.05fr;
+            background:#0b3c70;
+            color:white;
+            font-weight:900;
+            font-size:14px;
+          ">
+            <div style="padding:12px;text-align:center;">
+              البيان
+            </div>
+
+            <div style="
+              padding:12px;
+              text-align:center;
+              border-right:1px solid rgba(255,255,255,.16);
+              border-left:1px solid rgba(255,255,255,.16);
+            ">
+              القيمة
+            </div>
+
+            <div style="padding:12px;text-align:center;">
+              التفاصيل
+            </div>
+          </div>
+
+          ${row(
+            'الراتب الشهري',
+            money(driver.salary),
+            `أيام العمل: ${englishNumber(driver.workDays)}`,
+            0
+          )}
+
+          ${row(
+            'العمل الإضافي',
+            money(driver.extraAmount),
+            'إضافة على المستحق',
+            1
+          )}
+
+          ${row(
+            'السحوبات / السلف',
+            money(driver.withdrawals),
+            'خصم من المستحق',
+            2
+          )}
+
+          ${row(
+            'أيام الغياب',
+            `${englishNumber(driver.absentDays)} يوم`,
+            'للمتابعة',
+            3
+          )}
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1.25fr;align-items:center;background:#062c57;border:1px solid #062c57;border-radius:17px;margin-top:18px;overflow:hidden;box-shadow:0 8px 20px rgba(6,44,87,.12);">
-          <div style="padding:18px 24px;text-align:center;border-left:1px solid rgba(255,255,255,.18);"><div style="font-size:13px;color:#e9bd57;font-weight:800;">صافي المبلغ المتبقي</div><div style="font-size:34px;color:#e9bd57;font-weight:900;margin-top:4px;">${remaining.toLocaleString()} <span style="font-size:18px;">ر.س</span></div></div>
-          <div style="padding:18px 24px;text-align:center;"><div style="font-size:17px;color:#fff;font-weight:900;">صافي المبلغ المتبقي</div><div style="font-size:12px;color:#d5dfeb;margin-top:7px;">الراتب + الإضافي - السحوبات</div></div>
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1.25fr;
+          align-items:center;
+          background:#062c57;
+          border:1px solid #062c57;
+          border-radius:17px;
+          margin-top:18px;
+          overflow:hidden;
+          box-shadow:0 8px 20px rgba(6,44,87,.12);
+        ">
+          <div style="
+            padding:18px 24px;
+            text-align:center;
+            border-left:1px solid rgba(255,255,255,.18);
+          ">
+            <div style="
+              font-size:13px;
+              color:#e9bd57;
+              font-weight:800;
+            ">
+              صافي المبلغ المتبقي
+            </div>
+
+            <div style="
+              font-size:34px;
+              color:#e9bd57;
+              font-weight:900;
+              margin-top:4px;
+              direction:ltr;
+            ">
+              ${englishNumber(remaining)}
+              <span style="font-size:18px;">ر.س</span>
+            </div>
+          </div>
+
+          <div style="
+            padding:18px 24px;
+            text-align:center;
+          ">
+            <div style="
+              font-size:17px;
+              color:#fff;
+              font-weight:900;
+            ">
+              صافي المبلغ المتبقي
+            </div>
+
+            <div style="
+              font-size:12px;
+              color:#d5dfeb;
+              margin-top:7px;
+            ">
+              الراتب + الإضافي - السحوبات
+            </div>
+          </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:28px;border:1px solid #e1e6ed;border-radius:16px;padding:22px 28px 18px;text-align:center;color:#24364d;font-size:13px;">
-          <div><div style="font-weight:800;margin-bottom:28px;">توقيع السائق / المشغل</div><div style="border-top:1px dashed #8793a3;"></div></div>
-          <div><div style="font-weight:800;margin-bottom:28px;">توقيع الإدارة</div><div style="border-top:1px dashed #8793a3;"></div></div>
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:60px;
+          margin-top:28px;
+          border:1px solid #e1e6ed;
+          border-radius:16px;
+          padding:22px 28px 18px;
+          text-align:center;
+          color:#24364d;
+          font-size:13px;
+        ">
+          <div>
+            <div style="
+              font-weight:800;
+              margin-bottom:28px;
+            ">
+              توقيع السائق / المشغل
+            </div>
+
+            <div style="
+              border-top:1px dashed #8793a3;
+            "></div>
+          </div>
+
+          <div>
+            <div style="
+              font-weight:800;
+              margin-bottom:28px;
+            ">
+              توقيع الإدارة
+            </div>
+
+            <div style="
+              border-top:1px dashed #8793a3;
+            "></div>
+          </div>
         </div>
 
-        <div style="margin-top:20px;display:flex;justify-content:space-between;color:#718096;font-size:10px;padding:0 4px;"><span>تاريخ الإصدار: ${issueDate}</span><span>ملخص حساب السائق / المشغل</span></div>
-        <div style="margin:12px -30px -28px;background:#062c57;border-top:3px solid #d3a43b;color:#fff;text-align:center;padding:13px;font-size:14px;font-weight:800;">شكراً لتعاملكم معنا</div>
+        <div style="
+          margin-top:20px;
+          display:flex;
+          justify-content:space-between;
+          color:#718096;
+          font-size:10px;
+          padding:0 4px;
+        ">
+          <span style="direction:ltr;">
+            تاريخ الإصدار: ${issueDate}
+          </span>
+
+          <span>
+            ملخص حساب السائق / المشغل
+          </span>
+        </div>
+
+        <div style="
+          margin:12px -30px -28px;
+          background:#062c57;
+          border-top:3px solid #d3a43b;
+          color:#fff;
+          text-align:center;
+          padding:13px;
+          font-size:14px;
+          font-weight:800;
+        ">
+          شكراً لتعاملكم معنا
+        </div>
       </div>`;
-  }
-
-  async function createDriverPdf(driver: Driver) {
+}
+    async function createDriverPdf(driver: Driver) {
     const host = document.createElement('div');
     host.style.position = 'fixed';
     host.style.left = '-10000px';
@@ -241,19 +792,43 @@ export function DriversPage() {
     document.body.appendChild(host);
 
     try {
-      const canvas = await html2canvas(host.firstElementChild as HTMLElement, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
+      const canvas = await html2canvas(
+        host.firstElementChild as HTMLElement,
+        {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+        }
+      );
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
       });
 
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
       const pageWidth = 210;
       const pageHeight = 297;
-      const imgHeight = (canvas.height * pageWidth) / canvas.width;
-      const finalHeight = Math.min(imgHeight, pageHeight);
-      pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, finalHeight, undefined, 'FAST');
+      const imgHeight =
+        (canvas.height * pageWidth) / canvas.width;
+
+      const finalHeight = Math.min(
+        imgHeight,
+        pageHeight
+      );
+
+      pdf.addImage(
+        imgData,
+        'JPEG',
+        0,
+        0,
+        pageWidth,
+        finalHeight,
+        undefined,
+        'FAST'
+      );
 
       return pdf;
     } finally {
@@ -264,24 +839,41 @@ export function DriversPage() {
   function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+
       reader.onloadend = () => {
         const result = String(reader.result || '');
-        resolve(result.includes(',') ? result.split(',')[1] : result);
+
+        resolve(
+          result.includes(',')
+            ? result.split(',')[1]
+            : result
+        );
       };
+
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
   }
 
-  async function saveOrSharePdf(driver: Driver, shareAfterSave = false) {
+  async function saveOrSharePdf(
+    driver: Driver,
+    shareAfterSave = false
+  ) {
     try {
       const pdf = await createDriverPdf(driver);
-      const safeName = driver.name.replace(/[^\w\u0600-\u06FF-]+/g, '-');
-      const fileName = `ملخص-حساب-${safeName || 'سائق'}.pdf`;
+
+      const safeName = driver.name.replace(
+        /[^\w\u0600-\u06FF-]+/g,
+        '-'
+      );
+
+      const fileName =
+        `ملخص-حساب-${safeName || 'سائق'}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
         const blob = pdf.output('blob');
         const base64 = await blobToBase64(blob);
+
         const result = await Filesystem.writeFile({
           path: fileName,
           data: base64,
@@ -299,7 +891,8 @@ export function DriversPage() {
         } else {
           await Share.share({
             title: fileName,
-            text: 'تم تجهيز ملف PDF، اختر التطبيق الذي تريد حفظه أو فتحه من خلاله.',
+            text:
+              'تم تجهيز ملف PDF، اختر التطبيق الذي تريد حفظه أو فتحه من خلاله.',
             files: [result.uri],
             dialogTitle: 'حفظ / فتح ملف PDF',
           });
@@ -309,24 +902,38 @@ export function DriversPage() {
       }
     } catch (error) {
       console.error(error);
-      alert('تعذر إنشاء ملف PDF. حاول مرة أخرى.');
+
+      alert(
+        'تعذر إنشاء ملف PDF. حاول مرة أخرى.'
+      );
     }
   }
 
-  async function openDriverStatement(driver: Driver) {
+  async function openDriverStatement(
+    driver: Driver
+  ) {
     await saveOrSharePdf(driver, false);
   }
 
-  async function shareDriverOnWhatsApp(driver: Driver) {
-    const text = encodeURIComponent(getDriverSummaryText(driver));
+  async function shareDriverOnWhatsApp(
+    driver: Driver
+  ) {
+    const text = encodeURIComponent(
+      getDriverSummaryText(driver)
+    );
 
     try {
       if (Capacitor.isNativePlatform()) {
-        window.location.href = `whatsapp://send?text=${text}`;
+        window.location.href =
+          `whatsapp://send?text=${text}`;
+
         return;
       }
 
-      window.open(`https://wa.me/?text=${text}`, '_blank');
+      window.open(
+        `https://wa.me/?text=${text}`,
+        '_blank'
+      );
     } catch {
       try {
         await Share.share({
@@ -335,7 +942,9 @@ export function DriversPage() {
           dialogTitle: 'اختر واتساب',
         });
       } catch {
-        alert('تعذر فتح واتساب. استخدم زر المشاركة واختر واتساب.');
+        alert(
+          'تعذر فتح واتساب. استخدم زر المشاركة واختر واتساب.'
+        );
       }
     }
   }
@@ -353,7 +962,10 @@ export function DriversPage() {
           text: getDriverSummaryText(driver),
         });
       } else {
-        await navigator.clipboard.writeText(getDriverSummaryText(driver));
+        await navigator.clipboard.writeText(
+          getDriverSummaryText(driver)
+        );
+
         alert('تم نسخ ملخص الحساب.');
       }
     } catch (error) {
@@ -390,9 +1002,19 @@ export function DriversPage() {
         paddingBottom: '60px',
       }}
     >
-      <div style={{ maxWidth: 900, margin: 'auto' }}>
+      <div
+        style={{
+          maxWidth: 900,
+          margin: 'auto',
+        }}
+      >
         <div style={{ marginBottom: 22 }}>
-          <h1 style={{ margin: 0, fontSize: 27 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 27,
+            }}
+          >
             👷 رواتب السائقين
           </h1>
 
@@ -403,56 +1025,105 @@ export function DriversPage() {
               fontSize: 14,
             }}
           >
-            حساب مستقل لكل سائق ومتابعة الراتب والعمل والغياب والسحوبات
+            حساب مستقل لكل سائق ومتابعة الراتب
+            والعمل والغياب والسحوبات
           </p>
         </div>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
+            gridTemplateColumns:
+              'repeat(2, 1fr)',
             gap: 10,
             marginBottom: 18,
           }}
         >
           <div style={cardStyle}>
-            <small style={{ color: '#94a3b8' }}>إجمالي الرواتب</small>
-            <h3>{totals.salaries.toLocaleString()} ر.س</h3>
+            <small
+              style={{ color: '#94a3b8' }}
+            >
+              إجمالي الرواتب
+            </small>
+
+            <h3>
+              {englishNumber(totals.salaries)} ر.س
+            </h3>
           </div>
 
           <div style={cardStyle}>
-            <small style={{ color: '#94a3b8' }}>إجمالي الإضافي</small>
-            <h3>{totals.extra.toLocaleString()} ر.س</h3>
+            <small
+              style={{ color: '#94a3b8' }}
+            >
+              إجمالي الإضافي
+            </small>
+
+            <h3>
+              {englishNumber(totals.extra)} ر.س
+            </h3>
           </div>
 
           <div style={cardStyle}>
-            <small style={{ color: '#94a3b8' }}>إجمالي السحوبات</small>
-            <h3>{totals.withdrawals.toLocaleString()} ر.س</h3>
+            <small
+              style={{ color: '#94a3b8' }}
+            >
+              إجمالي السحوبات
+            </small>
+
+            <h3>
+              {englishNumber(totals.withdrawals)} ر.س
+            </h3>
           </div>
 
           <div style={cardStyle}>
-            <small style={{ color: '#94a3b8' }}>إجمالي المتبقي</small>
-            <h3>{totals.remaining.toLocaleString()} ر.س</h3>
+            <small
+              style={{ color: '#94a3b8' }}
+            >
+              إجمالي المتبقي
+            </small>
+
+            <h3>
+              {englishNumber(totals.remaining)} ر.س
+            </h3>
           </div>
         </div>
 
-        <div style={{ ...cardStyle, marginBottom: 20 }}>
-          <h2 style={{ marginTop: 0, fontSize: 19 }}>
+        <div
+          style={{
+            ...cardStyle,
+            marginBottom: 20,
+          }}
+        >
+          <h2
+            style={{
+              marginTop: 0,
+              fontSize: 19,
+            }}
+          >
             ➕ إضافة سائق
           </h2>
 
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div
+            style={{
+              display: 'grid',
+              gap: 10,
+            }}
+          >
             <input
               style={inputStyle}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
               placeholder="اسم السائق"
             />
 
             <input
               style={inputStyle}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) =>
+                setPhone(e.target.value)
+              }
               placeholder="رقم الجوال"
               inputMode="tel"
             />
@@ -460,7 +1131,9 @@ export function DriversPage() {
             <input
               style={inputStyle}
               value={equipment}
-              onChange={(e) => setEquipment(e.target.value)}
+              onChange={(e) =>
+                setEquipment(e.target.value)
+              }
               placeholder="المعدة التي يعمل عليها"
             />
 
@@ -468,14 +1141,17 @@ export function DriversPage() {
               style={inputStyle}
               type="number"
               value={salary}
-              onChange={(e) => setSalary(e.target.value)}
+              onChange={(e) =>
+                setSalary(e.target.value)
+              }
               placeholder="الراتب الشهري"
             />
 
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns:
+                  '1fr 1fr',
                 gap: 10,
               }}
             >
@@ -483,7 +1159,9 @@ export function DriversPage() {
                 style={inputStyle}
                 type="number"
                 value={workDays}
-                onChange={(e) => setWorkDays(e.target.value)}
+                onChange={(e) =>
+                  setWorkDays(e.target.value)
+                }
                 placeholder="أيام العمل"
               />
 
@@ -491,7 +1169,9 @@ export function DriversPage() {
                 style={inputStyle}
                 type="number"
                 value={absentDays}
-                onChange={(e) => setAbsentDays(e.target.value)}
+                onChange={(e) =>
+                  setAbsentDays(e.target.value)
+                }
                 placeholder="أيام الغياب"
               />
             </div>
@@ -499,7 +1179,8 @@ export function DriversPage() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns:
+                  '1fr 1fr',
                 gap: 10,
               }}
             >
@@ -507,7 +1188,9 @@ export function DriversPage() {
                 style={inputStyle}
                 type="number"
                 value={extraAmount}
-                onChange={(e) => setExtraAmount(e.target.value)}
+                onChange={(e) =>
+                  setExtraAmount(e.target.value)
+                }
                 placeholder="قيمة العمل الإضافي"
               />
 
@@ -515,7 +1198,9 @@ export function DriversPage() {
                 style={inputStyle}
                 type="number"
                 value={withdrawals}
-                onChange={(e) => setWithdrawals(e.target.value)}
+                onChange={(e) =>
+                  setWithdrawals(e.target.value)
+                }
                 placeholder="السحوبات / السلف"
               />
             </div>
@@ -537,16 +1222,32 @@ export function DriversPage() {
           </div>
         </div>
 
-        <h2 style={{ fontSize: 19 }}>السائقون المسجلون</h2>
+        <h2 style={{ fontSize: 19 }}>
+          السائقون المسجلون
+        </h2>
 
         {drivers.length === 0 ? (
-          <div style={{ ...cardStyle, textAlign: 'center' }}>
-            <p style={{ color: '#94a3b8' }}>
+          <div
+            style={{
+              ...cardStyle,
+              textAlign: 'center',
+            }}
+          >
+            <p
+              style={{
+                color: '#94a3b8',
+              }}
+            >
               لا يوجد سائقون مسجلون حتى الآن
             </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 13 }}>
+          <div
+            style={{
+              display: 'grid',
+              gap: 13,
+            }}
+          >
             {drivers.map((driver) => {
               const remaining =
                 driver.salary +
@@ -554,25 +1255,38 @@ export function DriversPage() {
                 driver.withdrawals;
 
               return (
-                <div key={driver.id} style={cardStyle}>
+                <div
+                  key={driver.id}
+                  style={cardStyle}
+                >
                   <div
                     style={{
                       display: 'flex',
-                      justifyContent: 'space-between',
+                      justifyContent:
+                        'space-between',
                       gap: 10,
                       alignItems: 'center',
                     }}
                   >
                     <div>
-                      <h3 style={{ margin: 0 }}>{driver.name}</h3>
+                      <h3 style={{ margin: 0 }}>
+                        {driver.name}
+                      </h3>
 
-                      <small style={{ color: '#94a3b8' }}>
-                        {driver.equipment || 'بدون معدة محددة'}
+                      <small
+                        style={{
+                          color: '#94a3b8',
+                        }}
+                      >
+                        {driver.equipment ||
+                          'بدون معدة محددة'}
                       </small>
                     </div>
 
                     <button
-                      onClick={() => deleteDriver(driver.id)}
+                      onClick={() =>
+                        deleteDriver(driver.id)
+                      }
                       style={{
                         border: 0,
                         borderRadius: 10,
@@ -586,7 +1300,13 @@ export function DriversPage() {
                   </div>
 
                   {driver.phone && (
-                    <p style={{ color: '#cbd5e1' }}>
+                    <p
+                      style={{
+                        color: '#cbd5e1',
+                        direction: 'ltr',
+                        textAlign: 'right',
+                      }}
+                    >
                       📱 {driver.phone}
                     </p>
                   )}
@@ -594,13 +1314,15 @@ export function DriversPage() {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
+                      gridTemplateColumns:
+                        '1fr 1fr',
                       gap: 8,
                       marginTop: 12,
                     }}
                   >
                     <label>
                       <small>الراتب</small>
+
                       <input
                         style={inputStyle}
                         type="number"
@@ -617,6 +1339,7 @@ export function DriversPage() {
 
                     <label>
                       <small>أيام العمل</small>
+
                       <input
                         style={inputStyle}
                         type="number"
@@ -633,6 +1356,7 @@ export function DriversPage() {
 
                     <label>
                       <small>أيام الغياب</small>
+
                       <input
                         style={inputStyle}
                         type="number"
@@ -649,6 +1373,7 @@ export function DriversPage() {
 
                     <label>
                       <small>الإضافي</small>
+
                       <input
                         style={inputStyle}
                         type="number"
@@ -665,6 +1390,7 @@ export function DriversPage() {
 
                     <label>
                       <small>السحوبات</small>
+
                       <input
                         style={inputStyle}
                         type="number"
@@ -686,7 +1412,11 @@ export function DriversPage() {
                         background: '#10251e',
                       }}
                     >
-                      <small style={{ color: '#94a3b8' }}>
+                      <small
+                        style={{
+                          color: '#94a3b8',
+                        }}
+                      >
                         المتبقي للسائق
                       </small>
 
@@ -695,9 +1425,11 @@ export function DriversPage() {
                           display: 'block',
                           marginTop: 8,
                           color: '#47d78a',
+                          direction: 'ltr',
+                          textAlign: 'right',
                         }}
                       >
-                        {remaining.toLocaleString()} ر.س
+                        {englishNumber(remaining)} ر.س
                       </strong>
                     </div>
                   </div>
@@ -705,16 +1437,20 @@ export function DriversPage() {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
+                      gridTemplateColumns:
+                        '1fr 1fr',
                       gap: 8,
                       marginTop: 14,
                     }}
                   >
                     <button
-                      onClick={() => openDriverStatement(driver)}
+                      onClick={() =>
+                        openDriverStatement(driver)
+                      }
                       style={{
                         padding: '12px 8px',
-                        border: '1px solid #315f9d',
+                        border:
+                          '1px solid #315f9d',
                         borderRadius: 12,
                         background: '#10294a',
                         color: '#ffffff',
@@ -726,10 +1462,15 @@ export function DriversPage() {
                     </button>
 
                     <button
-                      onClick={() => shareDriverOnWhatsApp(driver)}
+                      onClick={() =>
+                        shareDriverOnWhatsApp(
+                          driver
+                        )
+                      }
                       style={{
                         padding: '12px 8px',
-                        border: '1px solid #1f8b57',
+                        border:
+                          '1px solid #1f8b57',
                         borderRadius: 12,
                         background: '#123a29',
                         color: '#67e59c',
@@ -741,10 +1482,13 @@ export function DriversPage() {
                     </button>
 
                     <button
-                      onClick={() => shareDriver(driver)}
+                      onClick={() =>
+                        shareDriver(driver)
+                      }
                       style={{
                         padding: '12px 8px',
-                        border: '1px solid #475569',
+                        border:
+                          '1px solid #475569',
                         borderRadius: 12,
                         background: '#172033',
                         color: '#dbeafe',
@@ -757,11 +1501,14 @@ export function DriversPage() {
 
                     <button
                       onClick={() =>
-                        alert('يمكنك تعديل بيانات السائق مباشرة من الخانات الموجودة أعلى هذه الأزرار، ويتم الحفظ تلقائيًا.')
+                        alert(
+                          'يمكنك تعديل بيانات السائق مباشرة من الخانات الموجودة أعلى هذه الأزرار، ويتم الحفظ تلقائيًا.'
+                        )
                       }
                       style={{
                         padding: '12px 8px',
-                        border: '1px solid #8a651d',
+                        border:
+                          '1px solid #8a651d',
                         borderRadius: 12,
                         background: '#3b2d0e',
                         color: '#f8c85a',
@@ -780,4 +1527,4 @@ export function DriversPage() {
       </div>
     </div>
   );
-}
+                                     }
