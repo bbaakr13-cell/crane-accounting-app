@@ -27,7 +27,7 @@ const monthNames = [
   'ديسمبر',
 ];
 
-export function MonthlyDetailPage() {
+export function MonthlyPage() {
   const { id } = useParams<{ id: string }>();
   const now = new Date();
 
@@ -637,6 +637,8 @@ export function MonthlyDetailPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+        </AppLayout>
   );
-                            }
+}
+
+                            
