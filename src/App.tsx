@@ -20,6 +20,9 @@ import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
 import { DriversPage } from '@/pages/DriversPage-1';
 import { QuotationPage } from '@/pages/QuotationPage';
 import AboutPage from '@/pages/AboutPage';
+import { BackupPage } from '@/pages/BackupPage';
+import { runAutomaticBackup } from '@/lib/backup';
+
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
