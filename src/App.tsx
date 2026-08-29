@@ -29,7 +29,9 @@ function App() {
   const showBackButton = location.pathname !== '/';
   const [showExitHint, setShowExitHint] = useState(false);
   const [lastBackPress, setLastBackPress] = useState(0);
-
+useEffect(() => {
+  runAutomaticBackup();
+}, []);
   const handleBack = () => {
     if (window.history.length > 1) {
       navigate(-1);
