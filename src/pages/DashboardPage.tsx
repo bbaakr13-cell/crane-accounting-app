@@ -41,8 +41,7 @@ import {
   type DashboardTotals,
 } from '@/lib/transactions';
 
-const DASHBOARD_IMAGE_KEY =
-  'baakr_pro_dashboard_image';
+const DASHBOARD_IMAGE_KEY = 'baakr_pro_dashboard_image';
 
 type ActionTone =
   | 'green'
@@ -70,27 +69,22 @@ const tones: Record<
     background: 'rgba(34,197,94,0.11)',
     color: '#4ade80',
   },
-
   red: {
     background: 'rgba(239,68,68,0.11)',
     color: '#fb7185',
   },
-
   blue: {
     background: 'rgba(59,130,246,0.12)',
     color: '#60a5fa',
   },
-
   gold: {
     background: 'rgba(245,158,11,0.12)',
     color: '#fbbf24',
   },
-
   orange: {
     background: 'rgba(249,115,22,0.12)',
     color: '#fb923c',
   },
-
   purple: {
     background: 'rgba(168,85,247,0.12)',
     color: '#c084fc',
@@ -100,56 +94,79 @@ const tones: Record<
 export function DashboardPage() {
   const navigate = useNavigate();
 
-  const [totals, setTotals] =
-    useState<DashboardTotals>({
-      totalIncome: 0,
-      totalExpenses: 0,
-      netProfit: 0,
-      receivables: 0,
-    });
+  const [totals, setTotals] = useState<DashboardTotals>({
+    totalIncome: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    receivables: 0,
+  });
 
-  const [recentTxs, setRecentTxs] =
-    useState<Transaction[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [heroImage, setHeroImage] =
-    useState('');
+  const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [heroImage, setHeroImage] = useState('');
 
   const load = useCallback(async () => {
     try {
-      const [t, txs] =
-        await Promise.all([
-          fetchDashboardTotals(),
-          fetchAllTransactions(),
-        ]);
+      const [t, txs] = await Promise.all([
+        fetchDashboardTotals(),
+        fetchAllTransactions(),
+      ]);
 
       setTotals(t);
-
-      setRecentTxs(
-        txs.slice(0, 5)
-      );
+      setRecentTxs(txs.slice(0, 5));
     } catch (error) {
-      console.error(
-        'Dashboard load error:',
-        error
-      );
+      console.error('Dashboard load error:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const loadHeroImage = useCallback(() => {
+    try {
+      const savedImage =
+        localStorage.getItem(DASHBOARD_IMAGE_KEY) || '';
+
+      setHeroImage(savedImage);
+    } catch (error) {
+      console.error(
+        'Dashboard image load error:',
+        error
+      );
+
+      setHeroImage('');
+    }
+  }, []);
+
   useEffect(() => {
     load();
+    loadHeroImage();
 
-    const savedImage =
-      localStorage.getItem(
-        DASHBOARD_IMAGE_KEY
-      ) || '';
+    const handleStorage = () => {
+      loadHeroImage();
+    };
 
-    setHeroImage(savedImage);
-  }, [load]);
+    window.addEventListener(
+      'storage',
+      handleStorage
+    );
+
+    window.addEventListener(
+      'focus',
+      loadHeroImage
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        handleStorage
+      );
+
+      window.removeEventListener(
+        'focus',
+        loadHeroImage
+      );
+    };
+  }, [load, loadHeroImage]);
 
   const actions: ActionItem[] = [
     {
@@ -158,84 +175,72 @@ export function DashboardPage() {
       path: '/add',
       tone: 'green',
     },
-
     {
       label: 'إضافة مصروف',
       icon: ArrowUpLeft,
       path: '/add',
       tone: 'red',
     },
-
     {
       label: 'العملاء',
       icon: Users,
       path: '/customers',
       tone: 'blue',
     },
-
     {
       label: 'المعدات',
       icon: Truck,
       path: '/equipment',
       tone: 'gold',
     },
-
     {
       label: 'الحساب الشهري',
       icon: CalendarClock,
       path: '/monthly',
       tone: 'orange',
     },
-
     {
       label: 'التأجير الشهري',
       icon: CalendarClock,
       path: '/monthly-rental',
       tone: 'purple',
     },
-
     {
       label: 'السواقين والمشغلين',
       icon: Users,
       path: '/drivers',
       tone: 'gold',
     },
-
     {
       label: 'التقارير',
       icon: FileBarChart,
       path: '/reports',
       tone: 'blue',
     },
-
     {
       label: 'الفواتير',
       icon: FileText,
       path: '/invoices',
       tone: 'purple',
     },
-
     {
       label: 'عرض سعر',
       icon: FileText,
       path: '/quotation',
       tone: 'green',
     },
-
     {
       label: 'حساب اليوم',
       icon: Calculator,
       path: '/daily-calculator',
       tone: 'gold',
     },
-
     {
       label: 'الإعدادات',
       icon: Settings,
       path: '/settings',
       tone: 'red',
     },
-
     {
       label: 'النسخ الاحتياطي',
       icon: ShieldCheck,
@@ -246,17 +251,10 @@ export function DashboardPage() {
 
   return (
     <AppLayout>
-      <div
-        dir="rtl"
-        className="w-full"
-      >
+      <div dir="rtl" className="w-full">
 
-        {/* ====================== */}
         {/* الصورة الرئيسية */}
-        {/* ====================== */}
-
         <section className="mb-5">
-
           <div
             className="relative overflow-hidden rounded-[25px]"
             style={{
@@ -269,7 +267,6 @@ export function DashboardPage() {
                 'linear-gradient(135deg,#15243b,#081321)',
             }}
           >
-
             {heroImage ? (
               <img
                 src={heroImage}
@@ -291,8 +288,6 @@ export function DashboardPage() {
               </div>
             )}
 
-            {/* تغطية احترافية */}
-
             <div
               className="absolute inset-0"
               style={{
@@ -302,9 +297,7 @@ export function DashboardPage() {
             />
 
             <div className="absolute inset-0 p-5 flex flex-col justify-between">
-
               <div>
-
                 <p className="text-[10px] font-bold text-amber-400 tracking-[0.16em]">
                   BAAKR PRO
                 </p>
@@ -316,13 +309,10 @@ export function DashboardPage() {
                 <p className="text-[11px] text-slate-300 mt-1">
                   دقة • سرعة • احترافية
                 </p>
-
               </div>
 
               <div className="flex items-end justify-between">
-
                 <div className="flex gap-2">
-
                   <div className="px-2.5 py-1.5 rounded-xl bg-black/35 border border-white/10 text-[9px] text-slate-200">
                     🔒 آمن
                   </div>
@@ -330,7 +320,6 @@ export function DashboardPage() {
                   <div className="px-2.5 py-1.5 rounded-xl bg-black/35 border border-white/10 text-[9px] text-slate-200">
                     ⚡ سريع
                   </div>
-
                 </div>
 
                 <button
@@ -343,22 +332,14 @@ export function DashboardPage() {
                 >
                   <ImageIcon className="w-5 h-5 text-amber-400" />
                 </button>
-
               </div>
-
             </div>
           </div>
-
         </section>
 
-        {/* ====================== */}
         {/* الملخص المالي */}
-        {/* ====================== */}
-
         <section>
-
           <div className="flex items-center justify-between mb-3">
-
             <h2 className="text-[16px] font-black text-white">
               نظرة عامة
             </h2>
@@ -366,16 +347,12 @@ export function DashboardPage() {
             <span className="text-[10px] text-slate-500">
               الحسابات الحالية
             </span>
-
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-
             <MoneyCard
               label="إجمالي الدخل"
-              value={formatSAR(
-                totals.totalIncome
-              )}
+              value={formatSAR(totals.totalIncome)}
               icon={TrendingUp}
               color="#4ade80"
               bg="rgba(34,197,94,0.10)"
@@ -387,9 +364,7 @@ export function DashboardPage() {
 
             <MoneyCard
               label="إجمالي المصروفات"
-              value={formatSAR(
-                totals.totalExpenses
-              )}
+              value={formatSAR(totals.totalExpenses)}
               icon={TrendingDown}
               color="#fb7185"
               bg="rgba(239,68,68,0.10)"
@@ -401,9 +376,7 @@ export function DashboardPage() {
 
             <MoneyCard
               label="صافي الربح"
-              value={formatSAR(
-                totals.netProfit
-              )}
+              value={formatSAR(totals.netProfit)}
               icon={Wallet}
               color="#60a5fa"
               bg="rgba(59,130,246,0.10)"
@@ -415,9 +388,7 @@ export function DashboardPage() {
 
             <MoneyCard
               label="المستحقات"
-              value={formatSAR(
-                totals.receivables
-              )}
+              value={formatSAR(totals.receivables)}
               icon={Clock}
               color="#fb923c"
               bg="rgba(249,115,22,0.10)"
@@ -426,19 +397,12 @@ export function DashboardPage() {
                 navigate('/customers')
               }
             />
-
           </div>
-
         </section>
 
-        {/* ====================== */}
         {/* إضافة سريعة */}
-        {/* ====================== */}
-
         <section className="mt-5">
-
           <div className="grid grid-cols-2 gap-3">
-
             <button
               type="button"
               onClick={() =>
@@ -472,19 +436,12 @@ export function DashboardPage() {
               <ArrowUpLeft className="w-5 h-5" />
               إضافة مصروف
             </button>
-
           </div>
-
         </section>
 
-        {/* ====================== */}
         {/* الاختصارات */}
-        {/* ====================== */}
-
         <section className="mt-6">
-
           <div className="flex items-center justify-between mb-3">
-
             <h2 className="text-[16px] font-black text-white">
               الاختصارات السريعة
             </h2>
@@ -492,7 +449,6 @@ export function DashboardPage() {
             <span className="text-amber-400">
               ⚡
             </span>
-
           </div>
 
           <div
@@ -500,21 +456,17 @@ export function DashboardPage() {
             style={{
               background:
                 'linear-gradient(180deg, rgba(17,31,53,0.75), rgba(8,19,34,0.92))',
-
               border:
                 '1px solid rgba(255,255,255,0.07)',
             }}
           >
-
             <div className="grid grid-cols-3 gap-2">
-
               {actions
                 .filter(
                   (item) =>
                     item.path !== '/add'
                 )
                 .map((item) => {
-
                   const Icon = item.icon;
                   const tone =
                     tones[item.tone];
@@ -534,7 +486,6 @@ export function DashboardPage() {
                           '1px solid rgba(255,255,255,0.045)',
                       }}
                     >
-
                       <div
                         className="w-11 h-11 rounded-[15px] flex items-center justify-center"
                         style={{
@@ -555,25 +506,16 @@ export function DashboardPage() {
                       <span className="text-[10px] leading-[15px] font-bold text-slate-200 text-center">
                         {item.label}
                       </span>
-
                     </button>
                   );
                 })}
-
             </div>
-
           </div>
-
         </section>
 
-        {/* ====================== */}
         {/* أحدث الحركات */}
-        {/* ====================== */}
-
         <section className="mt-6">
-
           <div className="flex items-center justify-between mb-3">
-
             <h2 className="text-[16px] font-black text-white">
               أحدث الحركات
             </h2>
@@ -581,18 +523,13 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={() =>
-                navigate(
-                  '/transactions'
-                )
+                navigate('/transactions')
               }
               className="flex items-center gap-1 text-[11px] font-bold text-amber-400"
             >
               عرض الكل
-
               <ChevronLeft className="w-4 h-4" />
-
             </button>
-
           </div>
 
           {loading ? (
@@ -605,16 +542,13 @@ export function DashboardPage() {
                   '1px solid rgba(255,255,255,0.06)',
               }}
             >
-
               <div className="w-9 h-9 mx-auto rounded-full border-2 border-white/10 border-t-amber-400 animate-spin" />
 
               <p className="text-[11px] text-slate-500 mt-3">
                 جاري التحميل...
               </p>
-
             </div>
-          ) : recentTxs.length ===
-            0 ? (
+          ) : recentTxs.length === 0 ? (
             <div
               className="rounded-[24px] p-7 text-center"
               style={{
@@ -624,11 +558,8 @@ export function DashboardPage() {
                   '1px solid rgba(255,255,255,0.06)',
               }}
             >
-
               <div className="w-14 h-14 rounded-[18px] bg-amber-500/10 flex items-center justify-center mx-auto">
-
                 <Receipt className="w-7 h-7 text-amber-400" />
-
               </div>
 
               <p className="text-sm font-bold text-white mt-4">
@@ -646,17 +577,12 @@ export function DashboardPage() {
                 }
                 className="mt-4 px-5 py-2.5 rounded-xl font-bold text-[12px] text-slate-950 bg-gradient-to-br from-amber-400 to-orange-500 inline-flex items-center gap-2"
               >
-
                 <Plus className="w-4 h-4" />
-
                 إضافة حركة
-
               </button>
-
             </div>
           ) : (
             <div className="space-y-2.5">
-
               {recentTxs.map(
                 (tx, i) => (
                   <TransactionItem
@@ -666,14 +592,11 @@ export function DashboardPage() {
                   />
                 )
               )}
-
             </div>
           )}
-
         </section>
 
         <div className="h-4" />
-
       </div>
     </AppLayout>
   );
@@ -706,16 +629,12 @@ function MoneyCard({
       style={{
         background:
           'linear-gradient(145deg, rgba(13,27,47,0.94), rgba(7,17,31,0.98))',
-
         border: `1px solid ${border}`,
-
         boxShadow:
           '0 10px 25px rgba(0,0,0,0.18)',
       }}
     >
-
       <div className="flex items-start justify-between">
-
         <div>
           <p className="text-[10px] text-slate-400">
             {label}
@@ -736,7 +655,6 @@ function MoneyCard({
             strokeWidth={2.1}
           />
         </div>
-
       </div>
 
       <p
@@ -747,7 +665,6 @@ function MoneyCard({
       >
         {value}
       </p>
-
     </button>
   );
-}
+              }
