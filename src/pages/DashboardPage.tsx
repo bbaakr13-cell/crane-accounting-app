@@ -15,20 +15,24 @@ import {
   Settings,
   Calculator,
   ShieldCheck,
+  Image as ImageIcon,
+  ChevronLeft,
 } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 
 import { AppLayout } from '@/components/layout/AppLayout';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { QuickAction } from '@/components/dashboard/QuickAction';
+
 import {
   TransactionItem,
   type Transaction,
 } from '@/components/dashboard/TransactionItem';
 
-import { Card } from '@/components/ui/Card';
 import { formatSAR } from '@/lib/format';
 
 import {
@@ -37,260 +41,713 @@ import {
   type DashboardTotals,
 } from '@/lib/transactions';
 
+const DASHBOARD_IMAGE_KEY =
+  'baakr_pro_dashboard_image';
+
+type ActionTone =
+  | 'green'
+  | 'red'
+  | 'blue'
+  | 'gold'
+  | 'orange'
+  | 'purple';
+
+type ActionItem = {
+  label: string;
+  icon: any;
+  path: string;
+  tone: ActionTone;
+};
+
+const tones: Record<
+  ActionTone,
+  {
+    background: string;
+    color: string;
+  }
+> = {
+  green: {
+    background: 'rgba(34,197,94,0.11)',
+    color: '#4ade80',
+  },
+
+  red: {
+    background: 'rgba(239,68,68,0.11)',
+    color: '#fb7185',
+  },
+
+  blue: {
+    background: 'rgba(59,130,246,0.12)',
+    color: '#60a5fa',
+  },
+
+  gold: {
+    background: 'rgba(245,158,11,0.12)',
+    color: '#fbbf24',
+  },
+
+  orange: {
+    background: 'rgba(249,115,22,0.12)',
+    color: '#fb923c',
+  },
+
+  purple: {
+    background: 'rgba(168,85,247,0.12)',
+    color: '#c084fc',
+  },
+};
+
 export function DashboardPage() {
   const navigate = useNavigate();
 
-  const [totals, setTotals] = useState<DashboardTotals>({
-    totalIncome: 0,
-    totalExpenses: 0,
-    netProfit: 0,
-    receivables: 0,
-  });
+  const [totals, setTotals] =
+    useState<DashboardTotals>({
+      totalIncome: 0,
+      totalExpenses: 0,
+      netProfit: 0,
+      receivables: 0,
+    });
 
-  const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recentTxs, setRecentTxs] =
+    useState<Transaction[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [heroImage, setHeroImage] =
+    useState('');
 
   const load = useCallback(async () => {
     try {
-      const [t, txs] = await Promise.all([
-        fetchDashboardTotals(),
-        fetchAllTransactions(),
-      ]);
+      const [t, txs] =
+        await Promise.all([
+          fetchDashboardTotals(),
+          fetchAllTransactions(),
+        ]);
 
       setTotals(t);
-      setRecentTxs(txs.slice(0, 5));
-    } catch {
-      // تجاهل الخطأ
-    }
 
-    setLoading(false);
+      setRecentTxs(
+        txs.slice(0, 5)
+      );
+    } catch (error) {
+      console.error(
+        'Dashboard load error:',
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     load();
+
+    const savedImage =
+      localStorage.getItem(
+        DASHBOARD_IMAGE_KEY
+      ) || '';
+
+    setHeroImage(savedImage);
   }, [load]);
+
+  const actions: ActionItem[] = [
+    {
+      label: 'إضافة دخل',
+      icon: ArrowDownLeft,
+      path: '/add',
+      tone: 'green',
+    },
+
+    {
+      label: 'إضافة مصروف',
+      icon: ArrowUpLeft,
+      path: '/add',
+      tone: 'red',
+    },
+
+    {
+      label: 'العملاء',
+      icon: Users,
+      path: '/customers',
+      tone: 'blue',
+    },
+
+    {
+      label: 'المعدات',
+      icon: Truck,
+      path: '/equipment',
+      tone: 'gold',
+    },
+
+    {
+      label: 'الحساب الشهري',
+      icon: CalendarClock,
+      path: '/monthly',
+      tone: 'orange',
+    },
+
+    {
+      label: 'التأجير الشهري',
+      icon: CalendarClock,
+      path: '/monthly-rental',
+      tone: 'purple',
+    },
+
+    {
+      label: 'السواقين والمشغلين',
+      icon: Users,
+      path: '/drivers',
+      tone: 'gold',
+    },
+
+    {
+      label: 'التقارير',
+      icon: FileBarChart,
+      path: '/reports',
+      tone: 'blue',
+    },
+
+    {
+      label: 'الفواتير',
+      icon: FileText,
+      path: '/invoices',
+      tone: 'purple',
+    },
+
+    {
+      label: 'عرض سعر',
+      icon: FileText,
+      path: '/quotation',
+      tone: 'green',
+    },
+
+    {
+      label: 'حساب اليوم',
+      icon: Calculator,
+      path: '/daily-calculator',
+      tone: 'gold',
+    },
+
+    {
+      label: 'الإعدادات',
+      icon: Settings,
+      path: '/settings',
+      tone: 'red',
+    },
+
+    {
+      label: 'النسخ الاحتياطي',
+      icon: ShieldCheck,
+      path: '/backup',
+      tone: 'blue',
+    },
+  ];
 
   return (
     <AppLayout>
-      {/* الملخص المالي */}
+      <div
+        dir="rtl"
+        className="w-full"
+      >
 
-      <section className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="إجمالي الدخل"
-          amount={formatSAR(totals.totalIncome)}
-          icon={TrendingUp}
-          tone="income"
-          delay={0}
-        />
+        {/* ====================== */}
+        {/* الصورة الرئيسية */}
+        {/* ====================== */}
 
-        <StatCard
-          label="إجمالي المصروفات"
-          amount={formatSAR(totals.totalExpenses)}
-          icon={TrendingDown}
-          tone="expense"
-          delay={60}
-        />
+        <section className="mb-5">
 
-        <StatCard
-          label="صافي الربح"
-          amount={formatSAR(totals.netProfit)}
-          icon={Wallet}
-          tone="profit"
-          delay={120}
-        />
+          <div
+            className="relative overflow-hidden rounded-[25px]"
+            style={{
+              height: 185,
+              border:
+                '1px solid rgba(255,255,255,0.09)',
+              boxShadow:
+                '0 14px 35px rgba(0,0,0,0.28)',
+              background:
+                'linear-gradient(135deg,#15243b,#081321)',
+            }}
+          >
 
-        <StatCard
-          label="المستحقات"
-          amount={formatSAR(totals.receivables)}
-          icon={Clock}
-          tone="receivable"
-          delay={180}
-        />
-      </section>
+            {heroImage ? (
+              <img
+                src={heroImage}
+                alt="صورة واجهة BAAKR PRO"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="absolute inset-0 flex items-center justify-end px-5"
+                style={{
+                  background:
+                    'radial-gradient(circle at left, rgba(245,158,11,0.18), transparent 45%), linear-gradient(135deg,#17263b,#07111e)',
+                }}
+              >
+                <Truck
+                  className="w-24 h-24 text-amber-400/20"
+                  strokeWidth={1}
+                />
+              </div>
+            )}
 
-      {/* الاختصارات السريعة */}
+            {/* تغطية احترافية */}
 
-      <section className="mt-7">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-white font-display">
-            الاختصارات السريعة
-          </h2>
-        </div>
-
-        <Card className="p-4">
-          <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-
-            <QuickAction
-              label="إضافة دخل"
-              icon={ArrowDownLeft}
-              to="/add"
-              tone="income"
-              delay={0}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(90deg, rgba(3,8,17,0.22) 0%, rgba(3,8,17,0.50) 48%, rgba(3,8,17,0.94) 100%)',
+              }}
             />
 
-            <QuickAction
-              label="إضافة مصروف"
-              icon={ArrowUpLeft}
-              to="/add"
-              tone="expense"
-              delay={50}
+            <div className="absolute inset-0 p-5 flex flex-col justify-between">
+
+              <div>
+
+                <p className="text-[10px] font-bold text-amber-400 tracking-[0.16em]">
+                  BAAKR PRO
+                </p>
+
+                <h2 className="text-[21px] font-black text-white mt-1">
+                  إدارة حسابات الكرينات
+                </h2>
+
+                <p className="text-[11px] text-slate-300 mt-1">
+                  دقة • سرعة • احترافية
+                </p>
+
+              </div>
+
+              <div className="flex items-end justify-between">
+
+                <div className="flex gap-2">
+
+                  <div className="px-2.5 py-1.5 rounded-xl bg-black/35 border border-white/10 text-[9px] text-slate-200">
+                    🔒 آمن
+                  </div>
+
+                  <div className="px-2.5 py-1.5 rounded-xl bg-black/35 border border-white/10 text-[9px] text-slate-200">
+                    ⚡ سريع
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate('/settings')
+                  }
+                  className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center active:scale-95"
+                  aria-label="تغيير صورة الواجهة"
+                >
+                  <ImageIcon className="w-5 h-5 text-amber-400" />
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+
+        </section>
+
+        {/* ====================== */}
+        {/* الملخص المالي */}
+        {/* ====================== */}
+
+        <section>
+
+          <div className="flex items-center justify-between mb-3">
+
+            <h2 className="text-[16px] font-black text-white">
+              نظرة عامة
+            </h2>
+
+            <span className="text-[10px] text-slate-500">
+              الحسابات الحالية
+            </span>
+
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+
+            <MoneyCard
+              label="إجمالي الدخل"
+              value={formatSAR(
+                totals.totalIncome
+              )}
+              icon={TrendingUp}
+              color="#4ade80"
+              bg="rgba(34,197,94,0.10)"
+              border="rgba(34,197,94,0.17)"
+              onClick={() =>
+                navigate('/transactions')
+              }
             />
 
-            <QuickAction
-              label="العملاء"
-              icon={Users}
-              to="/customers"
-              tone="profit"
-              delay={100}
+            <MoneyCard
+              label="إجمالي المصروفات"
+              value={formatSAR(
+                totals.totalExpenses
+              )}
+              icon={TrendingDown}
+              color="#fb7185"
+              bg="rgba(239,68,68,0.10)"
+              border="rgba(239,68,68,0.17)"
+              onClick={() =>
+                navigate('/transactions')
+              }
             />
 
-            <QuickAction
-              label="المعدات"
-              icon={Truck}
-              to="/equipment"
-              tone="gold"
-              delay={150}
+            <MoneyCard
+              label="صافي الربح"
+              value={formatSAR(
+                totals.netProfit
+              )}
+              icon={Wallet}
+              color="#60a5fa"
+              bg="rgba(59,130,246,0.10)"
+              border="rgba(59,130,246,0.17)"
+              onClick={() =>
+                navigate('/reports')
+              }
             />
 
-            <QuickAction
-              label="الحساب الشهري"
-              icon={CalendarClock}
-              to="/monthly"
-              tone="receivable"
-              delay={200}
-            />
-
-            <QuickAction
-              label="التأجير الشهري"
-              icon={CalendarClock}
-              to="/monthly-rental"
-              tone="receivable"
-              delay={225}
-            />
-
-            <QuickAction
-              label="السواقين والمشغلين"
-              icon={Users}
-              to="/drivers"
-              tone="gold"
-              delay={240}
-            />
-
-            <QuickAction
-              label="التقارير"
-              icon={FileBarChart}
-              to="/reports"
-              tone="profit"
-              delay={250}
-            />
-
-            <QuickAction
-              label="الفواتير"
-              icon={FileText}
-              to="/invoices"
-              tone="gold"
-              delay={300}
-            />
-
-            <QuickAction
-              label="عرض سعر"
-              icon={FileText}
-              to="/quotation"
-              tone="profit"
-              delay={325}
-            />
-
-            <QuickAction
-              label="حساب اليوم"
-              icon={Calculator}
-              to="/daily-calculator"
-              tone="gold"
-              delay={350}
-            />
-
-            <QuickAction
-              label="الإعدادات"
-              icon={Settings}
-              to="/settings"
-              tone="expense"
-              delay={400}
-            />
-
-            {/* النسخ الاحتياطي */}
-
-            <QuickAction
-              label="النسخ الاحتياطي"
-              icon={ShieldCheck}
-              to="/backup"
-              tone="profit"
-              delay={450}
+            <MoneyCard
+              label="المستحقات"
+              value={formatSAR(
+                totals.receivables
+              )}
+              icon={Clock}
+              color="#fb923c"
+              bg="rgba(249,115,22,0.10)"
+              border="rgba(249,115,22,0.17)"
+              onClick={() =>
+                navigate('/customers')
+              }
             />
 
           </div>
-        </Card>
-      </section>
 
-      {/* أحدث الحركات */}
+        </section>
 
-      <section className="mt-7">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-white font-display">
-            أحدث الحركات
-          </h2>
+        {/* ====================== */}
+        {/* إضافة سريعة */}
+        {/* ====================== */}
 
-          <button
-            onClick={() => navigate('/transactions')}
-            className="text-xs text-gold-400 font-medium active:scale-95 transition-transform"
-          >
-            عرض الكل
-          </button>
-        </div>
+        <section className="mt-5">
 
-        {loading ? (
-          <Card className="p-8 text-center">
-            <p className="text-sm text-slate-400">
-              جاري التحميل...
-            </p>
-          </Card>
-        ) : recentTxs.length === 0 ? (
-          <Card className="p-8 flex flex-col items-center justify-center text-center">
-
-            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-              <Receipt
-                className="w-8 h-8 text-slate-600"
-                strokeWidth={1.5}
-              />
-            </div>
-
-            <p className="text-sm text-slate-400 mb-4">
-              لا توجد حركات حتى الآن
-            </p>
+          <div className="grid grid-cols-2 gap-3">
 
             <button
-              onClick={() => navigate('/add')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 text-ink-950 font-semibold text-sm shadow-glow-gold active:scale-95 transition-transform"
+              type="button"
+              onClick={() =>
+                navigate('/add')
+              }
+              className="h-[57px] rounded-[18px] flex items-center justify-center gap-2 font-bold text-[13px] active:scale-[0.97] transition-transform"
+              style={{
+                background:
+                  'linear-gradient(135deg,#15803d,#22c55e)',
+                boxShadow:
+                  '0 8px 20px rgba(34,197,94,0.14)',
+              }}
             >
-              <Plus
-                className="w-4 h-4"
-                strokeWidth={2.5}
-              />
-
-              إضافة أول حركة
+              <ArrowDownLeft className="w-5 h-5" />
+              إضافة دخل
             </button>
 
-          </Card>
-        ) : (
-          <div className="space-y-2.5">
-            {recentTxs.map((tx, i) => (
-              <TransactionItem
-                key={tx.data.id}
-                tx={tx}
-                delay={i * 50}
-              />
-            ))}
+            <button
+              type="button"
+              onClick={() =>
+                navigate('/add')
+              }
+              className="h-[57px] rounded-[18px] flex items-center justify-center gap-2 font-bold text-[13px] active:scale-[0.97] transition-transform"
+              style={{
+                background:
+                  'linear-gradient(135deg,#be123c,#ef4444)',
+                boxShadow:
+                  '0 8px 20px rgba(239,68,68,0.14)',
+              }}
+            >
+              <ArrowUpLeft className="w-5 h-5" />
+              إضافة مصروف
+            </button>
+
           </div>
-        )}
-      </section>
+
+        </section>
+
+        {/* ====================== */}
+        {/* الاختصارات */}
+        {/* ====================== */}
+
+        <section className="mt-6">
+
+          <div className="flex items-center justify-between mb-3">
+
+            <h2 className="text-[16px] font-black text-white">
+              الاختصارات السريعة
+            </h2>
+
+            <span className="text-amber-400">
+              ⚡
+            </span>
+
+          </div>
+
+          <div
+            className="rounded-[25px] p-3"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(17,31,53,0.75), rgba(8,19,34,0.92))',
+
+              border:
+                '1px solid rgba(255,255,255,0.07)',
+            }}
+          >
+
+            <div className="grid grid-cols-3 gap-2">
+
+              {actions
+                .filter(
+                  (item) =>
+                    item.path !== '/add'
+                )
+                .map((item) => {
+
+                  const Icon = item.icon;
+                  const tone =
+                    tones[item.tone];
+
+                  return (
+                    <button
+                      key={`${item.path}-${item.label}`}
+                      type="button"
+                      onClick={() =>
+                        navigate(item.path)
+                      }
+                      className="min-h-[96px] rounded-[18px] flex flex-col items-center justify-center gap-2 px-1 active:scale-[0.96] transition-transform"
+                      style={{
+                        background:
+                          'rgba(255,255,255,0.025)',
+                        border:
+                          '1px solid rgba(255,255,255,0.045)',
+                      }}
+                    >
+
+                      <div
+                        className="w-11 h-11 rounded-[15px] flex items-center justify-center"
+                        style={{
+                          background:
+                            tone.background,
+                        }}
+                      >
+                        <Icon
+                          className="w-5 h-5"
+                          style={{
+                            color:
+                              tone.color,
+                          }}
+                          strokeWidth={2}
+                        />
+                      </div>
+
+                      <span className="text-[10px] leading-[15px] font-bold text-slate-200 text-center">
+                        {item.label}
+                      </span>
+
+                    </button>
+                  );
+                })}
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ====================== */}
+        {/* أحدث الحركات */}
+        {/* ====================== */}
+
+        <section className="mt-6">
+
+          <div className="flex items-center justify-between mb-3">
+
+            <h2 className="text-[16px] font-black text-white">
+              أحدث الحركات
+            </h2>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  '/transactions'
+                )
+              }
+              className="flex items-center gap-1 text-[11px] font-bold text-amber-400"
+            >
+              عرض الكل
+
+              <ChevronLeft className="w-4 h-4" />
+
+            </button>
+
+          </div>
+
+          {loading ? (
+            <div
+              className="rounded-[22px] p-7 text-center"
+              style={{
+                background:
+                  'rgba(255,255,255,0.025)',
+                border:
+                  '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
+
+              <div className="w-9 h-9 mx-auto rounded-full border-2 border-white/10 border-t-amber-400 animate-spin" />
+
+              <p className="text-[11px] text-slate-500 mt-3">
+                جاري التحميل...
+              </p>
+
+            </div>
+          ) : recentTxs.length ===
+            0 ? (
+            <div
+              className="rounded-[24px] p-7 text-center"
+              style={{
+                background:
+                  'rgba(255,255,255,0.025)',
+                border:
+                  '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
+
+              <div className="w-14 h-14 rounded-[18px] bg-amber-500/10 flex items-center justify-center mx-auto">
+
+                <Receipt className="w-7 h-7 text-amber-400" />
+
+              </div>
+
+              <p className="text-sm font-bold text-white mt-4">
+                لا توجد حركات حتى الآن
+              </p>
+
+              <p className="text-[11px] text-slate-500 mt-1">
+                ابدأ بإضافة أول حركة مالية
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate('/add')
+                }
+                className="mt-4 px-5 py-2.5 rounded-xl font-bold text-[12px] text-slate-950 bg-gradient-to-br from-amber-400 to-orange-500 inline-flex items-center gap-2"
+              >
+
+                <Plus className="w-4 h-4" />
+
+                إضافة حركة
+
+              </button>
+
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+
+              {recentTxs.map(
+                (tx, i) => (
+                  <TransactionItem
+                    key={tx.data.id}
+                    tx={tx}
+                    delay={i * 50}
+                  />
+                )
+              )}
+
+            </div>
+          )}
+
+        </section>
+
+        <div className="h-4" />
+
+      </div>
     </AppLayout>
   );
-      }
+}
+
+type MoneyCardProps = {
+  label: string;
+  value: string;
+  icon: any;
+  color: string;
+  bg: string;
+  border: string;
+  onClick: () => void;
+};
+
+function MoneyCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+  bg,
+  border,
+  onClick,
+}: MoneyCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-[116px] rounded-[22px] p-3.5 text-right active:scale-[0.98] transition-transform"
+      style={{
+        background:
+          'linear-gradient(145deg, rgba(13,27,47,0.94), rgba(7,17,31,0.98))',
+
+        border: `1px solid ${border}`,
+
+        boxShadow:
+          '0 10px 25px rgba(0,0,0,0.18)',
+      }}
+    >
+
+      <div className="flex items-start justify-between">
+
+        <div>
+          <p className="text-[10px] text-slate-400">
+            {label}
+          </p>
+        </div>
+
+        <div
+          className="w-10 h-10 rounded-[14px] flex items-center justify-center"
+          style={{
+            background: bg,
+          }}
+        >
+          <Icon
+            className="w-5 h-5"
+            style={{
+              color,
+            }}
+            strokeWidth={2.1}
+          />
+        </div>
+
+      </div>
+
+      <p
+        className="text-[15px] font-black mt-4 leading-tight"
+        style={{
+          color,
+        }}
+      >
+        {value}
+      </p>
+
+    </button>
+  );
+}
