@@ -152,6 +152,7 @@ useEffect(() => {
         <Route path="/daily-calculator" element={<DailyCalculatorPage />} />
         <Route path="/monthly-rental" element={<MonthlyRentalPage />} />
         <Route path="/drivers" element={<DriversPage />} />
+        <Route path="/backup" element={<BackupPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/quotation" element={<QuotationPage />} />
       </Routes>
