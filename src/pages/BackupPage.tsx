@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Archive,
   Download,
@@ -9,13 +9,18 @@ import {
   Database,
   CalendarDays,
   Clock,
+  RefreshCw,
 } from 'lucide-react';
 
+import { Share } from '@capacitor/share';
+
 import {
-  BackupFile,
+  type BackupFile,
+  type SavedBackup,
   createManualBackup,
   deleteBackup,
   getSavedBackups,
+  getBackupFileUri,
   parseBackupFile,
   restoreBackup,
   runAutomaticBackup,
@@ -36,114 +41,151 @@ function getTypeName(type: BackupFile['type']) {
   switch (type) {
     case 'daily':
       return 'نسخة يومية';
+
     case 'weekly':
       return 'نسخة أسبوعية';
+
     case 'manual':
       return 'نسخة يدوية';
+
     case 'before_restore':
       return 'نسخة أمان قبل الاستعادة';
+
     default:
       return 'نسخة احتياطية';
   }
 }
 
-function downloadBackup(backup: BackupFile) {
-  const content = JSON.stringify(backup, null, 2);
-
-  const blob = new Blob([content], {
-    type: 'application/json;charset=utf-8',
-  });
-
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement('a');
-
-  const safeDate = backup.createdAt
-    .replace(/:/g, '-')
-    .replace(/\./g, '-');
-
-  link.href = url;
-  link.download = `BAAKR-PRO-BACKUP-${safeDate}.json`;
-
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  URL.revokeObjectURL(url);
-}
-
 export function BackupPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [backups, setBackups] = useState<SavedBackup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
   const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
-  const backups = useMemo(() => {
-    return getSavedBackups();
-  }, [refreshKey]);
-
-  const dailyCount = backups.filter(
-    (item) => item.backup.type === 'daily'
-  ).length;
-
-  const weeklyCount = backups.filter(
-    (item) => item.backup.type === 'weekly'
-  ).length;
-
-  const lastBackup = backups[0]?.backup;
-
-  function refresh() {
-    setRefreshKey((value) => value + 1);
+  async function loadBackups() {
+    try {
+      const list = await getSavedBackups();
+      setBackups(list);
+    } catch (error) {
+      console.error(error);
+      showMessage(
+        'تعذر قراءة النسخ الاحتياطية',
+        true
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function showMessage(text: string) {
+  useEffect(() => {
+    loadBackups();
+  }, []);
+
+  function showMessage(
+    text: string,
+    error = false
+  ) {
     setMessage(text);
+    setIsError(error);
 
     window.setTimeout(() => {
       setMessage('');
-    }, 3000);
+    }, 3500);
   }
 
-  function handleManualBackup() {
-    try {
-      const backup = createManualBackup();
+  const dailyCount = backups.filter(
+    (item) =>
+      item.backup.type === 'daily'
+  ).length;
 
-      refresh();
+  const weeklyCount = backups.filter(
+    (item) =>
+      item.backup.type === 'weekly'
+  ).length;
+
+  const lastBackup =
+    backups.length > 0
+      ? backups[0].backup
+      : null;
+
+  async function handleManualBackup() {
+    if (working) return;
+
+    setWorking(true);
+
+    try {
+      const result =
+        await createManualBackup();
+
+      await loadBackups();
 
       showMessage(
         `تم إنشاء النسخة الاحتياطية بنجاح - ${formatDate(
-          backup.createdAt
+          result.backup.createdAt
         )}`
       );
     } catch (error) {
       console.error(error);
-      showMessage('تعذر إنشاء النسخة الاحتياطية');
+
+      showMessage(
+        'تعذر إنشاء النسخة الاحتياطية',
+        true
+      );
+    } finally {
+      setWorking(false);
     }
   }
 
-  function handleAutomaticBackup() {
-    try {
-      runAutomaticBackup();
-      refresh();
+  async function handleAutomaticBackup() {
+    if (working) return;
 
-      showMessage('تم تحديث النسخ التلقائية بنجاح');
+    setWorking(true);
+
+    try {
+      const success =
+        await runAutomaticBackup();
+
+      await loadBackups();
+
+      if (success) {
+        showMessage(
+          'تم تحديث النسخ التلقائية بنجاح'
+        );
+      } else {
+        showMessage(
+          'تعذر تحديث النسخ التلقائية',
+          true
+        );
+      }
     } catch (error) {
       console.error(error);
-      showMessage('حدث خطأ أثناء النسخ التلقائي');
+
+      showMessage(
+        'تعذر تحديث النسخ التلقائية',
+        true
+      );
+    } finally {
+      setWorking(false);
     }
   }
 
-  function handleRestore(
+  async function handleRestore(
     backup: BackupFile
   ) {
-    const approved = window.confirm(
-      'هل تريد استعادة هذه النسخة؟\n\n' +
-        'سيتم استبدال بيانات التطبيق الحالية بالبيانات الموجودة في النسخة.\n\n' +
-        'سيقوم BAAKR PRO بإنشاء نسخة أمان من البيانات الحالية قبل الاستعادة.'
-    );
+    const approved =
+      window.confirm(
+        'هل تريد استعادة هذه النسخة؟\n\n' +
+          'سيتم استبدال بيانات التطبيق الحالية بالبيانات الموجودة في النسخة.\n\n' +
+          'سيتم إنشاء نسخة أمان من بياناتك الحالية قبل الاستعادة.'
+      );
 
     if (!approved) return;
 
+    setWorking(true);
+
     try {
-      restoreBackup(backup);
+      await restoreBackup(backup);
 
       window.alert(
         'تمت استعادة النسخة الاحتياطية بنجاح.\nسيتم إعادة تحميل التطبيق الآن.'
@@ -156,56 +198,123 @@ export function BackupPage() {
       window.alert(
         'تعذر استعادة النسخة الاحتياطية.'
       );
+    } finally {
+      setWorking(false);
     }
   }
 
-  function handleDelete(
-    key: string,
+  async function handleDelete(
+    fileName: string,
     backup: BackupFile
   ) {
-    const approved = window.confirm(
-      `هل تريد حذف ${getTypeName(
-        backup.type
-      )}؟`
-    );
+    const approved =
+      window.confirm(
+        `هل تريد حذف ${getTypeName(
+          backup.type
+        )}؟`
+      );
 
     if (!approved) return;
 
-    deleteBackup(key);
-    refresh();
+    setWorking(true);
 
-    showMessage('تم حذف النسخة');
+    try {
+      await deleteBackup(fileName);
+
+      await loadBackups();
+
+      showMessage(
+        'تم حذف النسخة الاحتياطية'
+      );
+    } catch (error) {
+      console.error(error);
+
+      showMessage(
+        'تعذر حذف النسخة',
+        true
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleShare(
+    fileName: string,
+    backup: BackupFile
+  ) {
+    if (working) return;
+
+    setWorking(true);
+
+    try {
+      const uri =
+        await getBackupFileUri(
+          fileName
+        );
+
+      await Share.share({
+        title: 'نسخة BAAKR PRO الاحتياطية',
+        text:
+          `نسخة احتياطية لتطبيق BAAKR PRO\n` +
+          `التاريخ: ${formatDate(
+            backup.createdAt
+          )}`,
+        url: uri,
+        dialogTitle:
+          'حفظ أو مشاركة النسخة الاحتياطية',
+      });
+    } catch (error) {
+      console.error(error);
+
+      showMessage(
+        'تعذر تصدير النسخة الاحتياطية',
+        true
+      );
+    } finally {
+      setWorking(false);
+    }
   }
 
   async function handleImport(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    const file = event.target.files?.[0];
+    const file =
+      event.target.files?.[0];
 
     event.target.value = '';
 
     if (!file) return;
 
+    setWorking(true);
+
     try {
-      const text = await file.text();
+      const text =
+        await file.text();
 
-      const backup = parseBackupFile(text);
+      const backup =
+        parseBackupFile(text);
 
-      const approved = window.confirm(
-        'تم العثور على نسخة احتياطية صالحة.\n\n' +
-          `تاريخ النسخة: ${formatDate(
-            backup.createdAt
-          )}\n\n` +
-          'هل تريد استعادتها الآن؟\n' +
-          'سيتم إنشاء نسخة أمان من البيانات الحالية أولًا.'
+      const approved =
+        window.confirm(
+          'تم العثور على نسخة احتياطية صالحة.\n\n' +
+            `تاريخ النسخة: ${formatDate(
+              backup.createdAt
+            )}\n\n` +
+            'هل تريد استعادتها الآن؟\n' +
+            'سيتم إنشاء نسخة أمان من بياناتك الحالية أولًا.'
+        );
+
+      if (!approved) {
+        setWorking(false);
+        return;
+      }
+
+      await restoreBackup(
+        backup
       );
 
-      if (!approved) return;
-
-      restoreBackup(backup);
-
       window.alert(
-        'تم استيراد واستعادة النسخة بنجاح.\nسيتم إعادة تحميل التطبيق.'
+        'تم استيراد واستعادة النسخة بنجاح.\nسيتم إعادة تحميل التطبيق الآن.'
       );
 
       window.location.reload();
@@ -215,6 +324,8 @@ export function BackupPage() {
       window.alert(
         'الملف المحدد ليس نسخة احتياطية صالحة لـ BAAKR PRO.'
       );
+    } finally {
+      setWorking(false);
     }
   }
 
@@ -283,14 +394,14 @@ export function BackupPage() {
           </p>
         </div>
 
-        {/* حالة الحماية */}
+        {/* حالة النسخ */}
 
         <div
           style={{
             padding: 18,
             borderRadius: 20,
             background:
-              'rgba(15, 30, 52, 0.96)',
+              'rgba(15,30,52,0.96)',
             border:
               '1px solid rgba(255,255,255,0.08)',
             marginBottom: 16,
@@ -355,7 +466,8 @@ export function BackupPage() {
               <CalendarDays
                 size={20}
                 style={{
-                  margin: '0 auto 5px',
+                  margin:
+                    '0 auto 5px',
                 }}
               />
 
@@ -386,7 +498,8 @@ export function BackupPage() {
               <Clock
                 size={20}
                 style={{
-                  margin: '0 auto 5px',
+                  margin:
+                    '0 auto 5px',
                 }}
               />
 
@@ -407,7 +520,7 @@ export function BackupPage() {
           </div>
         </div>
 
-        {/* العمليات */}
+        {/* الأزرار */}
 
         <div
           style={{
@@ -418,17 +531,36 @@ export function BackupPage() {
         >
           <button
             type="button"
-            onClick={handleManualBackup}
-            style={primaryButton}
+            onClick={
+              handleManualBackup
+            }
+            disabled={working}
+            style={{
+              ...primaryButton,
+              opacity:
+                working ? 0.6 : 1,
+            }}
           >
-            <Archive size={22} />
+            {working ? (
+              <RefreshCw size={22} />
+            ) : (
+              <Archive size={22} />
+            )}
+
             إنشاء نسخة احتياطية الآن
           </button>
 
           <button
             type="button"
-            onClick={handleAutomaticBackup}
-            style={normalButton}
+            onClick={
+              handleAutomaticBackup
+            }
+            disabled={working}
+            style={{
+              ...normalButton,
+              opacity:
+                working ? 0.6 : 1,
+            }}
           >
             <ShieldCheck size={22} />
             تحديث النسخ التلقائية
@@ -437,16 +569,25 @@ export function BackupPage() {
           <label
             style={{
               ...normalButton,
-              cursor: 'pointer',
+              cursor:
+                working
+                  ? 'default'
+                  : 'pointer',
+              opacity:
+                working ? 0.6 : 1,
             }}
           >
             <Upload size={22} />
+
             استيراد واستعادة نسخة من ملف
 
             <input
               type="file"
               accept=".json,application/json"
-              onChange={handleImport}
+              disabled={working}
+              onChange={
+                handleImport
+              }
               style={{
                 display: 'none',
               }}
@@ -464,18 +605,25 @@ export function BackupPage() {
               marginBottom: 16,
               textAlign: 'center',
               fontWeight: 800,
-              background:
-                'rgba(34,197,94,0.12)',
-              border:
-                '1px solid rgba(34,197,94,0.28)',
-              color: '#86efac',
+
+              background: isError
+                ? 'rgba(239,68,68,0.12)'
+                : 'rgba(34,197,94,0.12)',
+
+              border: isError
+                ? '1px solid rgba(239,68,68,0.28)'
+                : '1px solid rgba(34,197,94,0.28)',
+
+              color: isError
+                ? '#fca5a5'
+                : '#86efac',
             }}
           >
             {message}
           </div>
         )}
 
-        {/* قائمة النسخ */}
+        {/* النسخ المحفوظة */}
 
         <div
           style={{
@@ -487,19 +635,12 @@ export function BackupPage() {
           النسخ المحفوظة
         </div>
 
-        {backups.length === 0 ? (
-          <div
-            style={{
-              padding: 30,
-              textAlign: 'center',
-              borderRadius: 18,
-              color: '#94a3b8',
-              background:
-                'rgba(255,255,255,0.035)',
-              border:
-                '1px solid rgba(255,255,255,0.07)',
-            }}
-          >
+        {loading ? (
+          <div style={emptyBox}>
+            جاري قراءة النسخ...
+          </div>
+        ) : backups.length === 0 ? (
+          <div style={emptyBox}>
             لا توجد نسخ احتياطية محفوظة
           </div>
         ) : (
@@ -510,9 +651,12 @@ export function BackupPage() {
             }}
           >
             {backups.map(
-              ({ key, backup }) => (
+              ({
+                fileName,
+                backup,
+              }) => (
                 <div
-                  key={key}
+                  key={fileName}
                   style={{
                     padding: 15,
                     borderRadius: 18,
@@ -556,6 +700,7 @@ export function BackupPage() {
                   >
                     <button
                       type="button"
+                      disabled={working}
                       onClick={() =>
                         handleRestore(
                           backup
@@ -573,8 +718,10 @@ export function BackupPage() {
 
                     <button
                       type="button"
+                      disabled={working}
                       onClick={() =>
-                        downloadBackup(
+                        handleShare(
+                          fileName,
                           backup
                         )
                       }
@@ -590,9 +737,10 @@ export function BackupPage() {
 
                     <button
                       type="button"
+                      disabled={working}
                       onClick={() =>
                         handleDelete(
-                          key,
+                          fileName,
                           backup
                         )
                       }
@@ -628,9 +776,10 @@ export function BackupPage() {
             lineHeight: 1.9,
           }}
         >
-          🛡️ يحتفظ BAAKR PRO بآخر 7 نسخ
-          يومية و4 نسخ أسبوعية. قبل أي
-          عملية استعادة يتم إنشاء نسخة أمان
+          🛡️ يتم حفظ النسخ كملفات داخل
+          مساحة التطبيق. يحتفظ BAAKR PRO
+          بآخر 7 نسخ يومية و4 نسخ أسبوعية،
+          وقبل الاستعادة يتم إنشاء نسخة أمان
           من البيانات الحالية تلقائيًا.
         </div>
       </div>
@@ -688,4 +837,15 @@ const smallButton: React.CSSProperties = {
   justifyContent: 'center',
   gap: 4,
   cursor: 'pointer',
+};
+
+const emptyBox: React.CSSProperties = {
+  padding: 30,
+  textAlign: 'center',
+  borderRadius: 18,
+  color: '#94a3b8',
+  background:
+    'rgba(255,255,255,0.035)',
+  border:
+    '1px solid rgba(255,255,255,0.07)',
 };
