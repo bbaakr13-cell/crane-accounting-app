@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import {
   Routes,
   Route,
@@ -20,54 +21,94 @@ import { EquipmentDetailPage } from '@/pages/EquipmentDetailPage';
 import { MonthlyPage } from '@/pages/MonthlyPage';
 import { MonthlyDetailPage } from '@/pages/MonthlyDetailPage';
 import { ReportsPage } from '@/pages/ReportsPage';
+
 import { InvoicesPage } from '@/pages/InvoicesPage-2-final-polished-FINAL';
+
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
+
 import { DriversPage } from '@/pages/DriversPage-1';
+
 import { QuotationPage } from '@/pages/QuotationPage';
+
 import AboutPage from '@/pages/AboutPage';
+
 import { BackupPage } from '@/pages/BackupPage';
+
+/* =========================
+   BAAKR AI
+========================= */
+
+import { AIAssistantPage } from '@/pages/AIAssistantPage';
+
+/* =========================
+   APP LOCK
+========================= */
 
 import { AppLockScreen } from '@/components/AppLockScreen';
 
 import { runAutomaticBackup } from '@/lib/backup';
+
 import { isAppLockEnabled } from '@/lib/appLock';
 
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const showBackButton = location.pathname !== '/';
+  const showBackButton =
+    location.pathname !== '/';
 
-  const [showExitHint, setShowExitHint] = useState(false);
-  const [lastBackPress, setLastBackPress] = useState(0);
+  const [
+    showExitHint,
+    setShowExitHint,
+  ] = useState(false);
 
-  // حالة قفل التطبيق
-  const [locked, setLocked] = useState(() => {
-    return isAppLockEnabled();
-  });
+  const [
+    lastBackPress,
+    setLastBackPress,
+  ] = useState(0);
 
-  // النسخ الاحتياطي التلقائي
+  /* =========================
+     APP LOCK
+  ========================= */
+
+  const [locked, setLocked] =
+    useState(() => {
+      return isAppLockEnabled();
+    });
+
+  /* =========================
+     AUTO BACKUP
+  ========================= */
+
   useEffect(() => {
     runAutomaticBackup();
   }, []);
 
-  // إعادة قفل التطبيق عندما يذهب للخلفية
+  /* =========================
+     LOCK WHEN APP GOES
+     TO BACKGROUND
+  ========================= */
+
   useEffect(() => {
     let listener: {
       remove: () => Promise<void>;
     } | null = null;
 
     const setup = async () => {
-      listener = await CapacitorApp.addListener(
-        'appStateChange',
-        ({ isActive }) => {
-          if (!isActive && isAppLockEnabled()) {
-            setLocked(true);
+      listener =
+        await CapacitorApp.addListener(
+          'appStateChange',
+          ({ isActive }) => {
+            if (
+              !isActive &&
+              isAppLockEnabled()
+            ) {
+              setLocked(true);
+            }
           }
-        }
-      );
+        );
     };
 
     setup();
@@ -77,8 +118,14 @@ function App() {
     };
   }, []);
 
+  /* =========================
+     BACK BUTTON
+  ========================= */
+
   const handleBack = () => {
-    if (window.history.length > 1) {
+    if (
+      window.history.length > 1
+    ) {
       navigate(-1);
     } else {
       navigate('/');
@@ -87,60 +134,101 @@ function App() {
 
   useEffect(() => {
     let exitHintTimer:
-      | ReturnType<typeof setTimeout>
-      | undefined;
-
-    const setupBackButton = async () => {
-      const listener =
-        await CapacitorApp.addListener(
-          'backButton',
-          () => {
-            // إذا التطبيق مقفل لا نسمح بالرجوع للصفحات
-            if (locked) {
-              return;
-            }
-
-            if (location.pathname !== '/') {
-              navigate(-1);
-              return;
-            }
-
-            const now = Date.now();
-
-            if (now - lastBackPress < 2000) {
-              CapacitorApp.exitApp();
-              return;
-            }
-
-            setLastBackPress(now);
-            setShowExitHint(true);
-
-            if (exitHintTimer) {
-              clearTimeout(exitHintTimer);
-            }
-
-            exitHintTimer = setTimeout(() => {
-              setShowExitHint(false);
-            }, 1800);
-          }
-        );
-
-      return listener;
-    };
-
-    let activeListener:
-      | Awaited<
-          ReturnType<typeof setupBackButton>
+      | ReturnType<
+          typeof setTimeout
         >
       | undefined;
 
-    setupBackButton().then((listener) => {
-      activeListener = listener;
-    });
+    const setupBackButton =
+      async () => {
+        const listener =
+          await CapacitorApp.addListener(
+            'backButton',
+            () => {
+              /*
+               * إذا التطبيق مقفل
+               * لا نسمح بالرجوع
+               */
+              if (locked) {
+                return;
+              }
+
+              /*
+               * إذا لسنا في الرئيسية
+               * نرجع صفحة واحدة
+               */
+              if (
+                location.pathname !==
+                '/'
+              ) {
+                navigate(-1);
+                return;
+              }
+
+              /*
+               * في الرئيسية:
+               * ضغطتين للخروج
+               */
+              const now =
+                Date.now();
+
+              if (
+                now -
+                  lastBackPress <
+                2000
+              ) {
+                CapacitorApp.exitApp();
+                return;
+              }
+
+              setLastBackPress(
+                now
+              );
+
+              setShowExitHint(
+                true
+              );
+
+              if (
+                exitHintTimer
+              ) {
+                clearTimeout(
+                  exitHintTimer
+                );
+              }
+
+              exitHintTimer =
+                setTimeout(() => {
+                  setShowExitHint(
+                    false
+                  );
+                }, 1800);
+            }
+          );
+
+        return listener;
+      };
+
+    let activeListener:
+      | Awaited<
+          ReturnType<
+            typeof setupBackButton
+          >
+        >
+      | undefined;
+
+    setupBackButton().then(
+      (listener) => {
+        activeListener =
+          listener;
+      }
+    );
 
     return () => {
       if (exitHintTimer) {
-        clearTimeout(exitHintTimer);
+        clearTimeout(
+          exitHintTimer
+        );
       }
 
       activeListener?.remove();
@@ -152,7 +240,10 @@ function App() {
     locked,
   ]);
 
-  // إذا القفل مفعل، نظهر شاشة PIN فقط
+  /* =========================
+     LOCK SCREEN
+  ========================= */
+
   if (locked) {
     return (
       <AppLockScreen
@@ -165,6 +256,10 @@ function App() {
 
   return (
     <>
+      {/* =====================
+          GLOBAL BACK BUTTON
+      ===================== */}
+
       {showBackButton && (
         <button
           type="button"
@@ -172,52 +267,91 @@ function App() {
           aria-label="رجوع"
           style={{
             position: 'fixed',
+
             top:
               'calc(env(safe-area-inset-top, 0px) + 12px)',
+
             left: 14,
+
             zIndex: 9999,
+
             width: 44,
             height: 44,
+
             borderRadius: 14,
+
             border:
               '1px solid rgba(255,255,255,0.16)',
+
             background:
               'rgba(10, 25, 48, 0.94)',
+
             color: '#ffffff',
+
             fontSize: 24,
+
             fontWeight: 900,
+
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+
+            alignItems:
+              'center',
+
+            justifyContent:
+              'center',
+
             boxShadow:
               '0 8px 24px rgba(0,0,0,0.24)',
-            cursor: 'pointer',
+
+            cursor:
+              'pointer',
           }}
         >
           ←
         </button>
       )}
 
+      {/* =====================
+          EXIT MESSAGE
+      ===================== */}
+
       {showExitHint && (
         <div
           role="status"
           style={{
             position: 'fixed',
+
             left: '50%',
+
             bottom:
               'calc(env(safe-area-inset-bottom, 0px) + 28px)',
-            transform: 'translateX(-50%)',
+
+            transform:
+              'translateX(-50%)',
+
             zIndex: 10000,
+
             background:
               'rgba(15, 23, 42, 0.96)',
-            color: '#ffffff',
+
+            color:
+              '#ffffff',
+
             border:
               '1px solid rgba(255,255,255,0.14)',
+
             borderRadius: 14,
-            padding: '11px 16px',
+
+            padding:
+              '11px 16px',
+
             fontSize: 14,
+
             fontWeight: 700,
-            whiteSpace: 'nowrap',
+
+            whiteSpace:
+              'nowrap',
+
             boxShadow:
               '0 10px 30px rgba(0,0,0,0.28)',
           }}
@@ -226,106 +360,193 @@ function App() {
         </div>
       )}
 
+      {/* =====================
+          APP ROUTES
+      ===================== */}
+
       <Routes>
+
+        {/* الرئيسية */}
+
         <Route
           path="/"
-          element={<DashboardPage />}
+          element={
+            <DashboardPage />
+          }
         />
+
+        {/* ===================
+            BAAKR AI
+        =================== */}
+
+        <Route
+          path="/ai"
+          element={
+            <AIAssistantPage />
+          }
+        />
+
+        {/* الحركات */}
 
         <Route
           path="/transactions"
-          element={<TransactionsPage />}
+          element={
+            <TransactionsPage />
+          }
         />
+
+        {/* إضافة */}
 
         <Route
           path="/add"
-          element={<AddPage />}
+          element={
+            <AddPage />
+          }
         />
+
+        {/* المعدات */}
 
         <Route
           path="/equipment/add"
-          element={<AddEquipmentPage />}
+          element={
+            <AddEquipmentPage />
+          }
         />
 
         <Route
           path="/equipment/:id/edit"
-          element={<EditEquipmentPage />}
-        />
-
-        <Route
-          path="/customers"
-          element={<CustomersPage />}
-        />
-
-        <Route
-          path="/customers/:id"
-          element={<CustomerDetailPage />}
+          element={
+            <EditEquipmentPage />
+          }
         />
 
         <Route
           path="/equipment"
-          element={<EquipmentPage />}
+          element={
+            <EquipmentPage />
+          }
         />
 
         <Route
           path="/equipment/:id"
-          element={<EquipmentDetailPage />}
+          element={
+            <EquipmentDetailPage />
+          }
+        />
+
+        {/* العملاء */}
+
+        <Route
+          path="/customers"
+          element={
+            <CustomersPage />
+          }
         />
 
         <Route
+          path="/customers/:id"
+          element={
+            <CustomerDetailPage />
+          }
+        />
+
+        {/* الحساب الشهري */}
+
+        <Route
           path="/monthly"
-          element={<MonthlyPage />}
+          element={
+            <MonthlyPage />
+          }
         />
 
         <Route
           path="/monthly/:id"
-          element={<MonthlyDetailPage />}
+          element={
+            <MonthlyDetailPage />
+          }
         />
 
-        <Route
-          path="/reports"
-          element={<ReportsPage />}
-        />
-
-        <Route
-          path="/invoices"
-          element={<InvoicesPage />}
-        />
-
-        <Route
-          path="/settings"
-          element={<SettingsPage />}
-        />
-
-        <Route
-          path="/daily-calculator"
-          element={<DailyCalculatorPage />}
-        />
+        {/* التأجير الشهري */}
 
         <Route
           path="/monthly-rental"
-          element={<MonthlyRentalPage />}
+          element={
+            <MonthlyRentalPage />
+          }
         />
+
+        {/* السواقين */}
 
         <Route
           path="/drivers"
-          element={<DriversPage />}
+          element={
+            <DriversPage />
+          }
         />
 
-        <Route
-          path="/backup"
-          element={<BackupPage />}
-        />
+        {/* التقارير */}
 
         <Route
-          path="/about"
-          element={<AboutPage />}
+          path="/reports"
+          element={
+            <ReportsPage />
+          }
         />
+
+        {/* الفواتير */}
+
+        <Route
+          path="/invoices"
+          element={
+            <InvoicesPage />
+          }
+        />
+
+        {/* عرض السعر */}
 
         <Route
           path="/quotation"
-          element={<QuotationPage />}
+          element={
+            <QuotationPage />
+          }
         />
+
+        {/* حساب اليوم */}
+
+        <Route
+          path="/daily-calculator"
+          element={
+            <DailyCalculatorPage />
+          }
+        />
+
+        {/* النسخ الاحتياطي */}
+
+        <Route
+          path="/backup"
+          element={
+            <BackupPage />
+          }
+        />
+
+        {/* الإعدادات */}
+
+        <Route
+          path="/settings"
+          element={
+            <SettingsPage />
+          }
+        />
+
+        {/* حول التطبيق */}
+
+        <Route
+          path="/about"
+          element={
+            <AboutPage />
+          }
+        />
+
       </Routes>
     </>
   );
