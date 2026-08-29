@@ -58,6 +58,9 @@ jobs:
 
       - name: Build web app
         working-directory: ${{ steps.project.outputs.dir }}
+        env:
+          VITE_RECOVERY_SUPABASE_URL: ${{ secrets.VITE_RECOVERY_SUPABASE_URL }}
+          VITE_RECOVERY_SUPABASE_KEY: ${{ secrets.VITE_RECOVERY_SUPABASE_KEY }}
         run: npm run build
 
       - name: Install Capacitor
