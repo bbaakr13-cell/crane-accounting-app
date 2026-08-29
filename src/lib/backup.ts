@@ -1,16 +1,52 @@
-const BACKUP_PREFIX = 'baakr_pro_backup_';
-const DAILY_PREFIX = `${BACKUP_PREFIX}daily_`;
-const WEEKLY_PREFIX = `${BACKUP_PREFIX}weekly_`;
-const MANUAL_PREFIX = `${BACKUP_PREFIX}manual_`;
-const BEFORE_RESTORE_PREFIX = `${BACKUP_PREFIX}before_restore_`;
+import {
+  Directory,
+  Encoding,
+  Filesystem,
+} from '@capacitor/filesystem';
+
+const BACKUP_FOLDER = 'BAAKR_PRO_BACKUPS';
+
+const APP_STORAGE_PREFIXES = [
+  'crane_accounting_',
+  'monthly-ledger-',
+];
+
+export type BackupType =
+  | 'daily'
+  | 'weekly'
+  | 'manual'
+  | 'before_restore';
 
 export type BackupFile = {
   app: 'BAAKR PRO';
-  version: 1;
+  version: 2;
   createdAt: string;
-  type: 'daily' | 'weekly' | 'manual' | 'before_restore';
+  type: BackupType;
   data: Record<string, string>;
 };
+
+export type SavedBackup = {
+  fileName: string;
+  backup: BackupFile;
+};
+
+/* ==============================
+   معرفة بيانات التطبيق
+============================== */
+
+function isAppDataKey(key: string): boolean {
+  if (key === 'crane_accounting_offline_db_v2') {
+    return true;
+  }
+
+  return APP_STORAGE_PREFIXES.some((prefix) =>
+    key.startsWith(prefix)
+  );
+}
+
+/* ==============================
+   جمع بيانات التطبيق كاملة
+============================== */
 
 function getAppData(): Record<string, string> {
   const data: Record<string, string> = {};
@@ -20,8 +56,7 @@ function getAppData(): Record<string, string> {
 
     if (!key) continue;
 
-    // لا نضع ملفات النسخ الاحتياطي داخل نسخة أخرى
-    if (key.startsWith(BACKUP_PREFIX)) continue;
+    if (!isAppDataKey(key)) continue;
 
     const value = localStorage.getItem(key);
 
@@ -33,289 +68,524 @@ function getAppData(): Record<string, string> {
   return data;
 }
 
-function makeBackup(
-  type: BackupFile['type']
-): BackupFile {
+/* ==============================
+   إنشاء محتوى النسخة
+============================== */
+
+function makeBackup(type: BackupType): BackupFile {
   return {
     app: 'BAAKR PRO',
-    version: 1,
+    version: 2,
     createdAt: new Date().toISOString(),
     type,
     data: getAppData(),
   };
 }
 
-function saveBackup(
-  key: string,
+/* ==============================
+   تجهيز مجلد النسخ
+============================== */
+
+async function ensureBackupFolder() {
+  try {
+    await Filesystem.mkdir({
+      path: BACKUP_FOLDER,
+      directory: Directory.Data,
+      recursive: true,
+    });
+  } catch {
+    // المجلد موجود مسبقًا
+  }
+}
+
+/* ==============================
+   كتابة ملف نسخة
+============================== */
+
+async function writeBackupFile(
+  fileName: string,
   backup: BackupFile
 ) {
-  localStorage.setItem(key, JSON.stringify(backup));
-}
+  await ensureBackupFolder();
 
-function getBackupKeys(prefix: string) {
-  const keys: string[] = [];
-
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-
-    if (key?.startsWith(prefix)) {
-      keys.push(key);
-    }
-  }
-
-  return keys.sort().reverse();
-}
-
-function keepLatest(
-  prefix: string,
-  maximum: number
-) {
-  const keys = getBackupKeys(prefix);
-
-  keys.slice(maximum).forEach((key) => {
-    localStorage.removeItem(key);
+  await Filesystem.writeFile({
+    path: `${BACKUP_FOLDER}/${fileName}`,
+    data: JSON.stringify(backup, null, 2),
+    directory: Directory.Data,
+    encoding: Encoding.UTF8,
+    recursive: true,
   });
 }
+
+/* ==============================
+   قراءة ملف نسخة
+============================== */
+
+async function readBackupFile(
+  fileName: string
+): Promise<BackupFile> {
+  const result = await Filesystem.readFile({
+    path: `${BACKUP_FOLDER}/${fileName}`,
+    directory: Directory.Data,
+    encoding: Encoding.UTF8,
+  });
+
+  const text =
+    typeof result.data === 'string'
+      ? result.data
+      : '';
+
+  const backup = JSON.parse(text) as BackupFile;
+
+  validateBackup(backup);
+
+  return backup;
+}
+
+/* ==============================
+   التحقق من النسخة
+============================== */
+
+function validateBackup(
+  backup: BackupFile
+): void {
+  if (
+    !backup ||
+    backup.app !== 'BAAKR PRO' ||
+    !backup.data ||
+    typeof backup.data !== 'object'
+  ) {
+    throw new Error(
+      'ملف النسخة الاحتياطية غير صالح'
+    );
+  }
+}
+
+/* ==============================
+   التاريخ
+============================== */
 
 function dateId() {
   const date = new Date();
 
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, '0');
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
 }
 
+/* ==============================
+   رقم الأسبوع
+============================== */
+
 function weekId() {
   const date = new Date();
 
-  const firstDay = new Date(date.getFullYear(), 0, 1);
+  const firstDay = new Date(
+    date.getFullYear(),
+    0,
+    1
+  );
 
   const days = Math.floor(
-    (date.getTime() - firstDay.getTime()) / 86400000
+    (date.getTime() -
+      firstDay.getTime()) /
+      86400000
   );
 
   const week = Math.ceil(
-    (days + firstDay.getDay() + 1) / 7
+    (
+      days +
+      firstDay.getDay() +
+      1
+    ) / 7
   );
 
-  return `${date.getFullYear()}-W${String(week).padStart(2, '0')}`;
+  return `${date.getFullYear()}-W${String(
+    week
+  ).padStart(2, '0')}`;
 }
 
-/* =========================
-   نسخة يومية تلقائية
-========================= */
+/* ==============================
+   أسماء الملفات
+============================== */
 
-export function createDailyBackup() {
+function dailyFileName() {
+  return `daily-${dateId()}.json`;
+}
+
+function weeklyFileName() {
+  return `weekly-${weekId()}.json`;
+}
+
+function manualFileName() {
+  return `manual-${Date.now()}.json`;
+}
+
+function beforeRestoreFileName() {
+  return `before-restore-${Date.now()}.json`;
+}
+
+/* ==============================
+   هل الملف موجود؟
+============================== */
+
+async function fileExists(
+  fileName: string
+): Promise<boolean> {
   try {
-    const key = `${DAILY_PREFIX}${dateId()}`;
-
-    // نسخة واحدة فقط في اليوم
-    if (!localStorage.getItem(key)) {
-      saveBackup(key, makeBackup('daily'));
-    }
-
-    // الاحتفاظ بآخر 7 أيام
-    keepLatest(DAILY_PREFIX, 7);
+    await Filesystem.stat({
+      path: `${BACKUP_FOLDER}/${fileName}`,
+      directory: Directory.Data,
+    });
 
     return true;
-  } catch (error) {
-    console.error('خطأ في النسخة اليومية', error);
+  } catch {
     return false;
   }
 }
 
-/* =========================
-   نسخة أسبوعية تلقائية
-========================= */
+/* ==============================
+   قائمة أسماء الملفات
+============================== */
 
-export function createWeeklyBackup() {
+async function listFileNames(): Promise<string[]> {
+  await ensureBackupFolder();
+
   try {
-    const key = `${WEEKLY_PREFIX}${weekId()}`;
+    const result = await Filesystem.readdir({
+      path: BACKUP_FOLDER,
+      directory: Directory.Data,
+    });
 
-    if (!localStorage.getItem(key)) {
-      saveBackup(key, makeBackup('weekly'));
-    }
-
-    // الاحتفاظ بآخر 4 أسابيع
-    keepLatest(WEEKLY_PREFIX, 4);
-
-    return true;
-  } catch (error) {
-    console.error('خطأ في النسخة الأسبوعية', error);
-    return false;
+    return result.files
+      .map((file) => file.name)
+      .filter((name) =>
+        name.endsWith('.json')
+      );
+  } catch {
+    return [];
   }
 }
 
-/* =========================
-   تشغيل النسخ التلقائي
-========================= */
+/* ==============================
+   الاحتفاظ بآخر عدد محدد
+============================== */
 
-export function runAutomaticBackup() {
-  createDailyBackup();
-  createWeeklyBackup();
-}
-
-/* =========================
-   نسخة يدوية
-========================= */
-
-export function createManualBackup() {
-  const backup = makeBackup('manual');
-
-  const key =
-    `${MANUAL_PREFIX}${Date.now()}`;
-
-  saveBackup(key, backup);
-
-  return backup;
-}
-
-/* =========================
-   نسخة أمان قبل الاستعادة
-========================= */
-
-function createBeforeRestoreBackup() {
-  const backup = makeBackup('before_restore');
-
-  saveBackup(
-    `${BEFORE_RESTORE_PREFIX}${Date.now()}`,
-    backup
-  );
-
-  // نحتفظ بآخر 3 نسخ أمان
-  keepLatest(BEFORE_RESTORE_PREFIX, 3);
-}
-
-/* =========================
-   استعادة نسخة
-========================= */
-
-export function restoreBackup(
-  backup: BackupFile
+async function keepLatest(
+  prefix: string,
+  maximum: number
 ) {
-  if (
-    !backup ||
-    backup.app !== 'BAAKR PRO' ||
-    !backup.data
-  ) {
-    throw new Error('ملف النسخة الاحتياطية غير صالح');
-  }
+  const names = await listFileNames();
 
-  // حماية البيانات الحالية قبل الاستعادة
-  createBeforeRestoreBackup();
+  const matching = names
+    .filter((name) =>
+      name.startsWith(prefix)
+    )
+    .sort()
+    .reverse();
 
-  const keysToRemove: string[] = [];
+  const oldFiles =
+    matching.slice(maximum);
 
-  // حذف بيانات التطبيق الحالية،
-  // مع إبقاء النسخ الاحتياطية
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-
-    if (
-      key &&
-      !key.startsWith(BACKUP_PREFIX)
-    ) {
-      keysToRemove.push(key);
+  for (const fileName of oldFiles) {
+    try {
+      await Filesystem.deleteFile({
+        path: `${BACKUP_FOLDER}/${fileName}`,
+        directory: Directory.Data,
+      });
+    } catch {
+      // تجاهل
     }
   }
+}
 
-  keysToRemove.forEach((key) => {
-    localStorage.removeItem(key);
-  });
+/* ==============================
+   نسخة يومية
+============================== */
 
-  Object.entries(backup.data).forEach(
-    ([key, value]) => {
-      localStorage.setItem(key, value);
-    }
-  );
+export async function createDailyBackup() {
+  const fileName = dailyFileName();
+
+  if (!(await fileExists(fileName))) {
+    await writeBackupFile(
+      fileName,
+      makeBackup('daily')
+    );
+  }
+
+  await keepLatest('daily-', 7);
 
   return true;
 }
 
-/* =========================
-   قائمة النسخ الموجودة
-========================= */
+/* ==============================
+   نسخة أسبوعية
+============================== */
 
-export function getSavedBackups() {
-  const backups: {
-    key: string;
-    backup: BackupFile;
-  }[] = [];
+export async function createWeeklyBackup() {
+  const fileName = weeklyFileName();
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
+  if (!(await fileExists(fileName))) {
+    await writeBackupFile(
+      fileName,
+      makeBackup('weekly')
+    );
+  }
 
-    if (!key?.startsWith(BACKUP_PREFIX)) {
-      continue;
+  await keepLatest('weekly-', 4);
+
+  return true;
+}
+
+/* ==============================
+   تشغيل النسخ التلقائي
+============================== */
+
+export async function runAutomaticBackup() {
+  try {
+    await createDailyBackup();
+    await createWeeklyBackup();
+
+    return true;
+  } catch (error) {
+    console.error(
+      'خطأ في النسخ الاحتياطي التلقائي',
+      error
+    );
+
+    return false;
+  }
+}
+
+/* ==============================
+   نسخة يدوية
+============================== */
+
+export async function createManualBackup() {
+  const backup = makeBackup('manual');
+
+  const fileName = manualFileName();
+
+  await writeBackupFile(
+    fileName,
+    backup
+  );
+
+  return {
+    fileName,
+    backup,
+  };
+}
+
+/* ==============================
+   نسخة قبل الاستعادة
+============================== */
+
+async function createBeforeRestoreBackup() {
+  const backup =
+    makeBackup('before_restore');
+
+  const fileName =
+    beforeRestoreFileName();
+
+  await writeBackupFile(
+    fileName,
+    backup
+  );
+
+  await keepLatest(
+    'before-restore-',
+    3
+  );
+
+  return {
+    fileName,
+    backup,
+  };
+}
+
+/* ==============================
+   استعادة البيانات
+============================== */
+
+export async function restoreBackup(
+  backup: BackupFile
+) {
+  validateBackup(backup);
+
+  // نسخة أمان قبل الاستعادة
+  await createBeforeRestoreBackup();
+
+  const keysToDelete: string[] = [];
+
+  for (
+    let i = 0;
+    i < localStorage.length;
+    i++
+  ) {
+    const key =
+      localStorage.key(i);
+
+    if (
+      key &&
+      isAppDataKey(key)
+    ) {
+      keysToDelete.push(key);
     }
+  }
 
+  keysToDelete.forEach((key) => {
+    localStorage.removeItem(key);
+  });
+
+  Object.entries(
+    backup.data
+  ).forEach(([key, value]) => {
+    localStorage.setItem(
+      key,
+      value
+    );
+  });
+
+  return true;
+}
+
+/* ==============================
+   جلب النسخ المحفوظة
+============================== */
+
+export async function getSavedBackups(): Promise<
+  SavedBackup[]
+> {
+  const names =
+    await listFileNames();
+
+  const backups: SavedBackup[] = [];
+
+  for (const fileName of names) {
     try {
-      const raw = localStorage.getItem(key);
+      const backup =
+        await readBackupFile(
+          fileName
+        );
 
-      if (!raw) continue;
-
-      const backup = JSON.parse(raw) as BackupFile;
-
-      if (backup.app === 'BAAKR PRO') {
-        backups.push({
-          key,
-          backup,
-        });
-      }
+      backups.push({
+        fileName,
+        backup,
+      });
     } catch {
-      // تجاهل النسخة التالفة
+      // تجاهل الملف التالف
     }
   }
 
   return backups.sort(
     (a, b) =>
-      new Date(b.backup.createdAt).getTime() -
-      new Date(a.backup.createdAt).getTime()
+      new Date(
+        b.backup.createdAt
+      ).getTime() -
+      new Date(
+        a.backup.createdAt
+      ).getTime()
   );
 }
 
-/* =========================
-   حذف نسخة محددة
-========================= */
+/* ==============================
+   حذف نسخة
+============================== */
 
-export function deleteBackup(key: string) {
-  if (!key.startsWith(BACKUP_PREFIX)) {
+export async function deleteBackup(
+  fileName: string
+) {
+  if (
+    !fileName.endsWith('.json')
+  ) {
     return false;
   }
 
-  localStorage.removeItem(key);
+  await Filesystem.deleteFile({
+    path: `${BACKUP_FOLDER}/${fileName}`,
+    directory: Directory.Data,
+  });
 
   return true;
 }
 
-/* =========================
-   تصدير نسخة كملف JSON
-========================= */
+/* ==============================
+   تحويل النسخة إلى JSON
+============================== */
 
 export function backupToJson(
   backup: BackupFile
 ) {
-  return JSON.stringify(backup, null, 2);
+  return JSON.stringify(
+    backup,
+    null,
+    2
+  );
 }
 
-/* =========================
-   قراءة نسخة مستوردة
-========================= */
+/* ==============================
+   قراءة ملف مستورد
+============================== */
 
 export function parseBackupFile(
   text: string
 ): BackupFile {
-  const backup = JSON.parse(text) as BackupFile;
+  const backup =
+    JSON.parse(text) as BackupFile;
 
-  if (
-    backup.app !== 'BAAKR PRO' ||
-    backup.version !== 1 ||
-    !backup.data
-  ) {
-    throw new Error('هذا الملف ليس نسخة احتياطية صالحة لـ BAAKR PRO');
-  }
+  validateBackup(backup);
 
   return backup;
+}
+
+/* ==============================
+   الحصول على رابط ملف النسخة
+   للمشاركة أو التصدير
+============================== */
+
+export async function getBackupFileUri(
+  fileName: string
+) {
+  const result =
+    await Filesystem.getUri({
+      path: `${BACKUP_FOLDER}/${fileName}`,
+      directory: Directory.Data,
+    });
+
+  return result.uri;
+}
+
+/* ==============================
+   تصدير نسخة مستوردة/مؤقتة
+============================== */
+
+export async function saveBackupForExport(
+  backup: BackupFile
+) {
+  validateBackup(backup);
+
+  const fileName =
+    `BAAKR-PRO-BACKUP-${Date.now()}.json`;
+
+  await writeBackupFile(
+    fileName,
+    backup
+  );
+
+  return {
+    fileName,
+    uri:
+      await getBackupFileUri(
+        fileName
+      ),
+  };
 }
