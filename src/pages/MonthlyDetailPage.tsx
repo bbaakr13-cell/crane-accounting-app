@@ -1858,3 +1858,7 @@ export function MonthlyDetailPage() {
     ◆　تم إعداد هذا الكشف بواسطة BAAKR PRO　◆
   </div>
 </div>
+</div>
+</AppLayout>
+);
+}
