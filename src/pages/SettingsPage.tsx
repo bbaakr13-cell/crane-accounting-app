@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   KeyRound,
   LockOpen,
+  Mail,
 } from 'lucide-react';
 
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -43,6 +44,9 @@ import {
   verifyAppPin,
   disableAppLock,
   removeAppPin,
+  setRecoveryEmail,
+  getRecoveryEmail,
+  removeRecoveryEmail,
 } from '@/lib/appLock';
 
 function Toggle({
@@ -70,9 +74,7 @@ function Toggle({
 
       <div className="flex-1">
         <b className="text-sm text-white">{label}</b>
-        <p className="text-[11px] text-slate-500 mt-0.5">
-          {desc}
-        </p>
+        <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
       </div>
 
       <div
@@ -92,32 +94,22 @@ function Toggle({
 
 export function SettingsPage() {
   const nav = useNavigate();
-
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [s, setS] = useState<AppSettings | null>(null);
-
   const [saving, setSaving] = useState(false);
-
   const [msg, setMsg] = useState('');
 
   // =========================
   // قفل التطبيق
   // =========================
 
-  const [lockEnabled, setLockEnabled] = useState(
-    isAppLockEnabled()
-  );
-
-  const [pinExists, setPinExists] = useState(
-    hasAppPin()
-  );
+  const [lockEnabled, setLockEnabled] = useState(isAppLockEnabled());
+  const [pinExists, setPinExists] = useState(hasAppPin());
 
   const [showPinForm, setShowPinForm] = useState(false);
 
-  const [pinMode, setPinMode] = useState<
-    'create' | 'change'
-  >('create');
+  const [pinMode, setPinMode] = useState<'create' | 'change'>('create');
 
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -126,18 +118,25 @@ export function SettingsPage() {
   const [pinMessage, setPinMessage] = useState('');
   const [pinError, setPinError] = useState('');
 
-  const load = useCallback(
-    () => fetchSettings().then(setS),
-    []
+  // =========================
+  // بريد الاسترجاع
+  // =========================
+
+  const [recoveryEmail, setRecoveryEmailValue] = useState(
+    getRecoveryEmail()
   );
+
+  const [savedRecoveryEmail, setSavedRecoveryEmail] = useState(
+    getRecoveryEmail()
+  );
+
+  const load = useCallback(() => fetchSettings().then(setS), []);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  function logo(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  function logo(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
 
     if (!f || !s) return;
@@ -188,22 +187,16 @@ export function SettingsPage() {
     };
 
     for (const t of tables) {
-      const { data } = await supabase
-        .from(t)
-        .select('*');
-
+      const { data } = await supabase.from(t).select('*');
       out[t] = data ?? [];
     }
 
     const a = document.createElement('a');
 
     a.href = URL.createObjectURL(
-      new Blob(
-        [JSON.stringify(out, null, 2)],
-        {
-          type: 'application/json',
-        }
-      )
+      new Blob([JSON.stringify(out, null, 2)], {
+        type: 'application/json',
+      })
     );
 
     a.download = `crane-backup-${new Date()
@@ -213,16 +206,12 @@ export function SettingsPage() {
     a.click();
   }
 
-  async function imp(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  async function imp(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
 
     if (
       !f ||
-      !confirm(
-        'استعادة النسخة الاحتياطية واستبدال البيانات الحالية؟'
-      )
+      !confirm('استعادة النسخة الاحتياطية واستبدال البيانات الحالية؟')
     ) {
       return;
     }
@@ -240,9 +229,7 @@ export function SettingsPage() {
           .neq('id', '__none__');
 
         if (rows.length) {
-          await supabase
-            .from(t)
-            .insert(rows);
+          await supabase.from(t).insert(rows);
         }
       }
     }
@@ -295,36 +282,26 @@ export function SettingsPage() {
     setPinMessage('');
 
     if (!/^\d{4}$/.test(newPin)) {
-      setPinError(
-        'الرقم السري يجب أن يكون 4 أرقام'
-      );
+      setPinError('الرقم السري يجب أن يكون 4 أرقام');
       return;
     }
 
     if (newPin !== confirmPin) {
-      setPinError(
-        'تأكيد الرقم السري غير مطابق'
-      );
+      setPinError('تأكيد الرقم السري غير مطابق');
       return;
     }
 
     try {
-      // عند تغيير PIN نتأكد من القديم
       if (pinMode === 'change') {
         if (!/^\d{4}$/.test(oldPin)) {
-          setPinError(
-            'أدخل الرقم السري الحالي'
-          );
+          setPinError('أدخل الرقم السري الحالي');
           return;
         }
 
-        const correct =
-          await verifyAppPin(oldPin);
+        const correct = await verifyAppPin(oldPin);
 
         if (!correct) {
-          setPinError(
-            'الرقم السري الحالي غير صحيح'
-          );
+          setPinError('الرقم السري الحالي غير صحيح');
           return;
         }
       }
@@ -351,10 +328,7 @@ export function SettingsPage() {
       }, 2500);
     } catch (error) {
       console.error(error);
-
-      setPinError(
-        'تعذر حفظ الرقم السري'
-      );
+      setPinError('تعذر حفظ الرقم السري');
     }
   }
 
@@ -378,23 +352,17 @@ export function SettingsPage() {
 
       if (entered === null) return;
 
-      const correct =
-        await verifyAppPin(entered);
+      const correct = await verifyAppPin(entered);
 
       if (!correct) {
-        setPinError(
-          'الرقم السري غير صحيح'
-        );
+        setPinError('الرقم السري غير صحيح');
         return;
       }
 
       disableAppLock();
-
       setLockEnabled(false);
 
-      setPinMessage(
-        'تم إيقاف قفل التطبيق'
-      );
+      setPinMessage('تم إيقاف قفل التطبيق');
     } else {
       const entered = window.prompt(
         'أدخل الرقم السري لتفعيل القفل'
@@ -402,13 +370,10 @@ export function SettingsPage() {
 
       if (entered === null) return;
 
-      const correct =
-        await verifyAppPin(entered);
+      const correct = await verifyAppPin(entered);
 
       if (!correct) {
-        setPinError(
-          'الرقم السري غير صحيح'
-        );
+        setPinError('الرقم السري غير صحيح');
         return;
       }
 
@@ -416,9 +381,7 @@ export function SettingsPage() {
 
       setLockEnabled(true);
 
-      setPinMessage(
-        'تم تفعيل قفل التطبيق'
-      );
+      setPinMessage('تم تفعيل قفل التطبيق');
     }
 
     setTimeout(() => {
@@ -433,19 +396,14 @@ export function SettingsPage() {
   async function handleRemovePin() {
     if (!pinExists) return;
 
-    const entered = window.prompt(
-      'أدخل الرقم السري الحالي'
-    );
+    const entered = window.prompt('أدخل الرقم السري الحالي');
 
     if (entered === null) return;
 
-    const correct =
-      await verifyAppPin(entered);
+    const correct = await verifyAppPin(entered);
 
     if (!correct) {
-      setPinError(
-        'الرقم السري غير صحيح'
-      );
+      setPinError('الرقم السري غير صحيح');
       return;
     }
 
@@ -466,9 +424,61 @@ export function SettingsPage() {
     setNewPin('');
     setConfirmPin('');
 
-    setPinMessage(
-      'تم حذف قفل التطبيق'
+    setPinMessage('تم حذف قفل التطبيق');
+
+    setTimeout(() => {
+      setPinMessage('');
+    }, 2500);
+  }
+
+  // =========================
+  // حفظ بريد الاسترجاع
+  // =========================
+
+  function handleSaveRecoveryEmail() {
+    setPinError('');
+    setPinMessage('');
+
+    try {
+      setRecoveryEmail(recoveryEmail);
+
+      const saved = getRecoveryEmail();
+
+      setSavedRecoveryEmail(saved);
+      setRecoveryEmailValue(saved);
+
+      setPinMessage('تم حفظ بريد الاسترجاع بنجاح');
+
+      setTimeout(() => {
+        setPinMessage('');
+      }, 2500);
+    } catch (error) {
+      setPinError(
+        error instanceof Error
+          ? error.message
+          : 'تعذر حفظ بريد الاسترجاع'
+      );
+    }
+  }
+
+  // =========================
+  // حذف بريد الاسترجاع
+  // =========================
+
+  function handleRemoveRecoveryEmail() {
+    const approved = window.confirm(
+      'هل تريد حذف بريد استرجاع الرقم السري؟'
     );
+
+    if (!approved) return;
+
+    removeRecoveryEmail();
+
+    setRecoveryEmailValue('');
+    setSavedRecoveryEmail('');
+
+    setPinError('');
+    setPinMessage('تم حذف بريد الاسترجاع');
 
     setTimeout(() => {
       setPinMessage('');
@@ -477,10 +487,7 @@ export function SettingsPage() {
 
   if (!s) {
     return (
-      <AppLayout
-        showHeader={false}
-        showBottomNav={false}
-      >
+      <AppLayout showHeader={false} showBottomNav={false}>
         <PageHeader
           title="الإعدادات"
           icon={SettingsIcon}
@@ -497,10 +504,7 @@ export function SettingsPage() {
     'w-full bg-ink-850/80 border border-white/10 rounded-xl py-3 px-4 text-center text-xl tracking-[0.45em] text-white outline-none focus:border-gold-500/50';
 
   return (
-    <AppLayout
-      showHeader={false}
-      showBottomNav={false}
-    >
+    <AppLayout showHeader={false} showBottomNav={false}>
       <div className="pt-4">
         <PageHeader
           title="الإعدادات"
@@ -518,6 +522,7 @@ export function SettingsPage() {
                 <img
                   src={s.logo}
                   className="w-full h-full object-cover"
+                  alt="شعار التطبيق"
                 />
               ) : (
                 <CraneLogo size={56} />
@@ -534,9 +539,7 @@ export function SettingsPage() {
               </p>
 
               <button
-                onClick={() =>
-                  fileRef.current?.click()
-                }
+                onClick={() => fileRef.current?.click()}
                 className="mt-3 px-3 py-2 rounded-xl bg-gold-500/10 text-gold-400 text-xs flex items-center gap-2"
               >
                 <Image className="w-4 h-4" />
@@ -559,10 +562,7 @@ export function SettingsPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="flex items-center gap-2 text-gold-400 mb-2">
             <Building2 className="w-4 h-4" />
-
-            <b className="text-sm">
-              بيانات النشاط
-            </b>
+            <b className="text-sm">بيانات النشاط</b>
           </div>
 
           <input
@@ -583,8 +583,7 @@ export function SettingsPage() {
             onChange={(e) =>
               setS({
                 ...s,
-                businessName:
-                  e.target.value,
+                businessName: e.target.value,
               })
             }
             placeholder="اسم النشاط"
@@ -632,8 +631,7 @@ export function SettingsPage() {
                 onChange={(e) =>
                   setS({
                     ...s,
-                    currency:
-                      e.target.value,
+                    currency: e.target.value,
                   })
                 }
               />
@@ -641,21 +639,16 @@ export function SettingsPage() {
 
             <select
               className={input}
-              value={
-                s.defaultPaymentMethod
-              }
+              value={s.defaultPaymentMethod}
               onChange={(e) =>
                 setS({
                   ...s,
-                  defaultPaymentMethod:
-                    e.target.value,
+                  defaultPaymentMethod: e.target.value,
                 })
               }
             >
               {paymentMethods.map((x) => (
-                <option key={x}>
-                  {x}
-                </option>
+                <option key={x}>{x}</option>
               ))}
             </select>
           </div>
@@ -666,8 +659,7 @@ export function SettingsPage() {
             onChange={(e) =>
               setS({
                 ...s,
-                reportTitle:
-                  e.target.value,
+                reportTitle: e.target.value,
               })
             }
             placeholder="عنوان التقارير"
@@ -679,10 +671,7 @@ export function SettingsPage() {
         <Card className="p-4 mb-4 space-y-5">
           <div className="flex items-center gap-2 text-gold-400">
             <SlidersHorizontal className="w-4 h-4" />
-
-            <b className="text-sm">
-              خيارات التشغيل
-            </b>
+            <b className="text-sm">خيارات التشغيل</b>
           </div>
 
           <Toggle
@@ -787,8 +776,8 @@ export function SettingsPage() {
                 {lockEnabled
                   ? 'القفل مفعل حاليًا'
                   : pinExists
-                    ? 'القفل متوقف حاليًا'
-                    : 'أنشئ رقم PIN لحماية التطبيق'}
+                  ? 'القفل متوقف حاليًا'
+                  : 'أنشئ رقم PIN لحماية التطبيق'}
               </p>
             </div>
 
@@ -841,6 +830,63 @@ export function SettingsPage() {
               </button>
             </div>
           )}
+
+          {/* بريد الاسترجاع */}
+
+          <div className="mt-4 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Mail className="w-5 h-5 text-blue-400" />
+
+              <div>
+                <b className="text-sm text-white">
+                  بريد استرجاع الرقم السري
+                </b>
+
+                <p className="text-[11px] text-slate-500 mt-1">
+                  يصلك عليه رمز التحقق إذا نسيت PIN
+                </p>
+              </div>
+            </div>
+
+            <input
+              type="email"
+              inputMode="email"
+              dir="ltr"
+              autoCapitalize="none"
+              autoCorrect="off"
+              value={recoveryEmail}
+              onChange={(e) =>
+                setRecoveryEmailValue(e.target.value)
+              }
+              placeholder="example@gmail.com"
+              className={`${input} mt-3 text-left`}
+            />
+
+            <button
+              type="button"
+              onClick={handleSaveRecoveryEmail}
+              className="w-full mt-3 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold text-sm flex items-center justify-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              حفظ بريد الاسترجاع
+            </button>
+
+            {savedRecoveryEmail && (
+              <div className="mt-3">
+                <p className="text-xs text-green-400 text-center">
+                  ✓ يوجد بريد استرجاع محفوظ
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleRemoveRecoveryEmail}
+                  className="w-full mt-2 py-2 text-xs text-red-400"
+                >
+                  حذف بريد الاسترجاع
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* نموذج PIN */}
 
@@ -977,8 +1023,6 @@ export function SettingsPage() {
             : 'حفظ جميع الإعدادات'}
         </button>
 
-        {/* الحقوق */}
-
         <button
           type="button"
           onClick={() => nav('/about')}
@@ -986,8 +1030,6 @@ export function SettingsPage() {
         >
           حقوق التصميم — BAAKR_ALMASBHI
         </button>
-
-        {/* النسخ القديمة */}
 
         <div className="grid grid-cols-2 gap-3 mt-4">
           <button
