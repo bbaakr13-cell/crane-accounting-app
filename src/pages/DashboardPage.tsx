@@ -284,6 +284,13 @@ export function DashboardPage() {
     },
 
     {
+      label: 'فاتورة عمل',
+      icon: Receipt,
+      path: '/work-invoice',
+      tone: 'blue',
+    },
+
+    {
       label: 'عرض سعر',
       icon: FileText,
       path: '/quotation',
@@ -882,4 +889,4 @@ function MoneyCard({
       </p>
     </button>
   );
-}
+                  }
