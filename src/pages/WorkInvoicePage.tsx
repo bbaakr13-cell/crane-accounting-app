@@ -58,8 +58,7 @@ type WorkInvoiceData = {
    SETTINGS
 ========================================================= */
 
-const STORAGE_KEY =
-  'baakr-work-invoice-v2';
+const STORAGE_KEY = 'baakr-work-invoice-v3';
 
 const today = new Date()
   .toISOString()
@@ -79,32 +78,20 @@ function makeEmptyRows(): InvoiceRow[] {
 
 const initialData: WorkInvoiceData = {
   invoiceNo: '0001',
-
   date: today,
-
   customer: '',
 
   rightTitle: 'كرينات',
+  companyArabic: 'رافعات الحديثة',
+  companyEnglish: 'RAFIËAT AL-HADITHA',
+  leftTitle: 'بوم ترك',
 
-  companyArabic:
-    'رافعات الحديثة',
-
-  companyEnglish:
-    'RAFIËAT AL-HADITHA',
-
-  leftTitle:
-    'بوم ترك',
-
-  activity:
-    'لتأجير المعدات الثقيلة',
-
-  location:
-    'خميس مشيط - أبها',
+  activity: 'لتأجير المعدات الثقيلة',
+  location: 'خميس مشيط - أبها',
 
   rows: makeEmptyRows(),
 
   totalWords: '',
-
   notes: '',
 };
 
@@ -112,29 +99,21 @@ const initialData: WorkInvoiceData = {
    HELPERS
 ========================================================= */
 
-function safeNumber(
-  value: string | number
-) {
+function safeNumber(value: string | number) {
   const n = Number(value);
 
-  return Number.isFinite(n)
-    ? n
-    : 0;
+  return Number.isFinite(n) ? n : 0;
 }
 
 function loadInvoice(): WorkInvoiceData {
   try {
-    const saved =
-      localStorage.getItem(
-        STORAGE_KEY
-      );
+    const saved = localStorage.getItem(STORAGE_KEY);
 
     if (!saved) {
       return initialData;
     }
 
-    const parsed =
-      JSON.parse(saved);
+    const parsed = JSON.parse(saved);
 
     return {
       ...initialData,
@@ -144,20 +123,16 @@ function loadInvoice(): WorkInvoiceData {
         { length: 7 },
         (_, index) => ({
           description:
-            parsed?.rows?.[index]
-              ?.description ?? '',
+            parsed?.rows?.[index]?.description ?? '',
 
           qty:
-            parsed?.rows?.[index]
-              ?.qty ?? '',
+            parsed?.rows?.[index]?.qty ?? '',
 
           unitPrice:
-            parsed?.rows?.[index]
-              ?.unitPrice ?? '',
+            parsed?.rows?.[index]?.unitPrice ?? '',
 
           totalPrice:
-            parsed?.rows?.[index]
-              ?.totalPrice ?? '',
+            parsed?.rows?.[index]?.totalPrice ?? '',
         })
       ),
     };
@@ -171,13 +146,10 @@ function loadInvoice(): WorkInvoiceData {
 ========================================================= */
 
 export function WorkInvoicePage() {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
   const invoiceRef =
-    useRef<HTMLDivElement>(
-      null
-    );
+    useRef<HTMLDivElement>(null);
 
   const [data, setData] =
     useState<WorkInvoiceData>(
@@ -187,26 +159,20 @@ export function WorkInvoicePage() {
   const [busy, setBusy] =
     useState(false);
 
-  const [
-    previewOpen,
-    setPreviewOpen,
-  ] = useState(false);
+  const [previewOpen, setPreviewOpen] =
+    useState(false);
 
   /* =======================================================
      TOTAL
   ======================================================= */
 
-  const grandTotal =
-    useMemo(() => {
-      return data.rows.reduce(
-        (sum, row) =>
-          sum +
-          safeNumber(
-            row.totalPrice
-          ),
-        0
-      );
-    }, [data.rows]);
+  const grandTotal = useMemo(() => {
+    return data.rows.reduce(
+      (sum, row) =>
+        sum + safeNumber(row.totalPrice),
+      0
+    );
+  }, [data.rows]);
 
   /* =======================================================
      UPDATE FIELD
@@ -225,7 +191,7 @@ export function WorkInvoicePage() {
   }
 
   /* =======================================================
-     UPDATE TABLE
+     UPDATE ROW
   ======================================================= */
 
   function updateRow(
@@ -234,12 +200,11 @@ export function WorkInvoicePage() {
     value: string
   ) {
     setData((previous) => {
-      const rows =
-        previous.rows.map(
-          (row) => ({
-            ...row,
-          })
-        );
+      const rows = previous.rows.map(
+        (row) => ({
+          ...row,
+        })
+      );
 
       const current = {
         ...rows[index],
@@ -253,34 +218,25 @@ export function WorkInvoicePage() {
         const qty =
           key === 'qty'
             ? safeNumber(value)
-            : safeNumber(
-                current.qty
-              );
+            : safeNumber(current.qty);
 
         const unitPrice =
           key === 'unitPrice'
             ? safeNumber(value)
-            : safeNumber(
-                current.unitPrice
-              );
+            : safeNumber(current.unitPrice);
 
         if (
           current.qty ||
           current.unitPrice
         ) {
           current.totalPrice =
-            String(
-              qty *
-                unitPrice
-            );
+            String(qty * unitPrice);
         } else {
-          current.totalPrice =
-            '';
+          current.totalPrice = '';
         }
       }
 
-      rows[index] =
-        current;
+      rows[index] = current;
 
       return {
         ...previous,
@@ -294,10 +250,9 @@ export function WorkInvoicePage() {
   ======================================================= */
 
   function createNewInvoice() {
-    const ok =
-      window.confirm(
-        'هل تريد إنشاء فاتورة عمل جديدة؟'
-      );
+    const ok = window.confirm(
+      'هل تريد إنشاء فاتورة عمل جديدة؟'
+    );
 
     if (!ok) {
       return;
@@ -307,26 +262,24 @@ export function WorkInvoicePage() {
       ...initialData,
 
       invoiceNo:
-        String(
-          Date.now()
-        ).slice(-6),
+        String(Date.now()).slice(-6),
 
       date:
         new Date()
           .toISOString()
           .slice(0, 10),
 
-      rows:
-        makeEmptyRows(),
-
       customer: '',
+
+      rows: makeEmptyRows(),
+
       totalWords: '',
       notes: '',
     });
   }
 
   /* =======================================================
-     SAVE DATA
+     SAVE
   ======================================================= */
 
   function saveInvoice() {
@@ -349,7 +302,7 @@ export function WorkInvoicePage() {
   }
 
   /* =======================================================
-     CREATE CANVAS
+     CAPTURE INVOICE
   ======================================================= */
 
   async function captureInvoice() {
@@ -357,44 +310,26 @@ export function WorkInvoicePage() {
       return null;
     }
 
-    const element =
-      invoiceRef.current;
+    const element = invoiceRef.current;
 
-    const oldWidth =
-      element.style.width;
-
+    const oldWidth = element.style.width;
     const oldMinWidth =
       element.style.minWidth;
-
     const oldMaxWidth =
       element.style.maxWidth;
 
     try {
-      /*
-       * مهم للجوال:
-       * نجبر الفاتورة على عرض ثابت
-       * قبل تصويرها للـ PDF.
-       */
-
-      element.style.width =
-        '794px';
-
-      element.style.minWidth =
-        '794px';
-
-      element.style.maxWidth =
-        '794px';
+      element.style.width = '794px';
+      element.style.minWidth = '794px';
+      element.style.maxWidth = '794px';
 
       await new Promise<void>(
         (resolve) => {
-          requestAnimationFrame(
-            () => {
-              requestAnimationFrame(
-                () =>
-                  resolve()
-              );
-            }
-          );
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              resolve();
+            });
+          });
         }
       );
 
@@ -412,19 +347,16 @@ export function WorkInvoicePage() {
             logging: false,
 
             width: 794,
-
             windowWidth: 794,
 
             scrollX: 0,
-
             scrollY: 0,
           }
         );
 
       return canvas;
     } finally {
-      element.style.width =
-        oldWidth;
+      element.style.width = oldWidth;
 
       element.style.minWidth =
         oldMinWidth;
@@ -435,7 +367,7 @@ export function WorkInvoicePage() {
   }
 
   /* =======================================================
-     CREATE A4 PDF
+     CREATE PDF
   ======================================================= */
 
   async function createPdf() {
@@ -454,13 +386,9 @@ export function WorkInvoicePage() {
 
     const pdf =
       new jsPDF({
-        orientation:
-          'portrait',
-
+        orientation: 'portrait',
         unit: 'mm',
-
         format: 'a4',
-
         compress: true,
       });
 
@@ -470,54 +398,35 @@ export function WorkInvoicePage() {
     const pageHeight =
       pdf.internal.pageSize.getHeight();
 
-    /*
-     * هوامش صغيرة فقط
-     * حتى تكون الفاتورة كبيرة
-     * على ورقة A4.
-     */
-
     const marginX = 4;
     const marginY = 4;
 
     const maxWidth =
-      pageWidth -
-      marginX * 2;
+      pageWidth - marginX * 2;
 
     const maxHeight =
-      pageHeight -
-      marginY * 2;
+      pageHeight - marginY * 2;
 
     const ratio =
-      canvas.width /
-      canvas.height;
+      canvas.width / canvas.height;
 
-    let width =
-      maxWidth;
+    let width = maxWidth;
 
     let height =
       width / ratio;
 
-    if (
-      height >
-      maxHeight
-    ) {
-      height =
-        maxHeight;
+    if (height > maxHeight) {
+      height = maxHeight;
 
       width =
-        height *
-        ratio;
+        height * ratio;
     }
 
     const x =
-      (pageWidth -
-        width) /
-      2;
+      (pageWidth - width) / 2;
 
     const y =
-      (pageHeight -
-        height) /
-      2;
+      (pageHeight - height) / 2;
 
     pdf.addImage(
       image,
@@ -563,33 +472,23 @@ export function WorkInvoicePage() {
           );
 
         const base64 =
-          dataUri.split(
-            ','
-          )[1];
+          dataUri.split(',')[1];
 
-        await Filesystem.writeFile(
-          {
-            path: fileName,
-
-            data: base64,
-
-            directory:
-              Directory.Documents,
-          }
-        );
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory:
+            Directory.Documents,
+        });
 
         window.alert(
           'تم حفظ ملف PDF'
         );
       } else {
-        pdf.save(
-          fileName
-        );
+        pdf.save(fileName);
       }
     } catch (error) {
-      console.error(
-        error
-      );
+      console.error(error);
 
       window.alert(
         'تعذر حفظ ملف PDF'
@@ -631,39 +530,29 @@ export function WorkInvoicePage() {
             .split(',')[1];
 
         const saved =
-          await Filesystem.writeFile(
-            {
-              path: fileName,
-
-              data: base64,
-
-              directory:
-                Directory.Cache,
-            }
-          );
+          await Filesystem.writeFile({
+            path: fileName,
+            data: base64,
+            directory:
+              Directory.Cache,
+          });
 
         await Share.share({
-          title:
-            'فاتورة عمل',
+          title: 'فاتورة عمل',
 
           text:
             `فاتورة عمل رقم ${data.invoiceNo}`,
 
-          url:
-            saved.uri,
+          url: saved.uri,
 
           dialogTitle:
             'مشاركة فاتورة العمل',
         });
       } else {
-        pdf.save(
-          fileName
-        );
+        pdf.save(fileName);
       }
     } catch (error) {
-      console.error(
-        error
-      );
+      console.error(error);
 
       window.alert(
         'تعذر مشاركة الفاتورة'
@@ -689,23 +578,17 @@ export function WorkInvoicePage() {
       >
         <div className="mx-auto max-w-6xl px-3 py-4">
 
-          {/* =================================================
-              PAGE HEADER
-          ================================================= */}
+          {/* PAGE HEADER */}
 
           <div className="mb-4 flex items-center justify-between">
-
             <button
               type="button"
               onClick={() =>
                 navigate(-1)
               }
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700 bg-[#0c1728]"
-              aria-label="رجوع"
             >
-              <ArrowRight
-                size={22}
-              />
+              <ArrowRight size={22} />
             </button>
 
             <div className="text-center">
@@ -714,8 +597,8 @@ export function WorkInvoicePage() {
               </h1>
 
               <p className="mt-1 text-xs text-slate-400">
-                إنشاء وتعديل
-                ومعاينة الفاتورة
+                إنشاء وتعديل ومعاينة
+                الفاتورة
               </p>
             </div>
 
@@ -725,26 +608,18 @@ export function WorkInvoicePage() {
                 createNewInvoice
               }
               className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600"
-              aria-label="فاتورة جديدة"
             >
-              <Plus
-                size={23}
-              />
+              <Plus size={23} />
             </button>
           </div>
 
-          {/* =================================================
-              ACTION BUTTONS
-          ================================================= */}
+          {/* BUTTONS */}
 
           <div className="mb-4 grid grid-cols-3 gap-2">
-
             <button
               type="button"
               onClick={() =>
-                setPreviewOpen(
-                  true
-                )
+                setPreviewOpen(true)
               }
               className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-2 py-3 text-xs font-bold"
             >
@@ -754,9 +629,7 @@ export function WorkInvoicePage() {
 
             <button
               type="button"
-              onClick={
-                saveInvoice
-              }
+              onClick={saveInvoice}
               className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-2 py-3 text-xs font-bold"
             >
               <Save size={17} />
@@ -769,43 +642,31 @@ export function WorkInvoicePage() {
               onClick={savePdf}
               className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-2 py-3 text-xs font-bold disabled:opacity-50"
             >
-              <FileDown
-                size={17}
-              />
+              <FileDown size={17} />
               PDF
             </button>
 
             <button
               type="button"
               disabled={busy}
-              onClick={
-                shareInvoice
-              }
+              onClick={shareInvoice}
               className="flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-2 py-3 text-xs font-bold disabled:opacity-50"
             >
-              <Share2
-                size={17}
-              />
+              <Share2 size={17} />
               مشاركة
             </button>
 
             <button
               type="button"
-              onClick={
-                printInvoice
-              }
+              onClick={printInvoice}
               className="flex items-center justify-center gap-2 rounded-xl bg-slate-700 px-2 py-3 text-xs font-bold"
             >
-              <Printer
-                size={17}
-              />
+              <Printer size={17} />
               طباعة
             </button>
           </div>
 
-          {/* =================================================
-              EDIT FORM
-          ================================================= */}
+          {/* EDIT FORM */}
 
           <div className="rounded-[22px] border border-slate-700 bg-[#0a1525] p-3">
 
@@ -814,15 +675,10 @@ export function WorkInvoicePage() {
             </h2>
 
             <div className="grid grid-cols-2 gap-2">
-
               <Field
                 label="رقم الفاتورة"
-                value={
-                  data.invoiceNo
-                }
-                onChange={(
-                  value
-                ) =>
+                value={data.invoiceNo}
+                onChange={(value) =>
                   updateField(
                     'invoiceNo',
                     value
@@ -833,12 +689,8 @@ export function WorkInvoicePage() {
               <Field
                 label="التاريخ"
                 type="date"
-                value={
-                  data.date
-                }
-                onChange={(
-                  value
-                ) =>
+                value={data.date}
+                onChange={(value) =>
                   updateField(
                     'date',
                     value
@@ -849,13 +701,9 @@ export function WorkInvoicePage() {
 
             <Field
               label="اسم العميل"
-              value={
-                data.customer
-              }
+              value={data.customer}
               placeholder="اكتب اسم العميل"
-              onChange={(
-                value
-              ) =>
+              onChange={(value) =>
                 updateField(
                   'customer',
                   value
@@ -863,27 +711,17 @@ export function WorkInvoicePage() {
               }
             />
 
-            {/* ===============================================
-                HEADER EDIT
-            =============================================== */}
-
             <div className="my-4 border-t border-slate-700" />
 
             <h3 className="mb-3 text-sm font-black text-violet-300">
-              تعديل واجهة
-              الفاتورة
+              تعديل واجهة الفاتورة
             </h3>
 
             <div className="grid grid-cols-2 gap-2">
-
               <Field
                 label="كرينات"
-                value={
-                  data.rightTitle
-                }
-                onChange={(
-                  value
-                ) =>
+                value={data.rightTitle}
+                onChange={(value) =>
                   updateField(
                     'rightTitle',
                     value
@@ -893,12 +731,8 @@ export function WorkInvoicePage() {
 
               <Field
                 label="بوم ترك"
-                value={
-                  data.leftTitle
-                }
-                onChange={(
-                  value
-                ) =>
+                value={data.leftTitle}
+                onChange={(value) =>
                   updateField(
                     'leftTitle',
                     value
@@ -912,9 +746,7 @@ export function WorkInvoicePage() {
               value={
                 data.companyArabic
               }
-              onChange={(
-                value
-              ) =>
+              onChange={(value) =>
                 updateField(
                   'companyArabic',
                   value
@@ -927,9 +759,7 @@ export function WorkInvoicePage() {
               value={
                 data.companyEnglish
               }
-              onChange={(
-                value
-              ) =>
+              onChange={(value) =>
                 updateField(
                   'companyEnglish',
                   value
@@ -939,12 +769,8 @@ export function WorkInvoicePage() {
 
             <Field
               label="النشاط"
-              value={
-                data.activity
-              }
-              onChange={(
-                value
-              ) =>
+              value={data.activity}
+              onChange={(value) =>
                 updateField(
                   'activity',
                   value
@@ -954,22 +780,14 @@ export function WorkInvoicePage() {
 
             <Field
               label="الموقع"
-              value={
-                data.location
-              }
-              onChange={(
-                value
-              ) =>
+              value={data.location}
+              onChange={(value) =>
                 updateField(
                   'location',
                   value
                 )
               }
             />
-
-            {/* ===============================================
-                7 ROWS
-            =============================================== */}
 
             <div className="my-4 border-t border-slate-700" />
 
@@ -984,17 +802,13 @@ export function WorkInvoicePage() {
             </div>
 
             {data.rows.map(
-              (
-                row,
-                index
-              ) => (
+              (row, index) => (
                 <div
                   key={index}
                   className="mb-3 rounded-[18px] border border-slate-700 bg-[#07111f] p-3"
                 >
                   <div className="mb-3 text-xs font-black text-slate-300">
-                    السطر{' '}
-                    {index + 1}
+                    السطر {index + 1}
                   </div>
 
                   <Field
@@ -1003,9 +817,7 @@ export function WorkInvoicePage() {
                       row.description
                     }
                     placeholder="اكتب بيان العمل"
-                    onChange={(
-                      value
-                    ) =>
+                    onChange={(value) =>
                       updateRow(
                         index,
                         'description',
@@ -1015,15 +827,10 @@ export function WorkInvoicePage() {
                   />
 
                   <div className="grid grid-cols-3 gap-2">
-
                     <MiniField
                       label="الكمية"
-                      value={
-                        row.qty
-                      }
-                      onChange={(
-                        value
-                      ) =>
+                      value={row.qty}
+                      onChange={(value) =>
                         updateRow(
                           index,
                           'qty',
@@ -1037,9 +844,7 @@ export function WorkInvoicePage() {
                       value={
                         row.unitPrice
                       }
-                      onChange={(
-                        value
-                      ) =>
+                      onChange={(value) =>
                         updateRow(
                           index,
                           'unitPrice',
@@ -1053,9 +858,7 @@ export function WorkInvoicePage() {
                       value={
                         row.totalPrice
                       }
-                      onChange={(
-                        value
-                      ) =>
+                      onChange={(value) =>
                         updateRow(
                           index,
                           'totalPrice',
@@ -1070,13 +873,9 @@ export function WorkInvoicePage() {
 
             <Field
               label="المبلغ كتابة"
-              value={
-                data.totalWords
-              }
+              value={data.totalWords}
               placeholder="مثال: ثمانية عشر ألف ريال فقط لا غير"
-              onChange={(
-                value
-              ) =>
+              onChange={(value) =>
                 updateField(
                   'totalWords',
                   value
@@ -1086,13 +885,9 @@ export function WorkInvoicePage() {
 
             <Field
               label="ملاحظات"
-              value={
-                data.notes
-              }
+              value={data.notes}
               placeholder="ملاحظات اختيارية"
-              onChange={(
-                value
-              ) =>
+              onChange={(value) =>
                 updateField(
                   'notes',
                   value
@@ -1103,56 +898,41 @@ export function WorkInvoicePage() {
             <button
               type="button"
               onClick={() =>
-                setPreviewOpen(
-                  true
-                )
+                setPreviewOpen(true)
               }
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-[16px] bg-violet-600 py-3.5 text-sm font-black"
             >
               <Eye size={19} />
 
-              معاينة الفاتورة
-              قبل الحفظ
+              معاينة الفاتورة قبل الحفظ
             </button>
           </div>
 
-          {/* =================================================
-              HIDDEN/INLINE PRINT DOCUMENT
-          ================================================= */}
+          {/* SMALL PREVIEW */}
 
           <div className="mt-5 overflow-auto rounded-[22px] border border-slate-700 bg-[#0a1525] p-2">
-
             <div className="mb-2 text-center text-xs font-bold text-slate-400">
               معاينة مصغرة
             </div>
 
             <InvoiceDocument
-              invoiceRef={
-                invoiceRef
-              }
+              invoiceRef={invoiceRef}
               data={data}
-              grandTotal={
-                grandTotal
-              }
+              grandTotal={grandTotal}
             />
           </div>
         </div>
 
-        {/* ===================================================
-            FULL PREVIEW
-        =================================================== */}
+        {/* FULL PREVIEW */}
 
         {previewOpen && (
           <div className="fixed inset-0 z-[20000] flex flex-col bg-[#020817]">
 
             <div className="flex items-center justify-between border-b border-white/10 bg-[#07111f] px-3 py-3">
-
               <button
                 type="button"
                 onClick={() =>
-                  setPreviewOpen(
-                    false
-                  )
+                  setPreviewOpen(false)
                 }
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5"
               >
@@ -1161,13 +941,11 @@ export function WorkInvoicePage() {
 
               <div className="text-center">
                 <div className="text-sm font-black">
-                  معاينة
-                  فاتورة العمل
+                  معاينة فاتورة العمل
                 </div>
 
                 <div className="text-[10px] text-slate-400">
-                  راجع الفاتورة
-                  قبل الحفظ
+                  راجع الفاتورة قبل الحفظ
                 </div>
               </div>
 
@@ -1177,9 +955,7 @@ export function WorkInvoicePage() {
                 onClick={savePdf}
                 className="flex h-10 items-center gap-1 rounded-xl bg-blue-600 px-3 text-xs font-bold disabled:opacity-50"
               >
-                <FileDown
-                  size={15}
-                />
+                <FileDown size={15} />
                 PDF
               </button>
             </div>
@@ -1187,19 +963,14 @@ export function WorkInvoicePage() {
             <div className="flex-1 overflow-auto p-3">
               <InvoiceDocument
                 data={data}
-                grandTotal={
-                  grandTotal
-                }
+                grandTotal={grandTotal}
               />
             </div>
 
             <div className="grid grid-cols-3 gap-2 border-t border-white/10 bg-[#07111f] p-3">
-
               <button
                 type="button"
-                onClick={
-                  saveInvoice
-                }
+                onClick={saveInvoice}
                 className="rounded-xl bg-emerald-600 py-3 text-xs font-black"
               >
                 حفظ
@@ -1207,9 +978,7 @@ export function WorkInvoicePage() {
 
               <button
                 type="button"
-                onClick={
-                  shareInvoice
-                }
+                onClick={shareInvoice}
                 disabled={busy}
                 className="rounded-xl bg-sky-600 py-3 text-xs font-black disabled:opacity-50"
               >
@@ -1218,9 +987,7 @@ export function WorkInvoicePage() {
 
               <button
                 type="button"
-                onClick={
-                  printInvoice
-                }
+                onClick={printInvoice}
                 className="rounded-xl bg-slate-700 py-3 text-xs font-black"
               >
                 طباعة
@@ -1242,19 +1009,14 @@ function InvoiceDocument({
   data,
   grandTotal,
 }: {
-  invoiceRef?:
-    React.RefObject<HTMLDivElement | null>;
-
-  data:
-    WorkInvoiceData;
-
-  grandTotal:
-    number;
+  invoiceRef?: React.RefObject<HTMLDivElement>;
+  data: WorkInvoiceData;
+  grandTotal: number;
 }) {
   return (
     <div
       ref={invoiceRef}
-      dir="rtl"
+      dir="ltr"
       className="mx-auto w-[794px] min-w-[794px] overflow-hidden bg-white text-[#25256f]"
       style={{
         minHeight: 1123,
@@ -1262,19 +1024,15 @@ function InvoiceDocument({
           'Arial, Tahoma, sans-serif',
       }}
     >
-
-      {/* =====================================================
-          ORIGINAL STYLE HEADER
-      ===================================================== */}
+      {/* HEADER */}
 
       <div
-        className="relative overflow-hidden px-6 pb-8 pt-5"
+        className="relative overflow-hidden px-6 pb-7 pt-5"
         style={{
-          background:
-            '#292878',
+          background: '#292878',
         }}
       >
-        {/* TOP THREE BOXES */}
+        {/* TOP ROW */}
 
         <div
           className="grid items-start gap-4"
@@ -1283,20 +1041,17 @@ function InvoiceDocument({
               '1fr 2.15fr 1fr',
           }}
         >
-
-          {/* RIGHT */}
+          {/* LEFT - BOOM TRUCK */}
 
           <div className="flex justify-center pt-1">
             <div
+              dir="rtl"
               className="flex min-h-[58px] w-full items-center justify-center rounded-[17px] bg-white px-3 text-center text-[27px] font-black"
               style={{
-                color:
-                  '#292878',
+                color: '#292878',
               }}
             >
-              {
-                data.rightTitle
-              }
+              {data.leftTitle}
             </div>
           </div>
 
@@ -1305,20 +1060,19 @@ function InvoiceDocument({
           <div
             className="rounded-[27px] bg-white px-5 py-2 text-center"
             style={{
-              color:
-                '#292878',
+              color: '#292878',
             }}
           >
-            <div className="flex items-center justify-center gap-3">
-
+            <div
+              dir="rtl"
+              className="flex items-center justify-center gap-3"
+            >
               <span className="text-[23px]">
                 ✦
               </span>
 
               <span className="text-[30px] font-black leading-none">
-                {
-                  data.companyArabic
-                }
+                {data.companyArabic}
               </span>
 
               <span className="text-[23px]">
@@ -1330,25 +1084,21 @@ function InvoiceDocument({
               dir="ltr"
               className="mt-1 text-[17px] font-black tracking-[0.05em]"
             >
-              {
-                data.companyEnglish
-              }
+              {data.companyEnglish}
             </div>
           </div>
 
-          {/* LEFT */}
+          {/* RIGHT - CRANES */}
 
           <div className="flex justify-center pt-1">
             <div
+              dir="rtl"
               className="flex min-h-[58px] w-full items-center justify-center rounded-[17px] bg-white px-3 text-center text-[27px] font-black"
               style={{
-                color:
-                  '#292878',
+                color: '#292878',
               }}
             >
-              {
-                data.leftTitle
-              }
+              {data.rightTitle}
             </div>
           </div>
         </div>
@@ -1356,63 +1106,30 @@ function InvoiceDocument({
         {/* SECOND ROW */}
 
         <div className="mx-auto mt-4 grid max-w-[570px] grid-cols-2 gap-5">
-
           <div
+            dir="rtl"
             className="rounded-[18px] bg-white px-4 py-2 text-center text-[21px] font-black"
             style={{
-              color:
-                '#292878',
+              color: '#292878',
             }}
           >
             {data.location}
           </div>
 
           <div
+            dir="rtl"
             className="rounded-[18px] bg-white px-4 py-2 text-center text-[21px] font-black"
             style={{
-              color:
-                '#292878',
+              color: '#292878',
             }}
           >
             {data.activity}
           </div>
         </div>
 
-        {/* EQUIPMENT AREA
-            التصميم فقط، بدون استخدام الصور
-            المنفصلة التي أرسلها المستخدم.
-        */}
+        {/* CRANE + BOOM TRUCK DRAWING */}
 
-        <div className="relative mx-auto mt-3 h-[110px] max-w-[500px]">
-
-          <div className="absolute bottom-0 left-[40px] h-[56px] w-[145px] rounded-[7px] border-2 border-white/40 bg-white/10">
-            <div className="flex h-full items-center justify-center text-[11px] font-bold text-white/70">
-              BOOM TRUCK
-            </div>
-          </div>
-
-          <div
-            className="absolute bottom-[19px] left-[120px] h-[9px] w-[300px] origin-left rounded-full bg-white/80"
-            style={{
-              transform:
-                'rotate(-17deg)',
-            }}
-          />
-
-          <div className="absolute bottom-0 right-[45px] h-[65px] w-[175px] rounded-[7px] border-2 border-white/40 bg-white/10">
-            <div className="flex h-full items-center justify-center text-[11px] font-bold text-white/70">
-              CRANE
-            </div>
-          </div>
-
-          <div
-            className="absolute bottom-[24px] right-[130px] h-[9px] w-[300px] origin-right rounded-full bg-white/80"
-            style={{
-              transform:
-                'rotate(21deg)',
-            }}
-          />
-        </div>
+        <EquipmentArtwork />
 
         {/* CURVE */}
 
@@ -1425,56 +1142,67 @@ function InvoiceDocument({
         />
       </div>
 
-      {/* =====================================================
-          BODY
-      ===================================================== */}
+      {/* BODY */}
 
       <div className="px-7 pb-5 pt-6">
 
-        {/* CASH / NO / DATE */}
+        {/* CASH LEFT / DATE RIGHT */}
 
         <div
+          dir="ltr"
           className="grid items-start gap-4"
           style={{
             gridTemplateColumns:
               '1fr 1.35fr 1fr',
           }}
         >
+          {/* LEFT */}
 
-          <div
-            dir="ltr"
-            className="text-left"
-          >
-            <div className="text-[25px] font-black">
+          <div className="text-left">
+            <div
+              dir="rtl"
+              className="text-left text-[25px] font-black"
+            >
               فاتورة نقداً
             </div>
 
-            <div className="text-[17px] font-bold">
+            <div
+              dir="ltr"
+              className="text-[17px] font-bold"
+            >
               Cash Invoice
             </div>
 
-            <div className="mt-5 text-[28px]">
+            <div
+              dir="ltr"
+              className="mt-5 text-[28px]"
+            >
               No
             </div>
 
-            <div className="mt-1 text-[18px] font-black">
-              {
-                data.invoiceNo
-              }
+            <div
+              dir="ltr"
+              className="mt-1 text-[18px] font-black"
+            >
+              {data.invoiceNo}
             </div>
           </div>
 
           <div />
 
-          <div className="pt-2 text-right">
+          {/* RIGHT DATE */}
 
-            <div className="text-[19px] font-black">
+          <div className="pt-2 text-right">
+            <div
+              dir="rtl"
+              className="text-right text-[19px] font-black"
+            >
               التاريخ
             </div>
 
             <div
               dir="ltr"
-              className="mt-2 text-[18px] font-black"
+              className="mt-2 text-right text-[18px] font-black"
             >
               {data.date}
             </div>
@@ -1483,8 +1211,10 @@ function InvoiceDocument({
 
         {/* CUSTOMER */}
 
-        <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-2">
-
+        <div
+          dir="ltr"
+          className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-2"
+        >
           <div
             dir="ltr"
             className="text-[17px]"
@@ -1492,23 +1222,28 @@ function InvoiceDocument({
             Mr. / Messrs
           </div>
 
-          <div className="min-h-[34px] text-center text-[22px] font-black text-black">
+          <div
+            dir="rtl"
+            className="min-h-[34px] text-center text-[22px] font-black text-black"
+          >
             {data.customer ||
               'اسم العميل'}
           </div>
 
-          <div className="text-[18px] font-black">
-            المطلوب من السيد /
-            السادة
+          <div
+            dir="rtl"
+            className="text-[18px] font-black"
+          >
+            المطلوب من السيد / السادة
           </div>
         </div>
 
-        {/* ===================================================
-            TABLE
-        =================================================== */}
+        {/* TABLE */}
 
-        <div className="mt-5 overflow-hidden rounded-[17px] border-[3px] border-[#292878]">
-
+        <div
+          dir="ltr"
+          className="mt-5 overflow-hidden rounded-[17px] border-[3px] border-[#292878]"
+        >
           {/* HEADER */}
 
           <div
@@ -1518,43 +1253,42 @@ function InvoiceDocument({
                 '2.35fr .75fr 1.15fr 1.15fr',
             }}
           >
-
             <InvoiceHeaderCell>
-              <span>
+              <span dir="rtl">
                 البيان
               </span>
 
-              <small>
+              <small dir="ltr">
                 Description
               </small>
             </InvoiceHeaderCell>
 
             <InvoiceHeaderCell>
-              <span>
+              <span dir="rtl">
                 الكمية
               </span>
 
-              <small>
+              <small dir="ltr">
                 Qty.
               </small>
             </InvoiceHeaderCell>
 
             <InvoiceHeaderCell>
-              <span>
+              <span dir="rtl">
                 سعر الوحدة
               </span>
 
-              <small>
+              <small dir="ltr">
                 Unit Price
               </small>
             </InvoiceHeaderCell>
 
             <InvoiceHeaderCell>
-              <span>
+              <span dir="rtl">
                 السعر الإجمالي
               </span>
 
-              <small>
+              <small dir="ltr">
                 Total Price
               </small>
             </InvoiceHeaderCell>
@@ -1563,12 +1297,10 @@ function InvoiceDocument({
           {/* EXACTLY 7 ROWS */}
 
           {data.rows.map(
-            (
-              row,
-              index
-            ) => (
+            (row, index) => (
               <div
                 key={index}
+                dir="ltr"
                 className="grid min-h-[74px] border-t border-dotted border-slate-400"
                 style={{
                   gridTemplateColumns:
@@ -1576,25 +1308,27 @@ function InvoiceDocument({
                 }}
               >
                 <InvoiceCell>
-                  {
-                    row.description
-                  }
+                  <span dir="rtl">
+                    {row.description}
+                  </span>
                 </InvoiceCell>
 
                 <InvoiceCell>
-                  {row.qty}
+                  <span dir="ltr">
+                    {row.qty}
+                  </span>
                 </InvoiceCell>
 
                 <InvoiceCell>
-                  {
-                    row.unitPrice
-                  }
+                  <span dir="ltr">
+                    {row.unitPrice}
+                  </span>
                 </InvoiceCell>
 
                 <InvoiceCell>
-                  {
-                    row.totalPrice
-                  }
+                  <span dir="ltr">
+                    {row.totalPrice}
+                  </span>
                 </InvoiceCell>
               </div>
             )
@@ -1603,13 +1337,13 @@ function InvoiceDocument({
           {/* TOTAL */}
 
           <div
+            dir="ltr"
             className="grid border-t-[3px] border-[#292878]"
             style={{
               gridTemplateColumns:
                 '1fr 2.25fr .8fr 1fr',
             }}
           >
-
             <div
               dir="ltr"
               className="flex min-h-[62px] items-center justify-center px-2 text-[15px] font-black"
@@ -1617,16 +1351,25 @@ function InvoiceDocument({
               Total S.R.
             </div>
 
-            <div className="flex items-center justify-center border-r-2 border-[#292878] px-3 text-center text-[17px] font-black text-black">
+            <div
+              dir="rtl"
+              className="flex items-center justify-center border-l-2 border-[#292878] px-3 text-center text-[17px] font-black text-black"
+            >
               {data.totalWords ||
                 'فقط لا غير'}
             </div>
 
-            <div className="flex items-center justify-center border-r-2 border-[#292878] px-2 text-[16px] font-black">
+            <div
+              dir="rtl"
+              className="flex items-center justify-center border-l-2 border-[#292878] px-2 text-[16px] font-black"
+            >
               المجموع
             </div>
 
-            <div className="flex items-center justify-center border-r-2 border-[#292878] px-2 text-[27px] font-black text-black">
+            <div
+              dir="ltr"
+              className="flex items-center justify-center border-l-2 border-[#292878] px-2 text-[27px] font-black text-black"
+            >
               {grandTotal.toLocaleString(
                 'en-US'
               )}
@@ -1634,14 +1377,19 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* ===================================================
-            SIGNATURE
-        =================================================== */}
+        {/* SIGNATURE */}
 
-        <div className="grid grid-cols-2 gap-20 px-16 py-6">
+        <div
+          dir="ltr"
+          className="grid grid-cols-2 gap-20 px-16 py-6"
+        >
+          {/* LEFT RECEIVED */}
 
           <div className="text-center">
-            <div className="text-[17px] font-black">
+            <div
+              dir="rtl"
+              className="text-[17px] font-black"
+            >
               توقيع المستلم
             </div>
 
@@ -1655,8 +1403,13 @@ function InvoiceDocument({
             <div className="mx-auto mt-7 w-[120px] border-b-2 border-dotted border-slate-400" />
           </div>
 
+          {/* RIGHT SALESMAN */}
+
           <div className="text-center">
-            <div className="text-[17px] font-black">
+            <div
+              dir="rtl"
+              className="text-[17px] font-black"
+            >
               توقيع البائع
             </div>
 
@@ -1674,7 +1427,10 @@ function InvoiceDocument({
         {/* NOTES */}
 
         {data.notes && (
-          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-center text-[13px] font-bold text-black">
+          <div
+            dir="rtl"
+            className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-center text-[13px] font-bold text-black"
+          >
             {data.notes}
           </div>
         )}
@@ -1682,8 +1438,10 @@ function InvoiceDocument({
         {/* THANKS */}
 
         <div className="border-t border-slate-200 pt-3 text-center">
-
-          <div className="text-[17px] font-black">
+          <div
+            dir="rtl"
+            className="text-[17px] font-black"
+          >
             شكراً لتعاملكم معنا
           </div>
 
@@ -1691,8 +1449,7 @@ function InvoiceDocument({
             dir="ltr"
             className="mt-1 text-[13px] font-bold"
           >
-            Thank you for
-            dealing with us
+            Thank you for dealing with us
           </div>
         </div>
 
@@ -1708,7 +1465,141 @@ function InvoiceDocument({
 }
 
 /* =========================================================
-   FORM FIELD
+   EQUIPMENT ARTWORK
+========================================================= */
+
+function EquipmentArtwork() {
+  return (
+    <div className="relative mx-auto mt-2 h-[118px] w-[520px]">
+
+      <svg
+        viewBox="0 0 520 118"
+        className="h-full w-full"
+        aria-hidden="true"
+      >
+        {/* BOOM TRUCK - LEFT */}
+
+        <g
+          fill="none"
+          stroke="white"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* truck chassis */}
+          <path d="M34 91 H180" />
+
+          {/* truck body */}
+          <path d="M48 68 H127 L145 89 H48 Z" />
+
+          {/* cabin */}
+          <path d="M48 68 L62 48 H94 L110 68" />
+
+          {/* window */}
+          <path d="M64 52 H88 L98 66 H57 Z" />
+
+          {/* rear body */}
+          <path d="M112 67 H154 V88 H143" />
+
+          {/* wheels */}
+          <circle
+            cx="72"
+            cy="92"
+            r="10"
+          />
+
+          <circle
+            cx="136"
+            cy="92"
+            r="10"
+          />
+
+          {/* boom base */}
+          <path d="M127 65 L147 54" />
+
+          {/* boom */}
+          <path d="M143 57 L310 15" />
+
+          <path d="M147 63 L313 21" />
+
+          {/* hook line */}
+          <path d="M310 18 V46" />
+
+          <path d="M310 46 q0 10 8 10" />
+        </g>
+
+        {/* CRANE - RIGHT */}
+
+        <g
+          fill="none"
+          stroke="white"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* crane lower chassis */}
+          <path d="M332 90 H491" />
+
+          {/* crane body */}
+          <path d="M352 66 H438 L458 89 H347 Z" />
+
+          {/* cabin */}
+          <path d="M402 49 H434 L447 66 H397 Z" />
+
+          {/* window */}
+          <path d="M407 53 H430 L439 64 H401 Z" />
+
+          {/* wheels */}
+          <circle
+            cx="371"
+            cy="92"
+            r="10"
+          />
+
+          <circle
+            cx="419"
+            cy="92"
+            r="10"
+          />
+
+          <circle
+            cx="459"
+            cy="92"
+            r="10"
+          />
+
+          {/* rotating base */}
+          <path d="M350 65 L368 53 H393" />
+
+          {/* main boom */}
+          <path d="M371 53 L243 14" />
+
+          <path d="M375 58 L241 20" />
+
+          {/* boom tip */}
+          <path d="M242 16 L229 14" />
+
+          {/* hook */}
+          <path d="M232 16 V49" />
+
+          <path d="M232 49 q0 9 -8 9" />
+        </g>
+
+        {/* small center decorative line */}
+        <g
+          stroke="white"
+          strokeWidth="1.5"
+          opacity="0.45"
+        >
+          <path d="M190 105 H330" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+/* =========================================================
+   FIELD
 ========================================================= */
 
 function Field({
@@ -1719,20 +1610,16 @@ function Field({
   type = 'text',
 }: {
   label: string;
-
   value: string;
 
   onChange:
-    (value: string) =>
-      void;
+    (value: string) => void;
 
   placeholder?: string;
-
   type?: string;
 }) {
   return (
     <label className="mb-3 block">
-
       <span className="mb-1.5 block text-[11px] font-bold text-slate-400">
         {label}
       </span>
@@ -1740,9 +1627,7 @@ function Field({
       <input
         type={type}
         value={value}
-        placeholder={
-          placeholder
-        }
+        placeholder={placeholder}
         onChange={(event) =>
           onChange(
             event.target.value
@@ -1764,16 +1649,13 @@ function MiniField({
   onChange,
 }: {
   label: string;
-
   value: string;
 
   onChange:
-    (value: string) =>
-      void;
+    (value: string) => void;
 }) {
   return (
     <label className="block">
-
       <span className="mb-1.5 block text-[10px] font-bold text-slate-400">
         {label}
       </span>
@@ -1793,39 +1675,33 @@ function MiniField({
 }
 
 /* =========================================================
-   INVOICE HEADER CELL
+   TABLE HEADER CELL
 ========================================================= */
 
 function InvoiceHeaderCell({
   children,
 }: {
-  children:
-    React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[72px] flex-col items-center justify-center border-l-2 border-[#292878] px-2 text-center text-[17px] font-black last:border-l-0">
-
+    <div className="flex min-h-[72px] flex-col items-center justify-center border-r-2 border-[#292878] px-2 text-center text-[17px] font-black first:border-r-0">
       {children}
-
     </div>
   );
 }
 
 /* =========================================================
-   INVOICE CELL
+   TABLE CELL
 ========================================================= */
 
 function InvoiceCell({
   children,
 }: {
-  children?:
-    React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-center border-l-2 border-[#292878] px-2 text-center text-[16px] font-bold text-black last:border-l-0">
-
+    <div className="flex items-center justify-center border-r-2 border-[#292878] px-2 text-center text-[16px] font-bold text-black first:border-r-0">
       {children}
-
     </div>
   );
-  }
+                  }
