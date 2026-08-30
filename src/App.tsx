@@ -24,6 +24,12 @@ import { ReportsPage } from '@/pages/ReportsPage';
 
 import { InvoicesPage } from '@/pages/InvoicesPage-2-final-polished-FINAL';
 
+/* =========================
+   WORK INVOICE
+========================= */
+
+import { WorkInvoicePage } from '@/pages/WorkInvoicePage';
+
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
@@ -493,12 +499,23 @@ function App() {
           }
         />
 
-        {/* الفواتير */}
+        {/* الفواتير القديمة */}
 
         <Route
           path="/invoices"
           element={
             <InvoicesPage />
+          }
+        />
+
+        {/* ===================
+            فاتورة عمل الجديدة
+        =================== */}
+
+        <Route
+          path="/work-invoice"
+          element={
+            <WorkInvoicePage />
           }
         />
 
