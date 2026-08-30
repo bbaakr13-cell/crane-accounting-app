@@ -1,18 +1,27 @@
 import React, { useMemo, useRef, useState } from 'react';
+
 import {
   Save,
   FileDown,
   Printer,
   Share2,
   Plus,
-  Trash2,
   ArrowRight,
 } from 'lucide-react';
-import { AppLayout } from '@/components/AppLayout';
+
+import { useNavigate } from 'react-router-dom';
+
+import { AppLayout } from '@/components/layout/AppLayout';
+
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
 import { Capacitor } from '@capacitor/core';
-import { Directory, Filesystem } from '@capacitor/filesystem';
+import {
+  Directory,
+  Filesystem,
+} from '@capacitor/filesystem';
+
 import { Share } from '@capacitor/share';
 
 type InvoiceRow = {
@@ -40,17 +49,23 @@ type WorkInvoiceData = {
   notes: string;
 };
 
-const STORAGE_KEY = 'baakr-work-invoice-v1';
+const STORAGE_KEY =
+  'baakr-work-invoice-v1';
 
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date()
+  .toISOString()
+  .slice(0, 10);
 
 const emptyRows = (): InvoiceRow[] =>
-  Array.from({ length: 7 }, () => ({
-    description: '',
-    qty: '',
-    unitPrice: '',
-    totalPrice: '',
-  }));
+  Array.from(
+    { length: 7 },
+    () => ({
+      description: '',
+      qty: '',
+      unitPrice: '',
+      totalPrice: '',
+    })
+  );
 
 const initialData: WorkInvoiceData = {
   invoiceNo: '0001',
@@ -59,10 +74,15 @@ const initialData: WorkInvoiceData = {
 
   rightTitle: 'كرينات',
   companyArabic: 'رافعات الحديثة',
-  companyEnglish: 'RAFIËAT AL-HADITHA',
+  companyEnglish:
+    'RAFIËAT AL-HADITHA',
   leftTitle: 'بوم ترك',
-  activity: 'لتأجير المعدات الثقيلة',
-  location: 'خميس مشيط - أبها',
+
+  activity:
+    'لتأجير المعدات الثقيلة',
+
+  location:
+    'خميس مشيط - أبها',
 
   rows: emptyRows(),
 
@@ -72,23 +92,50 @@ const initialData: WorkInvoiceData = {
 
 function loadInvoice(): WorkInvoiceData {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved =
+      localStorage.getItem(
+        STORAGE_KEY
+      );
 
-    if (!saved) return initialData;
+    if (!saved) {
+      return initialData;
+    }
 
-    const parsed = JSON.parse(saved);
+    const parsed =
+      JSON.parse(saved);
 
     return {
       ...initialData,
       ...parsed,
+
       rows:
-        Array.isArray(parsed.rows) && parsed.rows.length
-          ? Array.from({ length: 7 }, (_, i) => ({
-              description: parsed.rows[i]?.description ?? '',
-              qty: parsed.rows[i]?.qty ?? '',
-              unitPrice: parsed.rows[i]?.unitPrice ?? '',
-              totalPrice: parsed.rows[i]?.totalPrice ?? '',
-            }))
+        Array.isArray(
+          parsed.rows
+        ) &&
+        parsed.rows.length
+          ? Array.from(
+              { length: 7 },
+              (_, i) => ({
+                description:
+                  parsed.rows[i]
+                    ?.description ??
+                  '',
+
+                qty:
+                  parsed.rows[i]
+                    ?.qty ?? '',
+
+                unitPrice:
+                  parsed.rows[i]
+                    ?.unitPrice ??
+                  '',
+
+                totalPrice:
+                  parsed.rows[i]
+                    ?.totalPrice ??
+                  '',
+              })
+            )
           : emptyRows(),
     };
   } catch {
@@ -96,24 +143,54 @@ function loadInvoice(): WorkInvoiceData {
   }
 }
 
-function safeNumber(value: string | number) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+function safeNumber(
+  value: string | number
+) {
+  const numberValue =
+    Number(value);
+
+  return Number.isFinite(
+    numberValue
+  )
+    ? numberValue
+    : 0;
 }
 
 export function WorkInvoicePage() {
-  const [data, setData] = useState<WorkInvoiceData>(() => loadInvoice());
-  const [busy, setBusy] = useState(false);
+  const navigate =
+    useNavigate();
 
-  const invoiceRef = useRef<HTMLDivElement>(null);
+  const [data, setData] =
+    useState<WorkInvoiceData>(
+      () => loadInvoice()
+    );
 
-  const grandTotal = useMemo(() => {
-    return data.rows.reduce((sum, row) => {
-      return sum + safeNumber(row.totalPrice);
-    }, 0);
-  }, [data.rows]);
+  const [busy, setBusy] =
+    useState(false);
 
-  function updateField<K extends keyof WorkInvoiceData>(
+  const invoiceRef =
+    useRef<HTMLDivElement>(
+      null
+    );
+
+  const grandTotal =
+    useMemo(() => {
+      return data.rows.reduce(
+        (sum, row) => {
+          return (
+            sum +
+            safeNumber(
+              row.totalPrice
+            )
+          );
+        },
+        0
+      );
+    }, [data.rows]);
+
+  function updateField<
+    K extends keyof WorkInvoiceData
+  >(
     key: K,
     value: WorkInvoiceData[K]
   ) {
@@ -129,30 +206,42 @@ export function WorkInvoicePage() {
     value: string
   ) {
     setData((prev) => {
-      const rows = [...prev.rows];
+      const rows =
+        [...prev.rows];
 
       const nextRow = {
         ...rows[index],
         [key]: value,
       };
 
-      if (key === 'qty' || key === 'unitPrice') {
+      if (
+        key === 'qty' ||
+        key === 'unitPrice'
+      ) {
         const qty =
           key === 'qty'
             ? safeNumber(value)
-            : safeNumber(nextRow.qty);
+            : safeNumber(
+                nextRow.qty
+              );
 
         const unit =
-          key === 'unitPrice'
+          key ===
+          'unitPrice'
             ? safeNumber(value)
-            : safeNumber(nextRow.unitPrice);
+            : safeNumber(
+                nextRow.unitPrice
+              );
 
-        if (qty > 0 || unit > 0) {
-          nextRow.totalPrice = String(qty * unit);
-        }
+        nextRow.totalPrice =
+          qty > 0 ||
+          unit > 0
+            ? String(qty * unit)
+            : '';
       }
 
-      rows[index] = nextRow;
+      rows[index] =
+        nextRow;
 
       return {
         ...prev,
@@ -162,55 +251,109 @@ export function WorkInvoicePage() {
   }
 
   function saveInvoice() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    alert('تم حفظ فاتورة العمل');
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(data)
+    );
+
+    alert(
+      'تم حفظ فاتورة العمل'
+    );
   }
 
   function newInvoice() {
-    const confirmed = confirm('إنشاء فاتورة عمل جديدة؟');
+    const confirmed =
+      window.confirm(
+        'إنشاء فاتورة عمل جديدة؟'
+      );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     setData({
       ...initialData,
-      invoiceNo: String(Date.now()).slice(-6),
-      date: new Date().toISOString().slice(0, 10),
+
+      invoiceNo:
+        String(
+          Date.now()
+        ).slice(-6),
+
+      date: new Date()
+        .toISOString()
+        .slice(0, 10),
+
       rows: emptyRows(),
     });
   }
 
-  async function createPdfBlob() {
-    if (!invoiceRef.current) return null;
+  async function createPdf() {
+    if (
+      !invoiceRef.current
+    ) {
+      return null;
+    }
 
-    const canvas = await html2canvas(invoiceRef.current, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-    });
+    const canvas =
+      await html2canvas(
+        invoiceRef.current,
+        {
+          scale: 2,
 
-    const img = canvas.toDataURL('image/jpeg', 0.96);
+          backgroundColor:
+            '#ffffff',
 
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
+          useCORS: true,
+        }
+      );
 
-    const pageWidth = 210;
-    const pageHeight = 297;
+    const image =
+      canvas.toDataURL(
+        'image/jpeg',
+        0.96
+      );
 
-    const ratio = Math.min(
-      pageWidth / canvas.width,
-      pageHeight / canvas.height
-    );
+    const pdf =
+      new jsPDF({
+        orientation:
+          'portrait',
 
-    const width = canvas.width * ratio;
-    const height = canvas.height * ratio;
+        unit: 'mm',
+
+        format: 'a4',
+      });
+
+    const pageWidth =
+      210;
+
+    const pageHeight =
+      297;
+
+    const ratio =
+      Math.min(
+        pageWidth /
+          canvas.width,
+
+        pageHeight /
+          canvas.height
+      );
+
+    const width =
+      canvas.width *
+      ratio;
+
+    const height =
+      canvas.height *
+      ratio;
 
     pdf.addImage(
-      img,
+      image,
       'JPEG',
-      (pageWidth - width) / 2,
+
+      (pageWidth -
+        width) /
+        2,
+
       0,
       width,
       height
@@ -223,28 +366,56 @@ export function WorkInvoicePage() {
     try {
       setBusy(true);
 
-      const pdf = await createPdfBlob();
+      const pdf =
+        await createPdf();
 
-      if (!pdf) return;
+      if (!pdf) {
+        return;
+      }
 
-      const fileName = `work-invoice-${data.invoiceNo || 'invoice'}.pdf`;
+      const fileName =
+        `work-invoice-${
+          data.invoiceNo ||
+          'invoice'
+        }.pdf`;
 
-      if (Capacitor.isNativePlatform()) {
-        const base64 = pdf.output('datauristring').split(',')[1];
+      if (
+        Capacitor.isNativePlatform()
+      ) {
+        const base64 =
+          pdf
+            .output(
+              'datauristring'
+            )
+            .split(',')[1];
 
-        await Filesystem.writeFile({
-          path: fileName,
-          data: base64,
-          directory: Directory.Documents,
-        });
+        await Filesystem.writeFile(
+          {
+            path: fileName,
 
-        alert('تم حفظ PDF في الجهاز');
+            data: base64,
+
+            directory:
+              Directory.Documents,
+          }
+        );
+
+        alert(
+          'تم حفظ PDF في الجهاز'
+        );
       } else {
-        pdf.save(fileName);
+        pdf.save(
+          fileName
+        );
       }
     } catch (error) {
-      console.error(error);
-      alert('تعذر حفظ ملف PDF');
+      console.error(
+        error
+      );
+
+      alert(
+        'تعذر حفظ ملف PDF'
+      );
     } finally {
       setBusy(false);
     }
@@ -254,33 +425,66 @@ export function WorkInvoicePage() {
     try {
       setBusy(true);
 
-      const pdf = await createPdfBlob();
+      const pdf =
+        await createPdf();
 
-      if (!pdf) return;
+      if (!pdf) {
+        return;
+      }
 
-      const fileName = `work-invoice-${data.invoiceNo || 'invoice'}.pdf`;
+      const fileName =
+        `work-invoice-${
+          data.invoiceNo ||
+          'invoice'
+        }.pdf`;
 
-      if (Capacitor.isNativePlatform()) {
-        const base64 = pdf.output('datauristring').split(',')[1];
+      if (
+        Capacitor.isNativePlatform()
+      ) {
+        const base64 =
+          pdf
+            .output(
+              'datauristring'
+            )
+            .split(',')[1];
 
-        const saved = await Filesystem.writeFile({
-          path: fileName,
-          data: base64,
-          directory: Directory.Cache,
-        });
+        const saved =
+          await Filesystem.writeFile(
+            {
+              path: fileName,
+
+              data: base64,
+
+              directory:
+                Directory.Cache,
+            }
+          );
 
         await Share.share({
-          title: 'فاتورة عمل',
-          text: `فاتورة رقم ${data.invoiceNo}`,
+          title:
+            'فاتورة عمل',
+
+          text:
+            `فاتورة رقم ${data.invoiceNo}`,
+
           url: saved.uri,
-          dialogTitle: 'مشاركة الفاتورة',
+
+          dialogTitle:
+            'مشاركة الفاتورة',
         });
       } else {
-        pdf.save(fileName);
+        pdf.save(
+          fileName
+        );
       }
     } catch (error) {
-      console.error(error);
-      alert('تعذر مشاركة الفاتورة');
+      console.error(
+        error
+      );
+
+      alert(
+        'تعذر مشاركة الفاتورة'
+      );
     } finally {
       setBusy(false);
     }
@@ -297,57 +501,106 @@ export function WorkInvoicePage() {
         className="min-h-screen bg-[#06101f] pb-28 text-white"
       >
         <div className="mx-auto max-w-6xl px-3 py-4">
-          {/* عنوان الصفحة */}
+
+          {/* =========================
+              رأس الصفحة
+          ========================= */}
+
           <div className="mb-4 flex items-center justify-between">
             <button
               type="button"
-              onClick={() => history.back()}
+              onClick={() =>
+                navigate(-1)
+              }
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700 bg-[#0c1728]"
+              aria-label="رجوع"
             >
-              <ArrowRight size={22} />
+              <ArrowRight
+                size={22}
+              />
             </button>
 
             <div className="text-center">
-              <h1 className="text-xl font-bold">فاتورة عمل</h1>
+              <h1 className="text-xl font-bold">
+                فاتورة عمل
+              </h1>
+
               <p className="mt-1 text-xs text-slate-400">
-                إنشاء وتعديل فاتورة
+                إنشاء وتعديل
+                فاتورة
               </p>
             </div>
 
             <button
               type="button"
-              onClick={newInvoice}
+              onClick={
+                newInvoice
+              }
               className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600"
+              aria-label="فاتورة جديدة"
             >
-              <Plus size={24} />
+              <Plus
+                size={24}
+              />
             </button>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-            {/* ===================================== */}
-            {/* لوحة التعديل */}
-            {/* ===================================== */}
+
+            {/* =========================
+                لوحة التعديل
+            ========================= */}
 
             <div className="rounded-2xl border border-slate-700 bg-[#0a1525] p-3">
-              <h2 className="mb-3 font-bold">بيانات فاتورة العمل</h2>
+              <h2 className="mb-3 font-bold">
+                بيانات فاتورة
+                العمل
+              </h2>
 
               <Field
                 label="رقم الفاتورة"
-                value={data.invoiceNo}
-                onChange={(v) => updateField('invoiceNo', v)}
+                value={
+                  data.invoiceNo
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'invoiceNo',
+                    value
+                  )
+                }
               />
 
               <Field
                 label="التاريخ"
                 type="date"
-                value={data.date}
-                onChange={(v) => updateField('date', v)}
+                value={
+                  data.date
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'date',
+                    value
+                  )
+                }
               />
 
               <Field
                 label="اسم العميل"
-                value={data.customer}
-                onChange={(v) => updateField('customer', v)}
+                value={
+                  data.customer
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'customer',
+                    value
+                  )
+                }
                 placeholder="اكتب اسم العميل"
               />
 
@@ -359,38 +612,92 @@ export function WorkInvoicePage() {
 
               <Field
                 label="يمين"
-                value={data.rightTitle}
-                onChange={(v) => updateField('rightTitle', v)}
+                value={
+                  data.rightTitle
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'rightTitle',
+                    value
+                  )
+                }
               />
 
               <Field
                 label="اسم المؤسسة"
-                value={data.companyArabic}
-                onChange={(v) => updateField('companyArabic', v)}
+                value={
+                  data.companyArabic
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'companyArabic',
+                    value
+                  )
+                }
               />
 
               <Field
                 label="الاسم الإنجليزي"
-                value={data.companyEnglish}
-                onChange={(v) => updateField('companyEnglish', v)}
+                value={
+                  data.companyEnglish
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'companyEnglish',
+                    value
+                  )
+                }
               />
 
               <Field
                 label="يسار"
-                value={data.leftTitle}
-                onChange={(v) => updateField('leftTitle', v)}
+                value={
+                  data.leftTitle
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'leftTitle',
+                    value
+                  )
+                }
               />
 
               <Field
                 label="النشاط"
-                value={data.activity}
-                onChange={(v) => updateField('activity', v)}
+                value={
+                  data.activity
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'activity',
+                    value
+                  )
+                }
               />
 
               <Field
                 label="الموقع"
-                value={data.location}
-                onChange={(v) => updateField('location', v)}
+                value={
+                  data.location
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'location',
+                    value
+                  )
+                }
               />
 
               <div className="my-4 border-t border-slate-700" />
@@ -399,171 +706,288 @@ export function WorkInvoicePage() {
                 السطور السبعة
               </p>
 
-              {data.rows.map((row, index) => (
-                <div
-                  key={index}
-                  className="mb-3 rounded-xl border border-slate-700 bg-[#07111f] p-3"
-                >
-                  <div className="mb-2 text-sm font-bold text-slate-300">
-                    السطر {index + 1}
-                  </div>
-
-                  <Field
-                    label="البيان"
-                    value={row.description}
-                    onChange={(v) =>
-                      updateRow(index, 'description', v)
+              {data.rows.map(
+                (
+                  row,
+                  index
+                ) => (
+                  <div
+                    key={
+                      index
                     }
-                    placeholder="مثال: إيجار كرين 25 طن"
-                  />
+                    className="mb-3 rounded-xl border border-slate-700 bg-[#07111f] p-3"
+                  >
+                    <div className="mb-2 text-sm font-bold text-slate-300">
+                      السطر{' '}
+                      {index +
+                        1}
+                    </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <MiniField
-                      label="الكمية"
-                      value={row.qty}
-                      onChange={(v) =>
-                        updateRow(index, 'qty', v)
+                    <Field
+                      label="البيان"
+                      value={
+                        row.description
                       }
+                      onChange={(
+                        value
+                      ) =>
+                        updateRow(
+                          index,
+                          'description',
+                          value
+                        )
+                      }
+                      placeholder="مثال: إيجار كرين 25 طن"
                     />
 
-                    <MiniField
-                      label="سعر الوحدة"
-                      value={row.unitPrice}
-                      onChange={(v) =>
-                        updateRow(index, 'unitPrice', v)
-                      }
-                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <MiniField
+                        label="الكمية"
+                        value={
+                          row.qty
+                        }
+                        onChange={(
+                          value
+                        ) =>
+                          updateRow(
+                            index,
+                            'qty',
+                            value
+                          )
+                        }
+                      />
 
-                    <MiniField
-                      label="الإجمالي"
-                      value={row.totalPrice}
-                      onChange={(v) =>
-                        updateRow(index, 'totalPrice', v)
-                      }
-                    />
+                      <MiniField
+                        label="سعر الوحدة"
+                        value={
+                          row.unitPrice
+                        }
+                        onChange={(
+                          value
+                        ) =>
+                          updateRow(
+                            index,
+                            'unitPrice',
+                            value
+                          )
+                        }
+                      />
+
+                      <MiniField
+                        label="الإجمالي"
+                        value={
+                          row.totalPrice
+                        }
+                        onChange={(
+                          value
+                        ) =>
+                          updateRow(
+                            index,
+                            'totalPrice',
+                            value
+                          )
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
 
               <Field
                 label="المبلغ كتابة"
-                value={data.totalWords}
-                onChange={(v) => updateField('totalWords', v)}
+                value={
+                  data.totalWords
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'totalWords',
+                    value
+                  )
+                }
                 placeholder="مثال: ثمانية عشر ألف ريال لا غير"
               />
 
               <Field
                 label="ملاحظات"
-                value={data.notes}
-                onChange={(v) => updateField('notes', v)}
+                value={
+                  data.notes
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    'notes',
+                    value
+                  )
+                }
                 placeholder="ملاحظات اختيارية"
               />
 
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={saveInvoice}
+                  onClick={
+                    saveInvoice
+                  }
                   className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-3 py-3 font-bold"
                 >
-                  <Save size={18} />
+                  <Save
+                    size={18}
+                  />
                   حفظ
                 </button>
 
                 <button
                   type="button"
-                  disabled={busy}
-                  onClick={savePdf}
+                  disabled={
+                    busy
+                  }
+                  onClick={
+                    savePdf
+                  }
                   className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-3 font-bold disabled:opacity-50"
                 >
-                  <FileDown size={18} />
+                  <FileDown
+                    size={18}
+                  />
                   PDF
                 </button>
 
                 <button
                   type="button"
-                  disabled={busy}
-                  onClick={shareInvoice}
+                  disabled={
+                    busy
+                  }
+                  onClick={
+                    shareInvoice
+                  }
                   className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-3 font-bold disabled:opacity-50"
                 >
-                  <Share2 size={18} />
+                  <Share2
+                    size={18}
+                  />
                   مشاركة
                 </button>
 
                 <button
                   type="button"
-                  onClick={printInvoice}
+                  onClick={
+                    printInvoice
+                  }
                   className="flex items-center justify-center gap-2 rounded-xl bg-slate-700 px-3 py-3 font-bold"
                 >
-                  <Printer size={18} />
+                  <Printer
+                    size={18}
+                  />
                   طباعة
                 </button>
               </div>
             </div>
 
-            {/* ===================================== */}
-            {/* معاينة الفاتورة */}
-            {/* ===================================== */}
+            {/* =========================
+                معاينة الفاتورة
+            ========================= */}
 
             <div className="overflow-auto rounded-2xl border border-slate-700 bg-[#0a1525] p-2">
+
               <div
-                ref={invoiceRef}
+                ref={
+                  invoiceRef
+                }
                 className="mx-auto min-h-[1120px] w-[794px] max-w-full overflow-hidden bg-white text-[#20255d]"
               >
-                {/* الواجهة العلوية */}
+
+                {/* =========================
+                    الواجهة العلوية
+                ========================= */}
+
                 <div className="bg-[#272778] px-6 pb-7 pt-6 text-center">
+
                   <div className="grid grid-cols-[1fr_2fr_1fr] items-start gap-5">
-                    {/* يمين */}
+
+                    {/* كرينات */}
+
                     <div className="flex justify-center">
                       <div className="rounded-2xl bg-white px-5 py-3 text-2xl font-extrabold text-[#272778]">
-                        {data.rightTitle}
+                        {
+                          data.rightTitle
+                        }
                       </div>
                     </div>
 
-                    {/* وسط */}
+                    {/* رافعات الحديثة */}
+
                     <div className="rounded-[30px] bg-white px-5 py-3">
                       <div className="text-3xl font-black text-[#272778]">
-                        ● {data.companyArabic} ●
+                        ●{' '}
+                        {
+                          data.companyArabic
+                        }{' '}
+                        ●
                       </div>
 
                       <div
                         dir="ltr"
                         className="mt-1 text-xl font-extrabold tracking-wide text-[#272778]"
                       >
-                        {data.companyEnglish}
+                        {
+                          data.companyEnglish
+                        }
                       </div>
                     </div>
 
-                    {/* يسار */}
+                    {/* بوم ترك */}
+
                     <div className="flex justify-center">
                       <div className="rounded-2xl bg-white px-5 py-3 text-2xl font-extrabold text-[#272778]">
-                        {data.leftTitle}
+                        {
+                          data.leftTitle
+                        }
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-5 grid grid-cols-2 gap-5 px-16">
                     <div className="rounded-full bg-white px-5 py-2 text-2xl font-extrabold text-[#272778]">
-                      {data.location}
+                      {
+                        data.location
+                      }
                     </div>
 
                     <div className="rounded-full bg-white px-5 py-2 text-2xl font-extrabold text-[#272778]">
-                      {data.activity}
+                      {
+                        data.activity
+                      }
                     </div>
                   </div>
                 </div>
 
-                {/* قوس */}
+                {/* القوس */}
+
                 <div className="relative h-12 overflow-hidden bg-white">
                   <div className="absolute -top-14 left-[-5%] h-24 w-[110%] rounded-[50%] border-[5px] border-[#272778] bg-white" />
                 </div>
 
-                {/* بيانات أعلى الفاتورة */}
+                {/* =========================
+                    بيانات الفاتورة
+                ========================= */}
+
                 <div className="px-7">
+
                   <div className="grid grid-cols-3 items-center gap-2">
-                    <div dir="ltr" className="text-left">
+
+                    {/* فاتورة نقداً */}
+
+                    <div
+                      dir="ltr"
+                      className="text-left"
+                    >
                       <div className="text-2xl font-bold">
                         فاتورة نقداً
                       </div>
+
                       <div className="text-xl font-bold">
                         Cash Invoice
                       </div>
@@ -573,21 +997,30 @@ export function WorkInvoicePage() {
                       </div>
 
                       <div className="mt-3 text-xl font-bold">
-                        {data.invoiceNo}
+                        {
+                          data.invoiceNo
+                        }
                       </div>
                     </div>
 
-                    {/* صورة الكرين مؤقتًا */}
-                    <div className="flex h-185px items-center justify-center">
-                      <div className="relative flex h-44 w-full items-center justify-center">
+                    {/* صورة الكرين مؤقتة */}
+
+                    <div className="flex min-h-[180px] items-center justify-center">
+                      <div className="flex h-44 w-full items-center justify-center">
                         <div className="text-center text-[#272778]">
-                          <div className="text-6xl">🏗️</div>
+                          <div className="text-6xl">
+                            🏗️
+                          </div>
+
                           <div className="mt-2 text-sm font-bold">
-                            صورة الكرين
+                            صورة
+                            الكرين
                           </div>
                         </div>
                       </div>
                     </div>
+
+                    {/* التاريخ */}
 
                     <div className="text-right">
                       <div className="text-xl font-bold">
@@ -598,73 +1031,122 @@ export function WorkInvoicePage() {
                         dir="ltr"
                         className="mt-2 text-xl font-bold"
                       >
-                        {data.date}
+                        {
+                          data.date
+                        }
                       </div>
                     </div>
                   </div>
 
+                  {/* العميل */}
+
                   <div className="mt-2 flex items-end justify-between gap-4 border-b-2 border-[#272778] pb-3">
-                    <div dir="ltr" className="text-xl">
+
+                    <div
+                      dir="ltr"
+                      className="text-xl"
+                    >
                       Mr. / Messrs
                     </div>
 
                     <div className="flex-1 text-center text-2xl font-black text-black">
-                      {data.customer || 'اسم العميل'}
+                      {data.customer ||
+                        'اسم العميل'}
                     </div>
 
                     <div className="text-xl font-bold">
-                      المطلوب من السيد / السادة
+                      المطلوب من
+                      السيد /
+                      السادة
                     </div>
                   </div>
 
-                  {/* الجدول */}
+                  {/* =========================
+                      الجدول
+                  ========================= */}
+
                   <div className="mt-5 overflow-hidden rounded-2xl border-[3px] border-[#272778]">
+
                     <div className="grid grid-cols-[2.5fr_0.7fr_1.15fr_1.15fr] bg-[#f2f2fb]">
+
                       <TableHeader>
                         البيان
-                        <small>Description</small>
+
+                        <small>
+                          Description
+                        </small>
                       </TableHeader>
 
                       <TableHeader>
                         الكمية
-                        <small>Qty.</small>
+
+                        <small>
+                          Qty.
+                        </small>
                       </TableHeader>
 
                       <TableHeader>
                         سعر الوحدة
-                        <small>Unit Price</small>
+
+                        <small>
+                          Unit Price
+                        </small>
                       </TableHeader>
 
                       <TableHeader>
-                        السعر الإجمالي
-                        <small>Total Price</small>
+                        السعر
+                        الإجمالي
+
+                        <small>
+                          Total Price
+                        </small>
                       </TableHeader>
                     </div>
 
-                    {data.rows.map((row, index) => (
-                      <div
-                        key={index}
-                        className="grid min-h-[86px] grid-cols-[2.5fr_0.7fr_1.15fr_1.15fr] border-t border-dotted border-[#666]"
-                      >
-                        <TableCell>
-                          {row.description}
-                        </TableCell>
+                    {/* 7 سطور فقط */}
 
-                        <TableCell>
-                          {row.qty}
-                        </TableCell>
+                    {data.rows.map(
+                      (
+                        row,
+                        index
+                      ) => (
+                        <div
+                          key={
+                            index
+                          }
+                          className="grid min-h-[86px] grid-cols-[2.5fr_0.7fr_1.15fr_1.15fr] border-t border-dotted border-[#666]"
+                        >
+                          <TableCell>
+                            {
+                              row.description
+                            }
+                          </TableCell>
 
-                        <TableCell>
-                          {row.unitPrice}
-                        </TableCell>
+                          <TableCell>
+                            {
+                              row.qty
+                            }
+                          </TableCell>
 
-                        <TableCell>
-                          {row.totalPrice}
-                        </TableCell>
-                      </div>
-                    ))}
+                          <TableCell>
+                            {
+                              row.unitPrice
+                            }
+                          </TableCell>
+
+                          <TableCell>
+                            {
+                              row.totalPrice
+                            }
+                          </TableCell>
+                        </div>
+                      )
+                    )}
+
+                    {/* المجموع */}
 
                     <div className="grid grid-cols-[1fr_2.4fr_0.7fr_1fr] border-t-[3px] border-[#272778]">
+
                       <div
                         dir="ltr"
                         className="flex items-center px-3 py-3 text-sm font-bold"
@@ -673,7 +1155,8 @@ export function WorkInvoicePage() {
                       </div>
 
                       <div className="flex items-center justify-center border-r border-[#272778] px-3 py-3 text-lg font-black text-black">
-                        {data.totalWords || 'فقط لا غير'}
+                        {data.totalWords ||
+                          'فقط لا غير'}
                       </div>
 
                       <div className="flex items-center justify-center border-r border-[#272778] px-2 font-bold">
@@ -681,16 +1164,29 @@ export function WorkInvoicePage() {
                       </div>
 
                       <div className="flex items-center justify-center border-r border-[#272778] px-2 text-3xl font-black text-black">
-                        {grandTotal.toLocaleString('en-US')}
+                        {grandTotal.toLocaleString(
+                          'en-US'
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* التواقيع */}
+                  {/* =========================
+                      التواقيع
+                  ========================= */}
+
                   <div className="grid grid-cols-2 gap-10 px-10 py-6">
+
                     <div className="text-center font-bold">
-                      <div>توقيع المستلم</div>
-                      <div dir="ltr" className="text-sm">
+                      <div>
+                        توقيع
+                        المستلم
+                      </div>
+
+                      <div
+                        dir="ltr"
+                        className="text-sm"
+                      >
                         Received
                       </div>
 
@@ -698,18 +1194,30 @@ export function WorkInvoicePage() {
                     </div>
 
                     <div className="text-center font-bold">
-                      <div>توقيع البائع</div>
-                      <div dir="ltr" className="text-sm">
-                        Salesman Sig.
+                      <div>
+                        توقيع
+                        البائع
+                      </div>
+
+                      <div
+                        dir="ltr"
+                        className="text-sm"
+                      >
+                        Salesman
+                        Sig.
                       </div>
 
                       <div className="mx-auto mt-8 w-32 border-b-2 border-dotted border-slate-400" />
                     </div>
                   </div>
 
+                  {/* الملاحظات */}
+
                   {data.notes && (
                     <div className="mb-5 rounded-lg bg-slate-50 p-3 text-center text-sm text-black">
-                      {data.notes}
+                      {
+                        data.notes
+                      }
                     </div>
                   )}
 
@@ -729,6 +1237,10 @@ export function WorkInvoicePage() {
   );
 }
 
+/* =========================
+   FIELD
+========================= */
+
 function Field({
   label,
   value,
@@ -738,7 +1250,9 @@ function Field({
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (
+    value: string
+  ) => void;
   placeholder?: string;
   type?: string;
 }) {
@@ -751,13 +1265,23 @@ function Field({
       <input
         type={type}
         value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
+        placeholder={
+          placeholder
+        }
+        onChange={(e) =>
+          onChange(
+            e.target.value
+          )
+        }
         className="w-full rounded-xl border border-slate-700 bg-[#07111f] px-3 py-3 text-sm text-white outline-none focus:border-violet-500"
       />
     </label>
   );
 }
+
+/* =========================
+   MINI FIELD
+========================= */
 
 function MiniField({
   label,
@@ -766,7 +1290,9 @@ function MiniField({
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (
+    value: string
+  ) => void;
 }) {
   return (
     <label className="block">
@@ -777,17 +1303,26 @@ function MiniField({
       <input
         inputMode="decimal"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) =>
+          onChange(
+            e.target.value
+          )
+        }
         className="w-full rounded-lg border border-slate-700 bg-[#0a1525] px-2 py-2 text-center text-sm text-white outline-none focus:border-violet-500"
       />
     </label>
   );
 }
 
+/* =========================
+   TABLE HEADER
+========================= */
+
 function TableHeader({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }) {
   return (
     <div className="flex min-h-[85px] flex-col items-center justify-center border-l-2 border-[#272778] px-2 text-center text-lg font-bold last:border-l-0">
@@ -796,14 +1331,19 @@ function TableHeader({
   );
 }
 
+/* =========================
+   TABLE CELL
+========================= */
+
 function TableCell({
   children,
 }: {
-  children?: React.ReactNode;
+  children?:
+    React.ReactNode;
 }) {
   return (
     <div className="flex items-center justify-center border-l-2 border-[#272778] px-2 text-center text-lg font-bold text-black last:border-l-0">
       {children}
     </div>
   );
-      }
+              }
