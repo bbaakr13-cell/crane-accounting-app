@@ -27,8 +27,10 @@ import { Capacitor } from '@capacitor/core';
 
 type Item = { description: string; qty: number; unitPrice: number };
 type ScreenMode = 'edit' | 'preview';
+type InvoiceKind = 'standard' | 'rental';
 
 type InvoiceData = {
+  invoiceKind: InvoiceKind;
   invoiceNo: string;
   date: string;
   customer: string;
@@ -37,6 +39,15 @@ type InvoiceData = {
   companyEnglish: string;
   activity: string;
   companyLocation: string;
+  leftService: string;
+  rightService: string;
+  equipmentType: string;
+  equipmentName: string;
+  rentalStart: string;
+  rentalEnd: string;
+  rentalPeriod: string;
+  paymentMethod: string;
+  paidAmount: string;
   notes: string;
   paid: boolean;
   themeColor: string;
@@ -47,14 +58,24 @@ type InvoiceData = {
 const STORAGE_KEY = 'professional-crane-invoice-v3';
 
 const initialData: InvoiceData = {
+  invoiceKind: 'standard',
   invoiceNo: '00125',
   date: new Date().toISOString().slice(0, 10),
   customer: 'شركة آفاق أعمال الخليجية للمقاولات العامة',
   customerLocation: 'خميس مشيط - أبها',
   companyArabic: 'رافعات الحديثة',
-  companyEnglish: 'RAFIEAT AL-HADITHA',
-  activity: 'تأجير المعدات الثقيلة',
+  companyEnglish: 'RAFIËAT AL-HADITHA',
+  activity: 'لتأجير المعدات الثقيلة',
   companyLocation: 'خميس مشيط - أبها',
+  leftService: 'كرينات',
+  rightService: 'بوم ترك',
+  equipmentType: 'كرين',
+  equipmentName: '',
+  rentalStart: new Date().toISOString().slice(0, 10),
+  rentalEnd: new Date().toISOString().slice(0, 10),
+  rentalPeriod: 'شهري',
+  paymentMethod: 'نقداً',
+  paidAmount: '',
   notes: 'يشمل السعر أجرة المعدات والسائق\nغير شامل ضريبة القيمة المضافة',
   paid: true,
   themeColor: '#0b2c7a',
@@ -136,6 +157,8 @@ export function InvoicesPage() {
 
   const total = useMemo(() => data.items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.unitPrice || 0), 0), [data.items]);
   const totalWords = useMemo(() => numberToArabicWords(total), [total]);
+  const paidAmount = Number(data.paidAmount || 0);
+  const remainingAmount = Math.max(total - paidAmount, 0);
   const theme = data.themeColor || '#082e73';
 
   function updateData<K extends keyof InvoiceData>(key: K, value: InvoiceData[K]) {
@@ -152,6 +175,12 @@ export function InvoicesPage() {
 
   function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function changeInvoiceKind(kind: InvoiceKind) {
+    setData((old) => ({ ...old, invoiceKind: kind }));
+    setMode('edit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function previewInvoice() {
@@ -241,7 +270,7 @@ async function createPdf() {
   async function savePdf() {
     try {
       const pdf = await createPdf();
-      const fileName = `invoice-${data.invoiceNo || Date.now()}.pdf`;
+      const fileName = `${data.invoiceKind === 'rental' ? 'rental-invoice' : 'invoice'}-${data.invoiceNo || Date.now()}.pdf`;
       if (Capacitor.isNativePlatform()) {
         const base64 = pdf.output('datauristring').split(',')[1];
         await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Documents });
@@ -256,11 +285,11 @@ async function createPdf() {
   async function sharePdf() {
     try {
       const pdf = await createPdf();
-      const fileName = `invoice-${data.invoiceNo || Date.now()}.pdf`;
+      const fileName = `${data.invoiceKind === 'rental' ? 'rental-invoice' : 'invoice'}-${data.invoiceNo || Date.now()}.pdf`;
       if (Capacitor.isNativePlatform()) {
         const base64 = pdf.output('datauristring').split(',')[1];
         const result = await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
-        await Share.share({ title: `فاتورة ${data.invoiceNo}`, text: `فاتورة ${data.companyArabic}`, url: result.uri, dialogTitle: 'مشاركة الفاتورة' });
+        await Share.share({ title: `${data.invoiceKind === 'rental' ? 'فاتورة إيجار' : 'فاتورة'} ${data.invoiceNo}`, text: `${data.invoiceKind === 'rental' ? 'فاتورة إيجار' : 'فاتورة'} ${data.companyArabic}`, url: result.uri, dialogTitle: 'مشاركة الفاتورة' });
       } else pdf.save(fileName);
     } catch (error) {
       console.error(error);
@@ -269,7 +298,14 @@ async function createPdf() {
   }
 
   function openWhatsApp() {
-    const text = [`فاتورة رقم: ${data.invoiceNo}`, `العميل: ${data.customer || '—'}`, `المجموع: ${total.toLocaleString('en-US')} ريال`, data.companyArabic].join('\n');
+    const text = [
+      `${data.invoiceKind === 'rental' ? 'فاتورة إيجار' : 'فاتورة'} رقم: ${data.invoiceNo}`,
+      `العميل: ${data.customer || '—'}`,
+      data.invoiceKind === 'rental' ? `المعدة: ${data.equipmentType || '—'} ${data.equipmentName || ''}`.trim() : '',
+      `المجموع: ${total.toLocaleString('en-US')} ريال`,
+      data.invoiceKind === 'rental' ? `المتبقي: ${remainingAmount.toLocaleString('en-US')} ريال` : '',
+      data.companyArabic,
+    ].filter(Boolean).join('\n');
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   }
 
@@ -289,7 +325,12 @@ async function createPdf() {
           <>
             <div style={pageHeader}>
               <div style={headerIcon(theme)}><ReceiptText size={28} /></div>
-              <div><h1 style={pageTitle}>إنشاء فاتورة جديدة</h1><p style={pageSubtitle}>أدخل البيانات ثم عاين الفاتورة قبل الحفظ أو المشاركة</p></div>
+              <div><h1 style={pageTitle}>{data.invoiceKind === 'rental' ? 'إنشاء فاتورة إيجار' : 'إنشاء فاتورة جديدة'}</h1><p style={pageSubtitle}>أدخل البيانات ثم عاين الفاتورة قبل الحفظ أو المشاركة</p></div>
+            </div>
+
+            <div style={invoiceTabs}>
+              <button type="button" onClick={() => changeInvoiceKind('standard')} style={invoiceTab(data.invoiceKind === 'standard', theme)}>فاتورة عادية</button>
+              <button type="button" onClick={() => changeInvoiceKind('rental')} style={invoiceTab(data.invoiceKind === 'rental', theme)}>فواتير الإيجار</button>
             </div>
 
             <SectionCard title="بيانات الفاتورة" icon={<CalendarDays size={20} />} theme={theme}>
@@ -305,10 +346,27 @@ async function createPdf() {
               <div style={twoColumns}>
                 <Field label="اسم المؤسسة بالعربي" value={data.companyArabic} onChange={(v) => updateData('companyArabic', v)} />
                 <Field label="اسم المؤسسة بالإنجليزي" value={data.companyEnglish} onChange={(v) => updateData('companyEnglish', v)} />
-                <Field label="نوع النشاط" value={data.activity} onChange={(v) => updateData('activity', v)} />
+                <Field label="النشاط" value={data.activity} onChange={(v) => updateData('activity', v)} />
                 <Field label="الموقع" value={data.companyLocation} onChange={(v) => updateData('companyLocation', v)} />
+                <Field label="النص بجانب صورة الكرين" value={data.leftService} onChange={(v) => updateData('leftService', v)} placeholder="كرينات" />
+                <Field label="النص بجانب صورة البوم ترك" value={data.rightService} onChange={(v) => updateData('rightService', v)} placeholder="بوم ترك" />
               </div>
             </SectionCard>
+
+            {data.invoiceKind === 'rental' && (
+              <SectionCard title="بيانات الإيجار" icon={<Truck size={20} />} theme={theme}>
+                <div style={twoColumns}>
+                  <Field label="نوع المعدة" value={data.equipmentType} onChange={(v) => updateData('equipmentType', v)} placeholder="كرين / بوم ترك / رافعة" />
+                  <Field label="اسم أو رقم المعدة" value={data.equipmentName} onChange={(v) => updateData('equipmentName', v)} placeholder="مثال: SANY 80 طن" />
+                  <Field label="بداية الإيجار" type="date" value={data.rentalStart} onChange={(v) => updateData('rentalStart', v)} />
+                  <Field label="نهاية الإيجار" type="date" value={data.rentalEnd} onChange={(v) => updateData('rentalEnd', v)} />
+                  <Field label="مدة / نظام الإيجار" value={data.rentalPeriod} onChange={(v) => updateData('rentalPeriod', v)} placeholder="يومي / أسبوعي / شهري" />
+                  <Field label="طريقة الدفع" value={data.paymentMethod} onChange={(v) => updateData('paymentMethod', v)} placeholder="نقداً / تحويل / آجل" />
+                  <Field label="المبلغ المدفوع" value={data.paidAmount} onChange={(v) => updateData('paidAmount', v.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[^\d.]/g, ''))} placeholder="0" />
+                  <div style={rentalBalanceBox(theme)}><span style={miniLabel}>المتبقي</span><strong>{remainingAmount.toLocaleString('en-US')} ر.س</strong></div>
+                </div>
+              </SectionCard>
+            )}
 
             <SectionCard title="بيانات الأعمال" icon={<Truck size={20} />} theme={theme}>
               <div style={{ display: 'grid', gap: 10 }}>
@@ -358,8 +416,8 @@ async function createPdf() {
           </>
         ) : (
           <>
-            <div style={previewTopBar}><button type="button" onClick={editInvoice} style={backButton}><ArrowRight size={19} />تعديل الفاتورة</button><div style={previewTitle}>معاينة الفاتورة</div></div>
-            <InvoicePreview ref={invoiceRef} data={data} total={total} totalWords={totalWords} theme={theme} />
+            <div style={previewTopBar}><button type="button" onClick={editInvoice} style={backButton}><ArrowRight size={19} />تعديل الفاتورة</button><div style={previewTitle}>{data.invoiceKind === 'rental' ? 'معاينة فاتورة الإيجار' : 'معاينة الفاتورة'}</div></div>
+            <InvoicePreview ref={invoiceRef} data={data} total={total} totalWords={totalWords} theme={theme} paidAmount={paidAmount} remainingAmount={remainingAmount} />
             <div style={actionBar}>
               <button type="button" onClick={editInvoice} style={actionButton(theme)}><Pencil size={18} />تعديل الفاتورة</button>
               <button type="button" onClick={savePdf} style={actionButton(theme)}><FileDown size={18} />حفظ PDF</button>
@@ -382,14 +440,14 @@ function Field({ label, value, placeholder, type = 'text', onChange }: { label: 
   return <label style={fieldWrap}><span style={fieldLabel}>{label}</span><input style={inputStyle} type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} /></label>;
 }
 
-const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; total: number; totalWords: string; theme: string }>(({ data, total, totalWords, theme }, ref) => (
+const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; total: number; totalWords: string; theme: string; paidAmount: number; remainingAmount: number }>(({ data, total, totalWords, theme, paidAmount, remainingAmount }, ref) => (
   <div ref={ref} style={modernInvoiceStyle}>
     <div style={{ ...topCurve, background: theme }} />
     <div style={{ ...topCurveLight, background: `${theme}c8` }} />
 
     <div style={modernInvoiceContent}>
       <div style={modernHeaderGrid}>
-        <div style={modernCraneBox}><img src={CRANE_LEFT} alt="كرين" style={modernCraneImage} /></div>
+        <div style={{ ...modernCraneBox, flexDirection: 'column' }}><div style={craneBadge(theme)}>{data.leftService || 'كرينات'}</div><img src={CRANE_LEFT} alt="كرين" style={{ ...modernCraneImage, height: 140 }} /></div>
 
         <div style={modernBrandCenter}>
           <div style={{ color: theme, fontWeight: 950, fontSize: 36, lineHeight: 1.05 }}>{data.companyArabic || 'رافعات الحديثة'}</div>
@@ -398,7 +456,7 @@ const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; tot
           <div style={{ color: '#111827', fontSize: 14, fontWeight: 800, marginTop: 4 }}>{data.companyLocation}</div>
         </div>
 
-        <div style={modernCraneBox}><img src={CRANE_RIGHT} alt="كرين" style={modernCraneImage} /></div>
+        <div style={{ ...modernCraneBox, flexDirection: 'column' }}><div style={craneBadge(theme)}>{data.rightService || 'بوم ترك'}</div><img src={CRANE_RIGHT} alt="بوم ترك" style={{ ...modernCraneImage, height: 140 }} /></div>
       </div>
 
       <div style={modernMetaRow}>
@@ -407,8 +465,8 @@ const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; tot
           <div dir="ltr" style={metaValue}>{data.invoiceNo || '—'}</div>
         </div>
         <div style={{ ...modernCashBadge, borderColor: theme, color: theme }}>
-          <strong style={{ fontSize: 22 }}>فاتورة نقداً</strong>
-          <span style={{ fontSize: 14, fontWeight: 900 }}>CASH INVOICE</span>
+          <strong style={{ fontSize: 22 }}>{data.invoiceKind === 'rental' ? 'فاتورة إيجار' : 'فاتورة نقداً'}</strong>
+          <span style={{ fontSize: 14, fontWeight: 900 }}>{data.invoiceKind === 'rental' ? 'RENTAL INVOICE' : 'CASH INVOICE'}</span>
         </div>
         <div style={metaCellRight}>
           <div style={metaLabel}>التاريخ <span dir="ltr">Date</span></div>
@@ -442,10 +500,23 @@ const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; tot
           <div style={{ ...invoiceDetailsCell, borderLeft: 'none' }}>
             <strong style={{ color: theme }}>نوع الفاتورة</strong>
             <small>Type</small>
-            <span>فاتورة نقداً</span>
+            <span>{data.invoiceKind === 'rental' ? 'فاتورة إيجار' : 'فاتورة نقداً'}</span>
           </div>
         </div>
       </div>
+
+      {data.invoiceKind === 'rental' && (
+        <div style={{ ...rentalPreviewPanel, borderColor: theme }}>
+          <div style={rentalPreviewGrid}>
+            <RentalPreviewCell theme={theme} label="نوع المعدة" value={data.equipmentType} />
+            <RentalPreviewCell theme={theme} label="المعدة" value={data.equipmentName} />
+            <RentalPreviewCell theme={theme} label="بداية الإيجار" value={data.rentalStart} ltr />
+            <RentalPreviewCell theme={theme} label="نهاية الإيجار" value={data.rentalEnd} ltr />
+            <RentalPreviewCell theme={theme} label="نظام الإيجار" value={data.rentalPeriod} />
+            <RentalPreviewCell theme={theme} label="طريقة الدفع" value={data.paymentMethod} />
+          </div>
+        </div>
+      )}
 
       <div style={{ overflow: 'hidden', border: `1.6px solid ${theme}`, borderRadius: 18, background: '#fff' }}>
         <table style={modernTable}>
@@ -480,6 +551,14 @@ const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; tot
         <div dir="ltr" style={totalValue}>{total.toLocaleString('en-US')} ر.س</div>
       </div>
 
+      {data.invoiceKind === 'rental' && (
+        <div style={rentalPaymentSummary}>
+          <div style={rentalMoneyCard}><span>الإجمالي</span><strong>{total.toLocaleString('en-US')} ر.س</strong></div>
+          <div style={rentalMoneyCard}><span>المدفوع</span><strong style={{ color: '#16a34a' }}>{paidAmount.toLocaleString('en-US')} ر.س</strong></div>
+          <div style={rentalMoneyCard}><span>المتبقي</span><strong style={{ color: remainingAmount > 0 ? '#c92a2a' : '#16a34a' }}>{remainingAmount.toLocaleString('en-US')} ر.س</strong></div>
+        </div>
+      )}
+
       <div style={amountWordsBox}>
         <strong style={{ color: theme }}>المبلغ كتابة:</strong>
         <span>{totalWords}</span>
@@ -492,10 +571,10 @@ const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; tot
         </div>
         <div style={modernDetailsBox}>
           <div style={{ color: theme, fontWeight: 950, marginBottom: 8 }}>تفاصيل الفاتورة</div>
-          <DetailRow label="نوع الفاتورة" value="نقداً" />
+          <DetailRow label="نوع الفاتورة" value={data.invoiceKind === 'rental' ? 'إيجار' : 'نقداً'} />
           <DetailRow label="رقم الفاتورة" value={data.invoiceNo} />
           <DetailRow label="التاريخ" value={data.date} />
-          <DetailRow label="حالة الدفع" value={data.paid ? 'مدفوع' : 'غير مدفوع'} valueColor={data.paid ? '#16a34a' : '#c92a2a'} />
+          <DetailRow label="حالة الدفع" value={data.invoiceKind === 'rental' ? (remainingAmount <= 0 ? 'مدفوع بالكامل' : 'متبقي') : (data.paid ? 'مدفوع' : 'غير مدفوع')} valueColor={data.invoiceKind === 'rental' ? (remainingAmount <= 0 ? '#16a34a' : '#c92a2a') : (data.paid ? '#16a34a' : '#c92a2a')} />
         </div>
       </div>
 
@@ -513,6 +592,10 @@ const InvoicePreview = React.forwardRef<HTMLDivElement, { data: InvoiceData; tot
 ));
 InvoicePreview.displayName = 'InvoicePreview';
 
+function RentalPreviewCell({ theme, label, value, ltr = false }: { theme: string; label: string; value: string; ltr?: boolean }) {
+  return <div style={rentalPreviewCell}><strong style={{ color: theme }}>{label}</strong><span dir={ltr ? 'ltr' : undefined}>{value || '—'}</span></div>;
+}
+
 function SummaryRow({ theme, label, children }: { theme: string; label: string; children: React.ReactNode }) {
   return <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', minHeight: 44, borderBottom: '1px solid #d6dbe2', alignItems: 'stretch' }}><strong style={{ background: theme, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>{label}</strong><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>{children}</div></div>;
 }
@@ -523,6 +606,9 @@ function DetailRow({ label, value, valueColor }: { label: string; value: string;
 
 const pageShell: React.CSSProperties = { maxWidth: 980, margin: '0 auto', padding: '18px 14px 90px', color: '#f8fafc' };
 const pageHeader: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 };
+const invoiceTabs: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: 5, borderRadius: 15, background: '#06101e', border: '1px solid #22324a', marginBottom: 14 };
+const invoiceTab = (active: boolean, theme: string): React.CSSProperties => ({ border: active ? `1px solid ${theme}` : '1px solid transparent', background: active ? `${theme}30` : 'transparent', color: active ? '#fff' : '#94a3b8', borderRadius: 11, padding: '11px 10px', fontWeight: 900, fontSize: 13, cursor: 'pointer' });
+const rentalBalanceBox = (theme: string): React.CSSProperties => ({ minHeight: 68, borderRadius: 12, border: `1px solid ${theme}55`, background: `${theme}18`, padding: '10px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', color: '#fff' });
 const headerIcon = (theme: string): React.CSSProperties => ({ width: 54, height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${theme}22`, color: theme, border: `1px solid ${theme}55` });
 const pageTitle: React.CSSProperties = { margin: 0, fontSize: 26, fontWeight: 900, color: '#fff' };
 const pageSubtitle: React.CSSProperties = { margin: '5px 0 0', color: '#94a3b8', fontSize: 13 };
@@ -604,6 +690,11 @@ const invoiceDetailsPanel: React.CSSProperties = { position: 'relative', margin:
 const invoiceDetailsTitle: React.CSSProperties = { position: 'absolute', top: -16, left: '50%', transform: 'translateX(-50%)', minWidth: 165, padding: '5px 18px', border: '1.5px solid', borderRadius: 12, background: '#fff', textAlign: 'center', fontWeight: 950, fontSize: 17, whiteSpace: 'nowrap' };
 const invoiceDetailsGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', alignItems: 'stretch', minHeight: 92, padding: '8px 6px 4px' };
 const invoiceDetailsCell: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '5px 8px', textAlign: 'center', borderLeft: '1px dashed #c5ccd6', fontSize: 13.5 };
+const rentalPreviewPanel: React.CSSProperties = { margin: '10px 0 14px', border: '1.5px solid', borderRadius: 15, overflow: 'hidden', background: '#f8fafc' };
+const rentalPreviewGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' };
+const rentalPreviewCell: React.CSSProperties = { minHeight: 68, padding: '9px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, textAlign: 'center', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', fontSize: 12.5 };
+const rentalPaymentSummary: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 10 };
+const rentalMoneyCard: React.CSSProperties = { border: '1px solid #d6dbe3', borderRadius: 12, padding: '9px 10px', display: 'flex', flexDirection: 'column', gap: 4, textAlign: 'center', fontSize: 12.5, background: '#fff' };
 
 const locationStrip: React.CSSProperties = { display: 'grid', gridTemplateColumns: '190px 1fr', alignItems: 'stretch', margin: '8px 0 12px', borderBottom: '1px dashed #b9c1ce' };
 const locationLabelBox: React.CSSProperties = { fontWeight: 950, padding: '7px 12px', textAlign: 'center' };
