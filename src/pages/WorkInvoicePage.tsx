@@ -20,10 +20,6 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
-/* =========================================================
-   TYPES
-========================================================= */
-
 type InvoiceRow = {
   description: string;
   qty: string;
@@ -49,10 +45,6 @@ type WorkInvoiceData = {
   totalWords: string;
   notes: string;
 };
-
-/* =========================================================
-   SETTINGS
-========================================================= */
 
 const STORAGE_KEY = 'baakr-work-invoice-v3';
 
@@ -92,10 +84,6 @@ const initialData: WorkInvoiceData = {
   notes: '',
 };
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
 function safeNumber(value: string | number) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
@@ -127,10 +115,6 @@ function loadInvoice(): WorkInvoiceData {
   }
 }
 
-/* =========================================================
-   PAGE
-========================================================= */
-
 export function WorkInvoicePage() {
   const navigate = useNavigate();
 
@@ -140,7 +124,6 @@ export function WorkInvoicePage() {
     useState<WorkInvoiceData>(() => loadInvoice());
 
   const [busy, setBusy] = useState(false);
-
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const grandTotal = useMemo(() => {
@@ -236,7 +219,6 @@ export function WorkInvoicePage() {
       window.alert('تم حفظ فاتورة العمل');
     } catch (error) {
       console.error(error);
-
       window.alert('تعذر حفظ الفاتورة');
     }
   }
@@ -261,10 +243,6 @@ export function WorkInvoicePage() {
       )
     );
   }
-
-  /* =========================================================
-     CAPTURE A4
-  ========================================================= */
 
   async function captureInvoice() {
     if (!invoiceRef.current) {
@@ -298,10 +276,6 @@ export function WorkInvoicePage() {
     });
   }
 
-  /* =========================================================
-     PDF
-  ========================================================= */
-
   async function createPdf() {
     const canvas = await captureInvoice();
 
@@ -324,11 +298,6 @@ export function WorkInvoicePage() {
 
     const pageHeight =
       pdf.internal.pageSize.getHeight();
-
-    /*
-      الصورة A4 بنفس النسبة،
-      لذلك نملأ الورقة تقريباً بالكامل.
-    */
 
     const margin = 1;
 
@@ -376,7 +345,6 @@ export function WorkInvoicePage() {
       }
     } catch (error) {
       console.error(error);
-
       window.alert('تعذر حفظ ملف PDF');
     } finally {
       setBusy(false);
@@ -416,7 +384,6 @@ export function WorkInvoicePage() {
       }
     } catch (error) {
       console.error(error);
-
       window.alert('تعذر مشاركة الفاتورة');
     } finally {
       setBusy(false);
@@ -434,8 +401,6 @@ export function WorkInvoicePage() {
         className="min-h-screen bg-[#06101f] pb-28 text-white"
       >
         <div className="mx-auto max-w-6xl px-3 py-4">
-
-          {/* APP HEADER */}
 
           <div className="mb-4 flex items-center justify-between">
             <button
@@ -464,8 +429,6 @@ export function WorkInvoicePage() {
               <Plus size={23} />
             </button>
           </div>
-
-          {/* ACTIONS */}
 
           <div className="mb-4 grid grid-cols-3 gap-2">
             <button
@@ -516,8 +479,6 @@ export function WorkInvoicePage() {
             </button>
           </div>
 
-          {/* FORM */}
-
           <div className="rounded-[22px] border border-slate-700 bg-[#0a1525] p-3">
 
             <h2 className="mb-4 text-sm font-black">
@@ -525,7 +486,6 @@ export function WorkInvoicePage() {
             </h2>
 
             <div className="grid grid-cols-2 gap-2">
-
               <Field
                 label="رقم الفاتورة"
                 value={data.invoiceNo}
@@ -542,7 +502,6 @@ export function WorkInvoicePage() {
                   updateField('date', value)
                 }
               />
-
             </div>
 
             <Field
@@ -561,7 +520,6 @@ export function WorkInvoicePage() {
             </h3>
 
             <div className="grid grid-cols-2 gap-2">
-
               <Field
                 label="كرينات"
                 value={data.rightTitle}
@@ -577,7 +535,6 @@ export function WorkInvoicePage() {
                   updateField('leftTitle', value)
                 }
               />
-
             </div>
 
             <Field
@@ -615,7 +572,6 @@ export function WorkInvoicePage() {
             <div className="my-4 border-t border-slate-700" />
 
             <div className="mb-3 flex items-center justify-between">
-
               <h3 className="text-sm font-black text-violet-300">
                 تفاصيل العمل
               </h3>
@@ -623,7 +579,6 @@ export function WorkInvoicePage() {
               <span className="rounded-full bg-violet-500/10 px-3 py-1 text-[10px] font-bold text-violet-300">
                 7 سطور
               </span>
-
             </div>
 
             {data.rows.map((row, index) => (
@@ -631,7 +586,6 @@ export function WorkInvoicePage() {
                 key={index}
                 className="mb-3 rounded-[18px] border border-slate-700 bg-[#07111f] p-3"
               >
-
                 <div className="mb-3 text-xs font-black text-slate-300">
                   السطر {index + 1}
                 </div>
@@ -646,7 +600,6 @@ export function WorkInvoicePage() {
                 />
 
                 <div className="grid grid-cols-3 gap-2">
-
                   <MiniField
                     label="الكمية"
                     value={row.qty}
@@ -670,7 +623,6 @@ export function WorkInvoicePage() {
                       updateRow(index, 'totalPrice', value)
                     }
                   />
-
                 </div>
               </div>
             ))}
@@ -703,10 +655,7 @@ export function WorkInvoicePage() {
             </button>
           </div>
 
-          {/* SMALL PREVIEW */}
-
           <div className="mt-5 overflow-auto rounded-[22px] border border-slate-700 bg-[#0a1525] p-2">
-
             <div className="mb-2 text-center text-xs font-bold text-slate-400">
               معاينة مصغرة
             </div>
@@ -716,11 +665,8 @@ export function WorkInvoicePage() {
               data={data}
               grandTotal={grandTotal}
             />
-
           </div>
         </div>
-
-        {/* FULL PREVIEW */}
 
         {previewOpen && (
           <div className="fixed inset-0 z-[20000] flex flex-col bg-[#020817]">
@@ -736,7 +682,6 @@ export function WorkInvoicePage() {
               </button>
 
               <div className="text-center">
-
                 <div className="text-sm font-black">
                   معاينة فاتورة العمل
                 </div>
@@ -744,7 +689,6 @@ export function WorkInvoicePage() {
                 <div className="text-[10px] text-slate-400">
                   راجع الفاتورة قبل الحفظ
                 </div>
-
               </div>
 
               <button
@@ -756,16 +700,13 @@ export function WorkInvoicePage() {
                 <FileDown size={15} />
                 PDF
               </button>
-
             </div>
 
             <div className="flex-1 overflow-auto p-3">
-
               <InvoiceDocument
                 data={data}
                 grandTotal={grandTotal}
               />
-
             </div>
 
             <div className="grid grid-cols-3 gap-2 border-t border-white/10 bg-[#07111f] p-3">
@@ -803,10 +744,6 @@ export function WorkInvoicePage() {
   );
 }
 
-/* =========================================================
-   A4 INVOICE
-========================================================= */
-
 function InvoiceDocument({
   invoiceRef,
   data,
@@ -830,14 +767,9 @@ function InvoiceDocument({
         minHeight: A4_HEIGHT,
         maxHeight: A4_HEIGHT,
 
-        fontFamily:
-          'Arial, Tahoma, sans-serif',
+        fontFamily: 'Arial, Tahoma, sans-serif',
       }}
     >
-
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
 
       <div
         className="relative h-[265px] overflow-hidden px-6 pt-4"
@@ -846,17 +778,12 @@ function InvoiceDocument({
         }}
       >
 
-        {/* FIRST ROW */}
-
         <div
           className="relative z-30 grid items-start gap-4"
           style={{
-            gridTemplateColumns:
-              '1fr 2.25fr 1fr',
+            gridTemplateColumns: '1fr 2.25fr 1fr',
           }}
         >
-
-          {/* BOOM */}
 
           <div
             dir="rtl"
@@ -865,27 +792,19 @@ function InvoiceDocument({
             {data.leftTitle}
           </div>
 
-          {/* COMPANY */}
-
           <div className="flex h-[72px] flex-col items-center justify-center rounded-[25px] bg-white px-3 text-center">
 
             <div
               dir="rtl"
               className="flex items-center justify-center gap-2"
             >
-
-              <span className="text-[13px]">
-                ●
-              </span>
+              <span className="text-[13px]">●</span>
 
               <span className="whitespace-nowrap text-[32px] font-black leading-none">
                 {data.companyArabic}
               </span>
 
-              <span className="text-[13px]">
-                ●
-              </span>
-
+              <span className="text-[13px]">●</span>
             </div>
 
             <div
@@ -894,10 +813,7 @@ function InvoiceDocument({
             >
               {data.companyEnglish}
             </div>
-
           </div>
-
-          {/* CRANES */}
 
           <div
             dir="rtl"
@@ -905,10 +821,7 @@ function InvoiceDocument({
           >
             {data.rightTitle}
           </div>
-
         </div>
-
-        {/* SECOND ROW */}
 
         <div className="relative z-30 mx-auto mt-3 grid max-w-[620px] grid-cols-2 gap-5">
 
@@ -925,65 +838,40 @@ function InvoiceDocument({
           >
             {data.activity}
           </div>
-
         </div>
-
-        {/* WHITE CURVE */}
 
         <div
           className="absolute left-[-5%] top-[157px] z-10 h-[170px] w-[110%] rounded-[50%] bg-white"
           style={{
-            borderTop:
-              '5px solid #292878',
+            borderTop: '5px solid #292878',
           }}
         />
-
-        {/* =====================================================
-            EQUIPMENT - ثابت
-        ===================================================== */}
 
         <img
           src={EQUIPMENT_IMAGE}
           alt="كرين وبوم ترك"
           style={{
             position: 'absolute',
-
             left: '50%',
-
-            'top: '150px
-
-            'width: '510px 
-
+            top: '150px',
+            width: '510px',
             height: '170px',
-
-            transform:
-              'translateX(-50%)',
-
+            transform: 'translateX(-50%)',
             objectFit: 'contain',
-
             zIndex: 25,
           }}
         />
 
       </div>
 
-      {/* =====================================================
-          BODY
-      ===================================================== */}
-
       <div className="px-6 pb-3 pt-2">
-
-        {/* INVOICE INFO */}
 
         <div
           className="grid"
           style={{
-            gridTemplateColumns:
-              '1fr 1.35fr 1fr',
+            gridTemplateColumns: '1fr 1.35fr 1fr',
           }}
         >
-
-          {/* LEFT CASH */}
 
           <div className="text-left">
 
@@ -1010,8 +898,6 @@ function InvoiceDocument({
 
           <div />
 
-          {/* DATE RIGHT */}
-
           <div className="pt-1 text-right">
 
             <div
@@ -1029,14 +915,9 @@ function InvoiceDocument({
             </div>
 
           </div>
-
         </div>
 
-        {/* CUSTOMER */}
-
-        <div
-          className="mt-2 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-1"
-        >
+        <div className="mt-2 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-1">
 
           <div className="text-[15px]">
             Mr. / Messrs
@@ -1058,15 +939,7 @@ function InvoiceDocument({
 
         </div>
 
-        {/* =====================================================
-            TABLE
-        ===================================================== */}
-
-        <div
-          className="relative mt-3 overflow-hidden rounded-[14px] border-[3px] border-[#292878]"
-        >
-
-          {/* HEADER */}
+        <div className="relative mt-3 overflow-hidden rounded-[14px] border-[3px] border-[#292878]">
 
           <div
             className="grid bg-[#f6f6fb]"
@@ -1157,9 +1030,7 @@ function InvoiceDocument({
                 gridRow: '2',
               }}
             >
-              <small>
-                S.R. ريال
-              </small>
+              <small>S.R. ريال</small>
             </HeaderBox>
 
             <HeaderBox
@@ -1168,9 +1039,7 @@ function InvoiceDocument({
                 gridRow: '2',
               }}
             >
-              <small>
-                H. هـ
-              </small>
+              <small>H. هـ</small>
             </HeaderBox>
 
             <HeaderBox
@@ -1179,9 +1048,7 @@ function InvoiceDocument({
                 gridRow: '2',
               }}
             >
-              <small>
-                S.R. ريال
-              </small>
+              <small>S.R. ريال</small>
             </HeaderBox>
 
             <HeaderBox
@@ -1190,22 +1057,16 @@ function InvoiceDocument({
                 gridRow: '2',
               }}
             >
-              <small>
-                H. هـ
-              </small>
+              <small>H. هـ</small>
             </HeaderBox>
 
           </div>
-
-          {/* WATERMARK */}
 
           <img
             src={EQUIPMENT_IMAGE}
             alt=""
             className="pointer-events-none absolute left-1/2 top-[53%] z-0 w-[390px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]"
           />
-
-          {/* EXACTLY 7 ROWS */}
 
           {data.rows.map((row, index) => (
             <div
@@ -1252,8 +1113,6 @@ function InvoiceDocument({
             </div>
           ))}
 
-          {/* TOTAL */}
-
           <div
             className="relative z-20 grid h-[55px] border-t-[3px] border-[#292878] bg-white"
             style={{
@@ -1284,15 +1143,7 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* =====================================================
-            SIGNATURES
-        ===================================================== */}
-
-        <div
-          className="grid grid-cols-2 gap-24 px-16 py-3"
-        >
-
-          {/* LEFT */}
+        <div className="grid grid-cols-2 gap-24 px-16 py-3">
 
           <div className="text-center">
 
@@ -1311,8 +1162,6 @@ function InvoiceDocument({
 
           </div>
 
-          {/* RIGHT */}
-
           <div className="text-center">
 
             <div
@@ -1329,10 +1178,7 @@ function InvoiceDocument({
             <div className="mx-auto mt-4 w-[125px] border-b-2 border-dotted border-slate-400" />
 
           </div>
-
         </div>
-
-        {/* NOTES */}
 
         {data.notes && (
           <div
@@ -1342,8 +1188,6 @@ function InvoiceDocument({
             {data.notes}
           </div>
         )}
-
-        {/* FOOTER */}
 
         <div className="flex items-center justify-center gap-3 pt-1">
 
@@ -1375,10 +1219,6 @@ function InvoiceDocument({
     </div>
   );
 }
-
-/* =========================================================
-   FORM FIELD
-========================================================= */
 
 function Field({
   label,
@@ -1414,10 +1254,6 @@ function Field({
   );
 }
 
-/* =========================================================
-   MINI FIELD
-========================================================= */
-
 function MiniField({
   label,
   value,
@@ -1447,10 +1283,6 @@ function MiniField({
   );
 }
 
-/* =========================================================
-   TABLE HEADER
-========================================================= */
-
 function HeaderBox({
   children,
   style,
@@ -1467,10 +1299,6 @@ function HeaderBox({
     </div>
   );
 }
-
-/* =========================================================
-   TABLE CELL
-========================================================= */
 
 function InvoiceCell({
   children,
@@ -1490,4 +1318,4 @@ function InvoiceCell({
       {children}
     </div>
   );
-      }
+                }
