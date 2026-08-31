@@ -168,17 +168,22 @@ export function WorkInvoicePage() {
       };
 
       if (key === 'qty' || key === 'unitPrice') {
+        const qtyText =
+          key === 'qty' ? value : current.qty;
+
+        const unitText =
+          key === 'unitPrice' ? value : current.unitPrice;
+
         const qty =
-          key === 'qty'
-            ? safeNumber(value)
-            : safeNumber(current.qty);
+          qtyText === ''
+            ? unitText !== ''
+              ? 1
+              : 0
+            : safeNumber(qtyText);
 
-        const unitPrice =
-          key === 'unitPrice'
-            ? safeNumber(value)
-            : safeNumber(current.unitPrice);
+        const unitPrice = safeNumber(unitText);
 
-        if (current.qty || current.unitPrice) {
+        if (unitText !== '') {
           current.totalPrice = String(qty * unitPrice);
         } else {
           current.totalPrice = '';
@@ -253,6 +258,10 @@ export function WorkInvoicePage() {
     );
   }
 
+  /* =========================================================
+     CAPTURE
+  ========================================================= */
+
   async function captureInvoice() {
     if (!invoiceRef.current) return null;
 
@@ -261,13 +270,11 @@ export function WorkInvoicePage() {
     const oldWidth = element.style.width;
     const oldMinWidth = element.style.minWidth;
     const oldMaxWidth = element.style.maxWidth;
-    const oldHeight = element.style.height;
 
     try {
       element.style.width = '794px';
       element.style.minWidth = '794px';
       element.style.maxWidth = '794px';
-      element.style.height = '1123px';
 
       await waitForImages(element);
 
@@ -277,7 +284,9 @@ export function WorkInvoicePage() {
         });
       });
 
-      const canvas = await html2canvas(element, {
+      const actualHeight = element.scrollHeight;
+
+      return await html2canvas(element, {
         scale: 2,
 
         backgroundColor: '#ffffff',
@@ -287,23 +296,24 @@ export function WorkInvoicePage() {
         logging: false,
 
         width: 794,
-        height: 1123,
+        height: actualHeight,
 
         windowWidth: 794,
-        windowHeight: 1123,
+        windowHeight: actualHeight,
 
         scrollX: 0,
         scrollY: 0,
       });
-
-      return canvas;
     } finally {
       element.style.width = oldWidth;
       element.style.minWidth = oldMinWidth;
       element.style.maxWidth = oldMaxWidth;
-      element.style.height = oldHeight;
     }
   }
+
+  /* =========================================================
+     PDF
+  ========================================================= */
 
   async function createPdf() {
     const canvas = await captureInvoice();
@@ -312,7 +322,7 @@ export function WorkInvoicePage() {
 
     const image = canvas.toDataURL(
       'image/jpeg',
-      0.98
+      0.99
     );
 
     const pdf = new jsPDF({
@@ -328,24 +338,35 @@ export function WorkInvoicePage() {
     const pageHeight =
       pdf.internal.pageSize.getHeight();
 
-    const marginX = 2;
-    const marginY = 2;
+    /*
+     * هام:
+     * لا نفرض ارتفاع على الفاتورة.
+     * نأخذ الفاتورة كاملة ثم نكبّرها
+     * إلى أقصى مساحة ممكنة في A4.
+     */
+    const margin = 1.5;
 
     const maxWidth =
-      pageWidth - marginX * 2;
+      pageWidth - margin * 2;
 
     const maxHeight =
-      pageHeight - marginY * 2;
+      pageHeight - margin * 2;
 
-    const ratio =
+    const canvasRatio =
       canvas.width / canvas.height;
 
-    let width = maxWidth;
-    let height = width / ratio;
+    const pageRatio =
+      maxWidth / maxHeight;
 
-    if (height > maxHeight) {
+    let width: number;
+    let height: number;
+
+    if (canvasRatio > pageRatio) {
+      width = maxWidth;
+      height = width / canvasRatio;
+    } else {
       height = maxHeight;
-      width = height * ratio;
+      width = height * canvasRatio;
     }
 
     const x =
@@ -401,9 +422,7 @@ export function WorkInvoicePage() {
     } catch (error) {
       console.error(error);
 
-      window.alert(
-        'تعذر حفظ ملف PDF'
-      );
+      window.alert('تعذر حفظ ملف PDF');
     } finally {
       setBusy(false);
     }
@@ -452,9 +471,7 @@ export function WorkInvoicePage() {
     } catch (error) {
       console.error(error);
 
-      window.alert(
-        'تعذر مشاركة الفاتورة'
-      );
+      window.alert('تعذر مشاركة الفاتورة');
     } finally {
       setBusy(false);
     }
@@ -559,7 +576,7 @@ export function WorkInvoicePage() {
 
           <div className="rounded-[22px] border border-slate-700 bg-[#0a1525] p-3">
 
-            <h2 className="mb-4 text-sm font-black text-white">
+            <h2 className="mb-4 text-sm font-black">
               بيانات الفاتورة
             </h2>
 
@@ -782,7 +799,6 @@ export function WorkInvoicePage() {
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-[16px] bg-violet-600 py-3.5 text-sm font-black"
             >
               <Eye size={19} />
-
               معاينة الفاتورة قبل الحفظ
             </button>
           </div>
@@ -842,6 +858,7 @@ export function WorkInvoicePage() {
             </div>
 
             <div className="flex-1 overflow-auto p-3">
+
               <InvoiceDocument
                 data={data}
                 grandTotal={grandTotal}
@@ -902,10 +919,10 @@ function InvoiceDocument({
       dir="ltr"
       className="mx-auto w-[794px] min-w-[794px] overflow-hidden bg-white text-[#292878]"
       style={{
-        width: 794,
-        height: 1123,
         minHeight: 1123,
-        fontFamily: 'Arial, Tahoma, sans-serif',
+
+        fontFamily:
+          'Arial, Tahoma, sans-serif',
       }}
     >
 
@@ -914,7 +931,7 @@ function InvoiceDocument({
       ================================================= */}
 
       <div
-        className="relative h-[330px] overflow-hidden px-6 pt-5"
+        className="relative h-[310px] overflow-hidden px-6 pt-5"
         style={{
           background: '#292878',
         }}
@@ -935,7 +952,7 @@ function InvoiceDocument({
           <div className="flex justify-center">
             <div
               dir="rtl"
-              className="flex h-[70px] w-full items-center justify-center rounded-[19px] bg-white px-3 text-center text-[32px] font-black leading-none"
+              className="flex h-[64px] w-full items-center justify-center rounded-[19px] bg-white px-3 text-center text-[30px] font-black leading-none"
             >
               {data.leftTitle}
             </div>
@@ -943,28 +960,28 @@ function InvoiceDocument({
 
           {/* COMPANY */}
 
-          <div className="flex h-[78px] flex-col items-center justify-center rounded-[27px] bg-white px-4 text-center">
+          <div className="flex h-[72px] flex-col items-center justify-center rounded-[27px] bg-white px-4 text-center">
 
             <div
               dir="rtl"
               className="flex items-center justify-center gap-3"
             >
-              <span className="text-[18px]">
+              <span className="text-[16px]">
                 ●
               </span>
 
-              <span className="text-[35px] font-black leading-none">
+              <span className="text-[33px] font-black leading-none">
                 {data.companyArabic}
               </span>
 
-              <span className="text-[18px]">
+              <span className="text-[16px]">
                 ●
               </span>
             </div>
 
             <div
               dir="ltr"
-              className="mt-1 text-[20px] font-black leading-none tracking-[0.02em]"
+              className="mt-1 text-[19px] font-black leading-none tracking-[0.02em]"
             >
               {data.companyEnglish}
             </div>
@@ -975,7 +992,7 @@ function InvoiceDocument({
           <div className="flex justify-center">
             <div
               dir="rtl"
-              className="flex h-[70px] w-full items-center justify-center rounded-[19px] bg-white px-3 text-center text-[32px] font-black leading-none"
+              className="flex h-[64px] w-full items-center justify-center rounded-[19px] bg-white px-3 text-center text-[30px] font-black leading-none"
             >
               {data.rightTitle}
             </div>
@@ -984,39 +1001,59 @@ function InvoiceDocument({
 
         {/* SECOND ROW */}
 
-        <div className="relative z-20 mx-auto mt-4 grid max-w-[625px] grid-cols-2 gap-5">
+        <div className="relative z-20 mx-auto mt-4 grid max-w-[610px] grid-cols-2 gap-5">
 
           <div
             dir="rtl"
-            className="flex h-[57px] items-center justify-center rounded-[20px] bg-white px-4 text-center text-[25px] font-black leading-none"
+            className="flex h-[50px] items-center justify-center rounded-[19px] bg-white px-4 text-center text-[23px] font-black leading-none"
           >
             {data.location}
           </div>
 
           <div
             dir="rtl"
-            className="flex h-[57px] items-center justify-center rounded-[20px] bg-white px-4 text-center text-[25px] font-black leading-none"
+            className="flex h-[50px] items-center justify-center rounded-[19px] bg-white px-4 text-center text-[23px] font-black leading-none"
           >
             {data.activity}
           </div>
         </div>
 
-        {/* WHITE CURVE */}
+        {/* CURVE */}
 
         <div
-          className="absolute left-[-5%] top-[205px] z-10 h-[190px] w-[110%] rounded-[50%] bg-white"
+          className="absolute left-[-5%] top-[190px] z-10 h-[190px] w-[110%] rounded-[50%] bg-white"
           style={{
             borderTop:
               '5px solid #292878',
           }}
         />
 
-        {/* EQUIPMENT */}
+        {/* =================================================
+            FIXED EQUIPMENT IMAGE
+            لا نغيّر هذا بعد الآن
+        ================================================= */}
 
         <img
           src={EQUIPMENT_IMAGE}
           alt="كرين وبوم ترك"
-          className="absolute left-1/2 top-[185px] z-30 h-[205px] w-[590px] -translate-x-1/2 object-contain"
+          style={{
+            position: 'absolute',
+
+            left: '50%',
+
+            top: '178px',
+
+            width: '540px',
+
+            height: '185px',
+
+            transform:
+              'translateX(-50%)',
+
+            objectFit: 'contain',
+
+            zIndex: 30,
+          }}
         />
       </div>
 
@@ -1024,7 +1061,7 @@ function InvoiceDocument({
           BODY
       ================================================= */}
 
-      <div className="px-6 pb-4 pt-2">
+      <div className="px-7 pb-4 pt-3">
 
         {/* CASH / DATE */}
 
@@ -1037,34 +1074,32 @@ function InvoiceDocument({
           }}
         >
 
-          {/* LEFT */}
-
           <div className="text-left">
 
             <div
               dir="rtl"
-              className="text-left text-[27px] font-black"
+              className="text-left text-[25px] font-black"
             >
               فاتورة نقداً
             </div>
 
             <div
               dir="ltr"
-              className="text-[18px] font-bold"
+              className="text-[17px] font-bold"
             >
               Cash Invoice
             </div>
 
             <div
               dir="ltr"
-              className="mt-3 text-[29px]"
+              className="mt-3 text-[28px]"
             >
               No
             </div>
 
             <div
               dir="ltr"
-              className="text-[19px] font-black text-black"
+              className="text-[18px] font-black text-black"
             >
               {data.invoiceNo}
             </div>
@@ -1072,20 +1107,18 @@ function InvoiceDocument({
 
           <div />
 
-          {/* DATE */}
-
           <div className="pt-2 text-right">
 
             <div
               dir="rtl"
-              className="text-right text-[20px] font-black"
+              className="text-right text-[19px] font-black"
             >
               التاريخ
             </div>
 
             <div
               dir="ltr"
-              className="mt-2 text-right text-[19px] font-black text-black"
+              className="mt-2 text-right text-[18px] font-black text-black"
             >
               {data.date}
             </div>
@@ -1099,16 +1132,13 @@ function InvoiceDocument({
           className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-2"
         >
 
-          <div
-            dir="ltr"
-            className="text-[17px]"
-          >
+          <div className="text-[17px]">
             Mr. / Messrs
           </div>
 
           <div
             dir="rtl"
-            className="min-h-[34px] text-center text-[23px] font-black text-black"
+            className="min-h-[34px] text-center text-[22px] font-black text-black"
           >
             {data.customer ||
               'اسم العميل'}
@@ -1128,10 +1158,10 @@ function InvoiceDocument({
 
         <div
           dir="ltr"
-          className="relative mt-3 overflow-hidden rounded-[17px] border-[3px] border-[#292878]"
+          className="relative mt-4 overflow-hidden rounded-[17px] border-[3px] border-[#292878]"
         >
 
-          {/* TABLE HEADER */}
+          {/* HEADER */}
 
           <div
             className="grid bg-[#f5f5fb]"
@@ -1140,7 +1170,7 @@ function InvoiceDocument({
                 '3fr .75fr 1fr .58fr 1fr .58fr',
 
               gridTemplateRows:
-                '44px 32px',
+                '44px 31px',
             }}
           >
 
@@ -1157,7 +1187,7 @@ function InvoiceDocument({
                 البيان
               </span>
 
-              <small className="text-[11px]">
+              <small>
                 Description
               </small>
             </HeaderBox>
@@ -1170,12 +1200,12 @@ function InvoiceDocument({
             >
               <span
                 dir="rtl"
-                className="text-[16px]"
+                className="text-[15px]"
               >
                 الكمية
               </span>
 
-              <small className="text-[11px]">
+              <small>
                 Qty.
               </small>
             </HeaderBox>
@@ -1188,12 +1218,12 @@ function InvoiceDocument({
             >
               <span
                 dir="rtl"
-                className="text-[15px]"
+                className="text-[14px]"
               >
                 سعر الوحدة
               </span>
 
-              <small className="text-[10px]">
+              <small>
                 Unit Price
               </small>
             </HeaderBox>
@@ -1206,12 +1236,12 @@ function InvoiceDocument({
             >
               <span
                 dir="rtl"
-                className="text-[15px]"
+                className="text-[14px]"
               >
                 السعر الإجمالي
               </span>
 
-              <small className="text-[10px]">
+              <small>
                 Total Price
               </small>
             </HeaderBox>
@@ -1266,16 +1296,16 @@ function InvoiceDocument({
           <img
             src={EQUIPMENT_IMAGE}
             alt=""
-            className="pointer-events-none absolute left-1/2 top-[54%] w-[430px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.04]"
+            className="pointer-events-none absolute left-1/2 top-[54%] w-[380px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]"
           />
 
-          {/* 7 ROWS */}
+          {/* EXACT 7 ROWS */}
 
           {data.rows.map(
             (row, index) => (
               <div
                 key={index}
-                className="relative z-10 grid min-h-[75px] border-t border-dotted border-slate-400"
+                className="relative z-10 grid min-h-[66px] border-t border-dotted border-slate-400"
                 style={{
                   gridTemplateColumns:
                     '3fr .75fr 1fr .58fr 1fr .58fr',
@@ -1301,9 +1331,7 @@ function InvoiceDocument({
                 </InvoiceCell>
 
                 <InvoiceCell>
-                  <span dir="ltr">
-                    -
-                  </span>
+                  -
                 </InvoiceCell>
 
                 <InvoiceCell>
@@ -1313,9 +1341,7 @@ function InvoiceDocument({
                 </InvoiceCell>
 
                 <InvoiceCell last>
-                  <span dir="ltr">
-                    -
-                  </span>
+                  -
                 </InvoiceCell>
               </div>
             )
@@ -1332,13 +1358,13 @@ function InvoiceDocument({
             }}
           >
 
-            <div className="flex min-h-[65px] items-center justify-center border-r-2 border-[#292878] px-2 text-[15px] font-black">
+            <div className="flex min-h-[62px] items-center justify-center border-r-2 border-[#292878] px-2 text-[15px] font-black">
               Total S.R.
             </div>
 
             <div
               dir="rtl"
-              className="flex items-center justify-center border-r-2 border-[#292878] px-3 text-center text-[17px] font-black text-black"
+              className="flex items-center justify-center border-r-2 border-[#292878] px-3 text-center text-[16px] font-black text-black"
             >
               المجموع :{' '}
               {data.totalWords ||
@@ -1347,7 +1373,7 @@ function InvoiceDocument({
 
             <div
               dir="ltr"
-              className="flex items-center justify-center px-2 text-[30px] font-black text-black"
+              className="flex items-center justify-center px-2 text-[28px] font-black text-black"
             >
               {grandTotal.toLocaleString(
                 'en-US'
@@ -1356,7 +1382,7 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* SIGNATURE */}
+        {/* SIGNATURES */}
 
         <div
           dir="ltr"
@@ -1364,39 +1390,35 @@ function InvoiceDocument({
         >
 
           <div className="text-center">
+
             <div
               dir="rtl"
-              className="text-[18px] font-black"
+              className="text-[17px] font-black"
             >
               توقيع المستلم
             </div>
 
-            <div
-              dir="ltr"
-              className="text-[13px] font-bold"
-            >
+            <div className="text-[13px] font-bold">
               Received
             </div>
 
-            <div className="mx-auto mt-5 w-[135px] border-b-2 border-dotted border-slate-400" />
+            <div className="mx-auto mt-5 w-[125px] border-b-2 border-dotted border-slate-400" />
           </div>
 
           <div className="text-center">
+
             <div
               dir="rtl"
-              className="text-[18px] font-black"
+              className="text-[17px] font-black"
             >
               توقيع البائع
             </div>
 
-            <div
-              dir="ltr"
-              className="text-[13px] font-bold"
-            >
+            <div className="text-[13px] font-bold">
               Salesman Sig.
             </div>
 
-            <div className="mx-auto mt-5 w-[135px] border-b-2 border-dotted border-slate-400" />
+            <div className="mx-auto mt-5 w-[125px] border-b-2 border-dotted border-slate-400" />
           </div>
         </div>
 
@@ -1411,13 +1433,13 @@ function InvoiceDocument({
           </div>
         )}
 
-        {/* THANK YOU */}
+        {/* THANKS */}
 
         <div
           dir="ltr"
           className="flex items-center justify-center gap-3 pt-1"
         >
-          <div className="h-px w-[135px] bg-[#292878]" />
+          <div className="h-px w-[130px] bg-[#292878]" />
 
           <div className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
 
@@ -1430,7 +1452,7 @@ function InvoiceDocument({
 
           <div className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
 
-          <div className="h-px w-[135px] bg-[#292878]" />
+          <div className="h-px w-[130px] bg-[#292878]" />
         </div>
 
         <div
@@ -1539,7 +1561,7 @@ function HeaderBox({
 }
 
 /* =========================================================
-   TABLE CELL
+   INVOICE CELL
 ========================================================= */
 
 function InvoiceCell({
@@ -1551,7 +1573,7 @@ function InvoiceCell({
 }) {
   return (
     <div
-      className={`flex items-center justify-center px-2 text-center text-[16px] font-bold text-black ${
+      className={`flex items-center justify-center px-2 text-center text-[15px] font-bold text-black ${
         last
           ? ''
           : 'border-r-2 border-[#292878]'
@@ -1560,4 +1582,4 @@ function InvoiceCell({
       {children}
     </div>
   );
-        }
+              }
