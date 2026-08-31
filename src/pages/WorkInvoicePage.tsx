@@ -950,9 +950,9 @@ function InvoiceDocument({
 
             left: '50%',
 
-            top: '137px',
+            'top: '150px
 
-            width: '560px',
+            'width: '510px 
 
             height: '170px',
 
