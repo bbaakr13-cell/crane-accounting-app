@@ -43,6 +43,9 @@ jobs:
           mkdir -p project/web/src
           cp -r src/. project/web/src/
 
+          mkdir -p project/web/public
+          cp -r public/. project/web/public/
+
       - name: Install dependencies
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm install
