@@ -57,7 +57,7 @@ type WorkInvoiceData = {
 const STORAGE_KEY = 'baakr-work-invoice-v3';
 
 const EQUIPMENT_IMAGE =
-  '/file_00000000bf2c820aa62b57dd4de5b46c.png';
+  '/file_000000000bf2c820aa62b57dd4de5b46c.png';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -102,7 +102,9 @@ function loadInvoice(): WorkInvoiceData {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
 
-    if (!saved) return initialData;
+    if (!saved) {
+      return initialData;
+    }
 
     const parsed = JSON.parse(saved);
 
@@ -131,11 +133,14 @@ export function WorkInvoicePage() {
 
   const invoiceRef = useRef<HTMLDivElement>(null);
 
-  const [data, setData] =
-    useState<WorkInvoiceData>(() => loadInvoice());
+  const [data, setData] = useState<WorkInvoiceData>(() => loadInvoice());
 
   const [busy, setBusy] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  /* =======================================================
+     TOTAL
+  ======================================================= */
 
   const grandTotal = useMemo(() => {
     return data.rows.reduce(
@@ -143,6 +148,10 @@ export function WorkInvoicePage() {
       0
     );
   }, [data.rows]);
+
+  /* =======================================================
+     UPDATE FIELD
+  ======================================================= */
 
   function updateField<K extends keyof WorkInvoiceData>(
     key: K,
@@ -153,6 +162,10 @@ export function WorkInvoicePage() {
       [key]: value,
     }));
   }
+
+  /* =======================================================
+     UPDATE ROW
+  ======================================================= */
 
   function updateRow(
     index: number,
@@ -194,33 +207,50 @@ export function WorkInvoicePage() {
     });
   }
 
+  /* =======================================================
+     NEW INVOICE
+  ======================================================= */
+
   function createNewInvoice() {
-    const ok = window.confirm(
-      'هل تريد إنشاء فاتورة عمل جديدة؟'
-    );
+    const ok = window.confirm('هل تريد إنشاء فاتورة عمل جديدة؟');
 
     if (!ok) return;
 
     setData({
       ...initialData,
+
       invoiceNo: String(Date.now()).slice(-6),
+
       date: new Date().toISOString().slice(0, 10),
+
       customer: '',
+
       rows: makeEmptyRows(),
+
       totalWords: '',
       notes: '',
     });
   }
 
+  /* =======================================================
+     SAVE
+  ======================================================= */
+
   function saveInvoice() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
       window.alert('تم حفظ فاتورة العمل');
     } catch (error) {
       console.error(error);
+
       window.alert('تعذر حفظ الفاتورة');
     }
   }
+
+  /* =======================================================
+     CAPTURE
+  ======================================================= */
 
   async function captureInvoice() {
     if (!invoiceRef.current) return null;
@@ -236,9 +266,11 @@ export function WorkInvoicePage() {
       element.style.minWidth = '794px';
       element.style.maxWidth = '794px';
 
-      const images = Array.from(
-        element.querySelectorAll('img')
-      );
+      /*
+       * ننتظر تحميل صورة المعدات بالكامل
+       * حتى تظهر في PDF.
+       */
+      const images = Array.from(element.querySelectorAll('img'));
 
       await Promise.all(
         images.map(
@@ -257,7 +289,9 @@ export function WorkInvoicePage() {
 
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => resolve());
+          requestAnimationFrame(() => {
+            resolve();
+          });
         });
       });
 
@@ -266,8 +300,10 @@ export function WorkInvoicePage() {
         backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,
+
         width: 794,
         windowWidth: 794,
+
         scrollX: 0,
         scrollY: 0,
       });
@@ -279,6 +315,10 @@ export function WorkInvoicePage() {
       element.style.maxWidth = oldMaxWidth;
     }
   }
+
+  /* =======================================================
+     PDF
+  ======================================================= */
 
   async function createPdf() {
     const canvas = await captureInvoice();
@@ -330,6 +370,10 @@ export function WorkInvoicePage() {
     return pdf;
   }
 
+  /* =======================================================
+     SAVE PDF
+  ======================================================= */
+
   async function savePdf() {
     try {
       setBusy(true);
@@ -338,11 +382,13 @@ export function WorkInvoicePage() {
 
       if (!pdf) return;
 
-      const fileName =
-        `work-invoice-${data.invoiceNo || 'invoice'}.pdf`;
+      const fileName = `work-invoice-${
+        data.invoiceNo || 'invoice'
+      }.pdf`;
 
       if (Capacitor.isNativePlatform()) {
         const dataUri = pdf.output('datauristring');
+
         const base64 = dataUri.split(',')[1];
 
         await Filesystem.writeFile({
@@ -357,11 +403,16 @@ export function WorkInvoicePage() {
       }
     } catch (error) {
       console.error(error);
+
       window.alert('تعذر حفظ ملف PDF');
     } finally {
       setBusy(false);
     }
   }
+
+  /* =======================================================
+     SHARE
+  ======================================================= */
 
   async function shareInvoice() {
     try {
@@ -371,12 +422,12 @@ export function WorkInvoicePage() {
 
       if (!pdf) return;
 
-      const fileName =
-        `work-invoice-${data.invoiceNo || 'invoice'}.pdf`;
+      const fileName = `work-invoice-${
+        data.invoiceNo || 'invoice'
+      }.pdf`;
 
       if (Capacitor.isNativePlatform()) {
-        const base64 =
-          pdf.output('datauristring').split(',')[1];
+        const base64 = pdf.output('datauristring').split(',')[1];
 
         const saved = await Filesystem.writeFile({
           path: fileName,
@@ -395,6 +446,7 @@ export function WorkInvoicePage() {
       }
     } catch (error) {
       console.error(error);
+
       window.alert('تعذر مشاركة الفاتورة');
     } finally {
       setBusy(false);
@@ -412,6 +464,7 @@ export function WorkInvoicePage() {
         className="min-h-screen bg-[#06101f] pb-28 text-white"
       >
         <div className="mx-auto max-w-6xl px-3 py-4">
+          {/* PAGE HEADER */}
 
           <div className="mb-4 flex items-center justify-between">
             <button
@@ -423,9 +476,7 @@ export function WorkInvoicePage() {
             </button>
 
             <div className="text-center">
-              <h1 className="text-xl font-black">
-                فاتورة عمل
-              </h1>
+              <h1 className="text-xl font-black">فاتورة عمل</h1>
 
               <p className="mt-1 text-xs text-slate-400">
                 إنشاء وتعديل ومعاينة الفاتورة
@@ -440,6 +491,8 @@ export function WorkInvoicePage() {
               <Plus size={23} />
             </button>
           </div>
+
+          {/* BUTTONS */}
 
           <div className="mb-4 grid grid-cols-3 gap-2">
             <button
@@ -490,8 +543,10 @@ export function WorkInvoicePage() {
             </button>
           </div>
 
+          {/* EDIT FORM */}
+
           <div className="rounded-[22px] border border-slate-700 bg-[#0a1525] p-3">
-            <h2 className="mb-4 text-sm font-black">
+            <h2 className="mb-4 text-sm font-black text-white">
               بيانات الفاتورة
             </h2>
 
@@ -499,18 +554,14 @@ export function WorkInvoicePage() {
               <Field
                 label="رقم الفاتورة"
                 value={data.invoiceNo}
-                onChange={(value) =>
-                  updateField('invoiceNo', value)
-                }
+                onChange={(value) => updateField('invoiceNo', value)}
               />
 
               <Field
                 label="التاريخ"
                 type="date"
                 value={data.date}
-                onChange={(value) =>
-                  updateField('date', value)
-                }
+                onChange={(value) => updateField('date', value)}
               />
             </div>
 
@@ -518,9 +569,7 @@ export function WorkInvoicePage() {
               label="اسم العميل"
               value={data.customer}
               placeholder="اكتب اسم العميل"
-              onChange={(value) =>
-                updateField('customer', value)
-              }
+              onChange={(value) => updateField('customer', value)}
             />
 
             <div className="my-4 border-t border-slate-700" />
@@ -533,17 +582,13 @@ export function WorkInvoicePage() {
               <Field
                 label="كرينات"
                 value={data.rightTitle}
-                onChange={(value) =>
-                  updateField('rightTitle', value)
-                }
+                onChange={(value) => updateField('rightTitle', value)}
               />
 
               <Field
                 label="بوم ترك"
                 value={data.leftTitle}
-                onChange={(value) =>
-                  updateField('leftTitle', value)
-                }
+                onChange={(value) => updateField('leftTitle', value)}
               />
             </div>
 
@@ -566,17 +611,13 @@ export function WorkInvoicePage() {
             <Field
               label="النشاط"
               value={data.activity}
-              onChange={(value) =>
-                updateField('activity', value)
-              }
+              onChange={(value) => updateField('activity', value)}
             />
 
             <Field
               label="الموقع"
               value={data.location}
-              onChange={(value) =>
-                updateField('location', value)
-              }
+              onChange={(value) => updateField('location', value)}
             />
 
             <div className="my-4 border-t border-slate-700" />
@@ -641,18 +682,14 @@ export function WorkInvoicePage() {
               label="المبلغ كتابة"
               value={data.totalWords}
               placeholder="مثال: ثمانية عشر ألف ريال فقط لا غير"
-              onChange={(value) =>
-                updateField('totalWords', value)
-              }
+              onChange={(value) => updateField('totalWords', value)}
             />
 
             <Field
               label="ملاحظات"
               value={data.notes}
               placeholder="ملاحظات اختيارية"
-              onChange={(value) =>
-                updateField('notes', value)
-              }
+              onChange={(value) => updateField('notes', value)}
             />
 
             <button
@@ -664,6 +701,8 @@ export function WorkInvoicePage() {
               معاينة الفاتورة قبل الحفظ
             </button>
           </div>
+
+          {/* SMALL PREVIEW */}
 
           <div className="mt-5 overflow-auto rounded-[22px] border border-slate-700 bg-[#0a1525] p-2">
             <div className="mb-2 text-center text-xs font-bold text-slate-400">
@@ -677,6 +716,8 @@ export function WorkInvoicePage() {
             />
           </div>
         </div>
+
+        {/* FULL PREVIEW */}
 
         {previewOpen && (
           <div className="fixed inset-0 z-[20000] flex flex-col bg-[#020817]">
@@ -773,16 +814,24 @@ function InvoiceDocument({
         fontFamily: 'Arial, Tahoma, sans-serif',
       }}
     >
+      {/* ================= HEADER ================= */}
+
       <div
-        className="relative h-[310px] overflow-hidden px-6 pt-5"
-        style={{ background: '#292878' }}
+        className="relative h-[315px] overflow-hidden px-6 pt-5"
+        style={{
+          background: '#292878',
+        }}
       >
+        {/* TOP ROW */}
+
         <div
           className="relative z-20 grid items-start gap-4"
           style={{
             gridTemplateColumns: '1fr 2.15fr 1fr',
           }}
         >
+          {/* LEFT */}
+
           <div className="flex justify-center pt-1">
             <div
               dir="rtl"
@@ -792,27 +841,31 @@ function InvoiceDocument({
             </div>
           </div>
 
+          {/* CENTER */}
+
           <div className="rounded-[27px] bg-white px-5 py-2 text-center">
             <div
               dir="rtl"
               className="flex items-center justify-center gap-3"
             >
-              <span className="text-[22px]">●</span>
+              <span className="text-[17px]">●</span>
 
               <span className="text-[30px] font-black leading-none">
                 {data.companyArabic}
               </span>
 
-              <span className="text-[22px]">●</span>
+              <span className="text-[17px]">●</span>
             </div>
 
             <div
               dir="ltr"
-              className="mt-1 text-[17px] font-black tracking-[0.05em]"
+              className="mt-1 text-[17px] font-black tracking-[0.04em]"
             >
               {data.companyEnglish}
             </div>
           </div>
+
+          {/* RIGHT */}
 
           <div className="flex justify-center pt-1">
             <div
@@ -824,7 +877,9 @@ function InvoiceDocument({
           </div>
         </div>
 
-        <div className="relative z-20 mx-auto mt-4 grid max-w-[590px] grid-cols-2 gap-5">
+        {/* SECOND ROW */}
+
+        <div className="relative z-20 mx-auto mt-4 grid max-w-[570px] grid-cols-2 gap-5">
           <div
             dir="rtl"
             className="rounded-[18px] bg-white px-4 py-2 text-center text-[21px] font-black"
@@ -840,27 +895,38 @@ function InvoiceDocument({
           </div>
         </div>
 
+        {/* WHITE CURVE */}
+
         <div
-          className="absolute -bottom-[78px] left-[-5%] z-10 h-[190px] w-[110%] rounded-[50%] bg-white"
+          className="absolute left-[-5%] top-[204px] z-10 h-[180px] w-[110%] rounded-[50%] bg-white"
           style={{
-            borderTop: '4px solid #292878',
+            borderTop: '5px solid #292878',
           }}
         />
+
+        {/* REAL EQUIPMENT IMAGE */}
 
         <img
           src={EQUIPMENT_IMAGE}
           alt="كرين وبوم ترك"
-          className="absolute left-1/2 top-[165px] z-30 h-[230px] w-[610px] -translate-x-1/2 object-contain"
+          className="absolute left-1/2 top-[176px] z-30 h-[190px] w-[540px] -translate-x-1/2 object-contain"
         />
       </div>
 
-      <div className="px-7 pb-5 pt-1">
+      {/* ================= BODY ================= */}
+
+      <div className="px-7 pb-5 pt-3">
+        {/* CASH / DATE */}
+
         <div
+          dir="ltr"
           className="grid items-start gap-4"
           style={{
-            gridTemplateColumns: '1fr 1.25fr 1fr',
+            gridTemplateColumns: '1fr 1.35fr 1fr',
           }}
         >
+          {/* CASH LEFT */}
+
           <div className="text-left">
             <div
               dir="rtl"
@@ -878,14 +944,14 @@ function InvoiceDocument({
 
             <div
               dir="ltr"
-              className="mt-3 text-[27px]"
+              className="mt-3 text-[28px]"
             >
               No
             </div>
 
             <div
               dir="ltr"
-              className="text-[18px] font-black text-black"
+              className="text-[18px] font-black"
             >
               {data.invoiceNo}
             </div>
@@ -893,7 +959,9 @@ function InvoiceDocument({
 
           <div />
 
-          <div className="pt-3 text-right">
+          {/* DATE RIGHT */}
+
+          <div className="pt-2 text-right">
             <div
               dir="rtl"
               className="text-right text-[19px] font-black"
@@ -910,206 +978,263 @@ function InvoiceDocument({
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-2">
+        {/* CUSTOMER */}
+
+        <div
+          dir="ltr"
+          className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-2"
+        >
           <div
             dir="ltr"
-            className="text-[16px]"
+            className="text-[17px]"
           >
             Mr. / Messrs
           </div>
 
           <div
             dir="rtl"
-            className="min-h-[32px] text-center text-[21px] font-black text-black"
+            className="min-h-[34px] text-center text-[22px] font-black text-black"
           >
             {data.customer || 'اسم العميل'}
           </div>
 
           <div
             dir="rtl"
-            className="text-[17px] font-black"
+            className="text-[18px] font-black"
           >
             المطلوب من السيد / السادة
           </div>
         </div>
 
-        <div className="relative mt-4 overflow-hidden rounded-[14px] border-[3px] border-[#292878]">
+        {/* ================= TABLE ================= */}
+
+        <div
+          dir="ltr"
+          className="relative mt-4 overflow-hidden rounded-[17px] border-[3px] border-[#292878]"
+        >
+          {/* HEADER - 6 PHYSICAL COLUMNS */}
+
           <div
-            className="grid bg-[#f7f7fb]"
+            className="relative z-20 grid bg-[#f5f5fb]"
             style={{
               gridTemplateColumns:
                 '3fr .75fr 1fr .58fr 1fr .58fr',
-              gridTemplateRows: '45px 34px',
+              gridTemplateRows: '45px 30px',
             }}
           >
-            <TableHeader
+            {/* DESCRIPTION */}
+
+            <div
+              className="flex flex-col items-center justify-center border-r-2 border-[#292878] px-2 text-center font-black"
               style={{
                 gridColumn: '1',
                 gridRow: '1 / 3',
               }}
-              noLeftBorder
             >
-              <span dir="rtl">البيان</span>
-              <small dir="ltr">Description</small>
-            </TableHeader>
+              <span dir="rtl" className="text-[17px]">
+                البيان
+              </span>
 
-            <TableHeader
+              <small dir="ltr" className="text-[11px]">
+                Description
+              </small>
+            </div>
+
+            {/* QTY */}
+
+            <div
+              className="flex flex-col items-center justify-center border-r-2 border-[#292878] px-1 text-center font-black"
               style={{
                 gridColumn: '2',
                 gridRow: '1 / 3',
               }}
             >
-              <span dir="rtl">الكمية</span>
-              <small dir="ltr">Qty.</small>
-            </TableHeader>
+              <span dir="rtl" className="text-[15px]">
+                الكمية
+              </span>
 
-            <TableHeader
+              <small dir="ltr" className="text-[10px]">
+                Qty.
+              </small>
+            </div>
+
+            {/* UNIT PRICE GROUP */}
+
+            <div
+              className="flex flex-col items-center justify-center border-r-2 border-b border-[#292878] text-center font-black"
               style={{
                 gridColumn: '3 / 5',
                 gridRow: '1',
               }}
             >
-              <span dir="rtl">سعر الوحدة</span>
-              <small dir="ltr">Unit Price</small>
-            </TableHeader>
+              <span dir="rtl" className="text-[14px]">
+                سعر الوحدة
+              </span>
 
-            <TableHeader
+              <small dir="ltr" className="text-[9px]">
+                Unit Price
+              </small>
+            </div>
+
+            {/* TOTAL PRICE GROUP */}
+
+            <div
+              className="flex flex-col items-center justify-center border-r-2 border-b border-[#292878] text-center font-black"
               style={{
                 gridColumn: '5 / 7',
                 gridRow: '1',
               }}
             >
-              <span dir="rtl">السعر الإجمالي</span>
-              <small dir="ltr">Total Price</small>
-            </TableHeader>
+              <span dir="rtl" className="text-[14px]">
+                السعر الإجمالي
+              </span>
 
-            <SubHeader
+              <small dir="ltr" className="text-[9px]">
+                Total Price
+              </small>
+            </div>
+
+            {/* UNIT SR */}
+
+            <div
+              className="flex items-center justify-center border-r-2 border-[#292878] text-[10px] font-black"
               style={{
                 gridColumn: '3',
                 gridRow: '2',
               }}
             >
-              <span dir="rtl">ريال</span>
-              <small>S.R.</small>
-            </SubHeader>
+              S.R. ريال
+            </div>
 
-            <SubHeader
+            {/* UNIT H */}
+
+            <div
+              className="flex items-center justify-center border-r-2 border-[#292878] text-[10px] font-black"
               style={{
                 gridColumn: '4',
                 gridRow: '2',
               }}
             >
-              <span dir="rtl">هـ</span>
-              <small>H.</small>
-            </SubHeader>
+              H. هـ
+            </div>
 
-            <SubHeader
+            {/* TOTAL SR */}
+
+            <div
+              className="flex items-center justify-center border-r-2 border-[#292878] text-[10px] font-black"
               style={{
                 gridColumn: '5',
                 gridRow: '2',
               }}
             >
-              <span dir="rtl">ريال</span>
-              <small>S.R.</small>
-            </SubHeader>
+              S.R. ريال
+            </div>
 
-            <SubHeader
+            {/* TOTAL H */}
+
+            <div
+              className="flex items-center justify-center text-[10px] font-black"
               style={{
                 gridColumn: '6',
                 gridRow: '2',
               }}
             >
-              <span dir="rtl">هـ</span>
-              <small>H.</small>
-            </SubHeader>
+              H. هـ
+            </div>
           </div>
 
+          {/* TABLE BODY */}
+
           <div className="relative">
+            {/* WATERMARK */}
+
             <img
               src={EQUIPMENT_IMAGE}
               alt=""
-              className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[380px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]"
+              className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[360px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]"
             />
+
+            {/* EXACTLY 7 ROWS */}
 
             {data.rows.map((row, index) => (
               <div
                 key={index}
-                className="relative z-10 grid min-h-[66px] border-t border-dashed border-slate-400"
+                className="relative z-10 grid min-h-[66px] border-t border-dotted border-slate-400"
                 style={{
                   gridTemplateColumns:
                     '3fr .75fr 1fr .58fr 1fr .58fr',
                 }}
               >
-                <TableBodyCell noLeftBorder>
-                  <span dir="rtl">
-                    {row.description}
-                  </span>
-                </TableBodyCell>
+                <TableCell>
+                  <span dir="rtl">{row.description}</span>
+                </TableCell>
 
-                <TableBodyCell>
-                  <span dir="ltr">
-                    {row.qty}
-                  </span>
-                </TableBodyCell>
+                <TableCell>
+                  <span dir="ltr">{row.qty}</span>
+                </TableCell>
 
-                <TableBodyCell>
-                  <span dir="ltr">
-                    {row.unitPrice}
-                  </span>
-                </TableBodyCell>
+                <TableCell>
+                  <span dir="ltr">{row.unitPrice}</span>
+                </TableCell>
 
-                <TableBodyCell>
-                  <span dir="ltr">
-                    {row.unitPrice ? '00' : ''}
-                  </span>
-                </TableBodyCell>
+                <TableCell>
+                  <span dir="ltr">-</span>
+                </TableCell>
 
-                <TableBodyCell>
-                  <span dir="ltr">
-                    {row.totalPrice}
-                  </span>
-                </TableBodyCell>
+                <TableCell>
+                  <span dir="ltr">{row.totalPrice}</span>
+                </TableCell>
 
-                <TableBodyCell>
-                  <span dir="ltr">
-                    {row.totalPrice ? '00' : ''}
-                  </span>
-                </TableBodyCell>
+                <TableCell last>
+                  <span dir="ltr">-</span>
+                </TableCell>
               </div>
             ))}
           </div>
 
+          {/* TOTAL */}
+
           <div
-            className="grid min-h-[62px] border-t-[3px] border-[#292878]"
+            dir="ltr"
+            className="relative z-20 grid border-t-[3px] border-[#292878] bg-white"
             style={{
-              gridTemplateColumns: '1.15fr 3fr 1.2fr',
+              gridTemplateColumns: '1.05fr 2.65fr 1.05fr',
             }}
           >
-            <div className="flex items-center justify-center px-2 text-center text-[15px] font-black">
+            {/* LEFT */}
+
+            <div className="flex min-h-[62px] items-center justify-center border-r-2 border-[#292878] px-2 text-[14px] font-black">
               Total S.R.
             </div>
 
+            {/* CENTER */}
+
             <div
               dir="rtl"
-              className="flex items-center justify-center border-l-2 border-[#292878] px-4 text-center text-[16px] font-black text-black"
+              className="flex items-center justify-center border-r-2 border-[#292878] px-3 text-center text-[16px] font-black text-black"
             >
-              <span className="ml-2 text-[#292878]">
-                المجموع :
-              </span>
-
-              {data.totalWords || 'فقط لا غير'}
+              المجموع : {data.totalWords || 'فقط لا غير'}
             </div>
+
+            {/* RIGHT */}
 
             <div
               dir="ltr"
-              className="flex items-center justify-center border-l-2 border-[#292878] px-2 text-[26px] font-black text-black"
+              className="flex items-center justify-center px-2 text-[27px] font-black text-black"
             >
               {grandTotal.toLocaleString('en-US')}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-24 px-14 py-5">
+        {/* ================= SIGNATURE ================= */}
+
+        <div
+          dir="ltr"
+          className="grid grid-cols-2 gap-20 px-16 py-5"
+        >
+          {/* RECEIVED LEFT */}
+
           <div className="text-center">
             <div
               dir="rtl"
@@ -1118,12 +1243,17 @@ function InvoiceDocument({
               توقيع المستلم
             </div>
 
-            <div className="text-[13px] font-bold">
+            <div
+              dir="ltr"
+              className="text-[12px] font-bold"
+            >
               Received
             </div>
 
-            <div className="mx-auto mt-6 w-[130px] border-b-2 border-dotted border-slate-400" />
+            <div className="mx-auto mt-6 w-[120px] border-b-2 border-dotted border-slate-400" />
           </div>
+
+          {/* SALESMAN RIGHT */}
 
           <div className="text-center">
             <div
@@ -1133,13 +1263,18 @@ function InvoiceDocument({
               توقيع البائع
             </div>
 
-            <div className="text-[13px] font-bold">
+            <div
+              dir="ltr"
+              className="text-[12px] font-bold"
+            >
               Salesman Sig.
             </div>
 
-            <div className="mx-auto mt-6 w-[130px] border-b-2 border-dotted border-slate-400" />
+            <div className="mx-auto mt-6 w-[120px] border-b-2 border-dotted border-slate-400" />
           </div>
         </div>
+
+        {/* NOTES */}
 
         {data.notes && (
           <div
@@ -1150,28 +1285,31 @@ function InvoiceDocument({
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-4 pt-1">
-          <div className="flex w-[170px] items-center">
-            <div className="h-[1px] flex-1 bg-[#292878]" />
-            <div className="ml-2 h-2 w-2 rounded-full bg-[#292878]" />
-          </div>
+        {/* ================= THANKS ================= */}
+
+        <div
+          dir="ltr"
+          className="flex items-center justify-center gap-3 pt-1"
+        >
+          <div className="h-[1px] w-[130px] bg-[#292878]" />
+
+          <div className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
 
           <div
             dir="rtl"
-            className="whitespace-nowrap text-[17px] font-black"
+            className="text-[16px] font-black"
           >
             شكراً لتعاملكم معنا
           </div>
 
-          <div className="flex w-[170px] items-center">
-            <div className="mr-2 h-2 w-2 rounded-full bg-[#292878]" />
-            <div className="h-[1px] flex-1 bg-[#292878]" />
-          </div>
+          <div className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
+
+          <div className="h-[1px] w-[130px] bg-[#292878]" />
         </div>
 
         <div
           dir="ltr"
-          className="mt-2 text-[11px] font-bold text-black"
+          className="mt-4 text-[11px] font-bold text-black"
         >
           1/1
         </div>
@@ -1207,9 +1345,7 @@ function Field({
         type={type}
         value={value}
         placeholder={placeholder}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-xl border border-slate-700 bg-[#07111f] px-3 py-3 text-sm text-white outline-none transition-colors focus:border-violet-500"
       />
     </label>
@@ -1238,9 +1374,7 @@ function MiniField({
       <input
         inputMode="decimal"
         value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-lg border border-slate-700 bg-[#0a1525] px-2 py-2.5 text-center text-xs font-bold text-white outline-none focus:border-violet-500"
       />
     </label>
@@ -1248,73 +1382,23 @@ function MiniField({
 }
 
 /* =========================================================
-   TABLE HEADER
+   TABLE CELL
 ========================================================= */
 
-function TableHeader({
+function TableCell({
   children,
-  style,
-  noLeftBorder = false,
-}: {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-  noLeftBorder?: boolean;
-}) {
-  return (
-    <div
-      style={style}
-      className={`flex flex-col items-center justify-center px-2 text-center text-[16px] font-black ${
-        noLeftBorder
-          ? ''
-          : 'border-l-2 border-[#292878]'
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
-
-/* =========================================================
-   SUB HEADER
-========================================================= */
-
-function SubHeader({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <div
-      style={style}
-      className="flex items-center justify-center gap-1 border-l-2 border-t-2 border-[#292878] px-1 text-center text-[12px] font-black"
-    >
-      {children}
-    </div>
-  );
-}
-
-/* =========================================================
-   TABLE BODY CELL
-========================================================= */
-
-function TableBodyCell({
-  children,
-  noLeftBorder = false,
+  last = false,
 }: {
   children?: React.ReactNode;
-  noLeftBorder?: boolean;
+  last?: boolean;
 }) {
   return (
     <div
       className={`flex items-center justify-center px-2 text-center text-[15px] font-bold text-black ${
-        noLeftBorder
-          ? ''
-          : 'border-l-2 border-[#292878]'
+        last ? '' : 'border-r-2 border-[#292878]'
       }`}
     >
       {children}
     </div>
   );
-      }
+  }
