@@ -56,8 +56,9 @@ type WorkInvoiceData = {
 
 const STORAGE_KEY = 'baakr-work-invoice-v3';
 
+/* اسم الصورة الصحيح داخل public */
 const EQUIPMENT_IMAGE =
-  '/file_000000000bf2c820aa62b57dd4de5b46c.png';
+  '/file_00000000bf2c820aa62b57dd4de5b46c.png';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -102,9 +103,7 @@ function loadInvoice(): WorkInvoiceData {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
 
-    if (!saved) {
-      return initialData;
-    }
+    if (!saved) return initialData;
 
     const parsed = JSON.parse(saved);
 
@@ -130,17 +129,11 @@ function loadInvoice(): WorkInvoiceData {
 
 export function WorkInvoicePage() {
   const navigate = useNavigate();
-
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const [data, setData] = useState<WorkInvoiceData>(() => loadInvoice());
-
   const [busy, setBusy] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-
-  /* =======================================================
-     TOTAL
-  ======================================================= */
 
   const grandTotal = useMemo(() => {
     return data.rows.reduce(
@@ -148,10 +141,6 @@ export function WorkInvoicePage() {
       0
     );
   }, [data.rows]);
-
-  /* =======================================================
-     UPDATE FIELD
-  ======================================================= */
 
   function updateField<K extends keyof WorkInvoiceData>(
     key: K,
@@ -162,10 +151,6 @@ export function WorkInvoicePage() {
       [key]: value,
     }));
   }
-
-  /* =======================================================
-     UPDATE ROW
-  ======================================================= */
 
   function updateRow(
     index: number,
@@ -207,10 +192,6 @@ export function WorkInvoicePage() {
     });
   }
 
-  /* =======================================================
-     NEW INVOICE
-  ======================================================= */
-
   function createNewInvoice() {
     const ok = window.confirm('هل تريد إنشاء فاتورة عمل جديدة؟');
 
@@ -218,39 +199,43 @@ export function WorkInvoicePage() {
 
     setData({
       ...initialData,
-
       invoiceNo: String(Date.now()).slice(-6),
-
       date: new Date().toISOString().slice(0, 10),
-
       customer: '',
-
       rows: makeEmptyRows(),
-
       totalWords: '',
       notes: '',
     });
   }
 
-  /* =======================================================
-     SAVE
-  ======================================================= */
-
   function saveInvoice() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
       window.alert('تم حفظ فاتورة العمل');
     } catch (error) {
       console.error(error);
-
       window.alert('تعذر حفظ الفاتورة');
     }
   }
 
-  /* =======================================================
-     CAPTURE
-  ======================================================= */
+  async function waitForImages(element: HTMLElement) {
+    const images = Array.from(element.querySelectorAll('img'));
+
+    await Promise.all(
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) {
+              resolve();
+              return;
+            }
+
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          })
+      )
+    );
+  }
 
   async function captureInvoice() {
     if (!invoiceRef.current) return null;
@@ -266,59 +251,30 @@ export function WorkInvoicePage() {
       element.style.minWidth = '794px';
       element.style.maxWidth = '794px';
 
-      /*
-       * ننتظر تحميل صورة المعدات بالكامل
-       * حتى تظهر في PDF.
-       */
-      const images = Array.from(element.querySelectorAll('img'));
-
-      await Promise.all(
-        images.map(
-          (img) =>
-            new Promise<void>((resolve) => {
-              if (img.complete) {
-                resolve();
-                return;
-              }
-
-              img.onload = () => resolve();
-              img.onerror = () => resolve();
-            })
-        )
-      );
+      await waitForImages(element);
 
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            resolve();
-          });
+          requestAnimationFrame(() => resolve());
         });
       });
 
-      const canvas = await html2canvas(element, {
+      return await html2canvas(element, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,
-
         width: 794,
         windowWidth: 794,
-
         scrollX: 0,
         scrollY: 0,
       });
-
-      return canvas;
     } finally {
       element.style.width = oldWidth;
       element.style.minWidth = oldMinWidth;
       element.style.maxWidth = oldMaxWidth;
     }
   }
-
-  /* =======================================================
-     PDF
-  ======================================================= */
 
   async function createPdf() {
     const canvas = await captureInvoice();
@@ -370,10 +326,6 @@ export function WorkInvoicePage() {
     return pdf;
   }
 
-  /* =======================================================
-     SAVE PDF
-  ======================================================= */
-
   async function savePdf() {
     try {
       setBusy(true);
@@ -382,13 +334,10 @@ export function WorkInvoicePage() {
 
       if (!pdf) return;
 
-      const fileName = `work-invoice-${
-        data.invoiceNo || 'invoice'
-      }.pdf`;
+      const fileName = `work-invoice-${data.invoiceNo || 'invoice'}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
         const dataUri = pdf.output('datauristring');
-
         const base64 = dataUri.split(',')[1];
 
         await Filesystem.writeFile({
@@ -403,16 +352,11 @@ export function WorkInvoicePage() {
       }
     } catch (error) {
       console.error(error);
-
       window.alert('تعذر حفظ ملف PDF');
     } finally {
       setBusy(false);
     }
   }
-
-  /* =======================================================
-     SHARE
-  ======================================================= */
 
   async function shareInvoice() {
     try {
@@ -422,9 +366,7 @@ export function WorkInvoicePage() {
 
       if (!pdf) return;
 
-      const fileName = `work-invoice-${
-        data.invoiceNo || 'invoice'
-      }.pdf`;
+      const fileName = `work-invoice-${data.invoiceNo || 'invoice'}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
         const base64 = pdf.output('datauristring').split(',')[1];
@@ -446,7 +388,6 @@ export function WorkInvoicePage() {
       }
     } catch (error) {
       console.error(error);
-
       window.alert('تعذر مشاركة الفاتورة');
     } finally {
       setBusy(false);
@@ -464,7 +405,6 @@ export function WorkInvoicePage() {
         className="min-h-screen bg-[#06101f] pb-28 text-white"
       >
         <div className="mx-auto max-w-6xl px-3 py-4">
-          {/* PAGE HEADER */}
 
           <div className="mb-4 flex items-center justify-between">
             <button
@@ -491,8 +431,6 @@ export function WorkInvoicePage() {
               <Plus size={23} />
             </button>
           </div>
-
-          {/* BUTTONS */}
 
           <div className="mb-4 grid grid-cols-3 gap-2">
             <button
@@ -543,9 +481,8 @@ export function WorkInvoicePage() {
             </button>
           </div>
 
-          {/* EDIT FORM */}
-
           <div className="rounded-[22px] border border-slate-700 bg-[#0a1525] p-3">
+
             <h2 className="mb-4 text-sm font-black text-white">
               بيانات الفاتورة
             </h2>
@@ -595,17 +532,13 @@ export function WorkInvoicePage() {
             <Field
               label="اسم المؤسسة بالعربي"
               value={data.companyArabic}
-              onChange={(value) =>
-                updateField('companyArabic', value)
-              }
+              onChange={(value) => updateField('companyArabic', value)}
             />
 
             <Field
               label="اسم المؤسسة بالإنجليزي"
               value={data.companyEnglish}
-              onChange={(value) =>
-                updateField('companyEnglish', value)
-              }
+              onChange={(value) => updateField('companyEnglish', value)}
             />
 
             <Field
@@ -654,9 +587,7 @@ export function WorkInvoicePage() {
                   <MiniField
                     label="الكمية"
                     value={row.qty}
-                    onChange={(value) =>
-                      updateRow(index, 'qty', value)
-                    }
+                    onChange={(value) => updateRow(index, 'qty', value)}
                   />
 
                   <MiniField
@@ -702,8 +633,6 @@ export function WorkInvoicePage() {
             </button>
           </div>
 
-          {/* SMALL PREVIEW */}
-
           <div className="mt-5 overflow-auto rounded-[22px] border border-slate-700 bg-[#0a1525] p-2">
             <div className="mb-2 text-center text-xs font-bold text-slate-400">
               معاينة مصغرة
@@ -716,8 +645,6 @@ export function WorkInvoicePage() {
             />
           </div>
         </div>
-
-        {/* FULL PREVIEW */}
 
         {previewOpen && (
           <div className="fixed inset-0 z-[20000] flex flex-col bg-[#020817]">
@@ -814,24 +741,17 @@ function InvoiceDocument({
         fontFamily: 'Arial, Tahoma, sans-serif',
       }}
     >
-      {/* ================= HEADER ================= */}
-
+      {/* HEADER */}
       <div
-        className="relative h-[315px] overflow-hidden px-6 pt-5"
-        style={{
-          background: '#292878',
-        }}
+        className="relative h-[295px] overflow-hidden px-6 pt-5"
+        style={{ background: '#292878' }}
       >
-        {/* TOP ROW */}
-
         <div
-          className="relative z-20 grid items-start gap-4"
+          className="grid items-start gap-4"
           style={{
             gridTemplateColumns: '1fr 2.15fr 1fr',
           }}
         >
-          {/* LEFT */}
-
           <div className="flex justify-center pt-1">
             <div
               dir="rtl"
@@ -841,31 +761,27 @@ function InvoiceDocument({
             </div>
           </div>
 
-          {/* CENTER */}
-
           <div className="rounded-[27px] bg-white px-5 py-2 text-center">
             <div
               dir="rtl"
               className="flex items-center justify-center gap-3"
             >
-              <span className="text-[17px]">●</span>
+              <span className="text-[18px]">●</span>
 
               <span className="text-[30px] font-black leading-none">
                 {data.companyArabic}
               </span>
 
-              <span className="text-[17px]">●</span>
+              <span className="text-[18px]">●</span>
             </div>
 
             <div
               dir="ltr"
-              className="mt-1 text-[17px] font-black tracking-[0.04em]"
+              className="mt-1 text-[17px] font-black tracking-[0.03em]"
             >
               {data.companyEnglish}
             </div>
           </div>
-
-          {/* RIGHT */}
 
           <div className="flex justify-center pt-1">
             <div
@@ -877,9 +793,7 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* SECOND ROW */}
-
-        <div className="relative z-20 mx-auto mt-4 grid max-w-[570px] grid-cols-2 gap-5">
+        <div className="mx-auto mt-4 grid max-w-[570px] grid-cols-2 gap-5">
           <div
             dir="rtl"
             className="rounded-[18px] bg-white px-4 py-2 text-center text-[21px] font-black"
@@ -895,28 +809,35 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* WHITE CURVE */}
-
+        {/* CURVED WHITE AREA */}
         <div
-          className="absolute left-[-5%] top-[204px] z-10 h-[180px] w-[110%] rounded-[50%] bg-white"
+          className="absolute left-[-5%] top-[172px] h-[190px] w-[110%] rounded-[50%] bg-white"
           style={{
             borderTop: '5px solid #292878',
           }}
         />
 
         {/* REAL EQUIPMENT IMAGE */}
-
-        <img
-          src={EQUIPMENT_IMAGE}
-          alt="كرين وبوم ترك"
-          className="absolute left-1/2 top-[176px] z-30 h-[190px] w-[540px] -translate-x-1/2 object-contain"
-        />
+        <div
+          className="absolute z-10"
+          style={{
+            left: '50%',
+            top: 150,
+            width: 480,
+            height: 160,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <img
+            src={EQUIPMENT_IMAGE}
+            alt="Crane and boom truck"
+            className="h-full w-full object-contain"
+          />
+        </div>
       </div>
 
-      {/* ================= BODY ================= */}
-
-      <div className="px-7 pb-5 pt-3">
-        {/* CASH / DATE */}
+      {/* BODY */}
+      <div className="px-7 pb-5 pt-4">
 
         <div
           dir="ltr"
@@ -925,8 +846,6 @@ function InvoiceDocument({
             gridTemplateColumns: '1fr 1.35fr 1fr',
           }}
         >
-          {/* CASH LEFT */}
-
           <div className="text-left">
             <div
               dir="rtl"
@@ -935,31 +854,20 @@ function InvoiceDocument({
               فاتورة نقداً
             </div>
 
-            <div
-              dir="ltr"
-              className="text-[17px] font-bold"
-            >
+            <div className="text-[17px] font-bold">
               Cash Invoice
             </div>
 
-            <div
-              dir="ltr"
-              className="mt-3 text-[28px]"
-            >
+            <div className="mt-4 text-[28px]">
               No
             </div>
 
-            <div
-              dir="ltr"
-              className="text-[18px] font-black"
-            >
+            <div className="text-[18px] font-black">
               {data.invoiceNo}
             </div>
           </div>
 
           <div />
-
-          {/* DATE RIGHT */}
 
           <div className="pt-2 text-right">
             <div
@@ -969,25 +877,18 @@ function InvoiceDocument({
               التاريخ
             </div>
 
-            <div
-              dir="ltr"
-              className="mt-2 text-right text-[18px] font-black text-black"
-            >
+            <div className="mt-2 text-right text-[18px] font-black">
               {data.date}
             </div>
           </div>
         </div>
 
         {/* CUSTOMER */}
-
         <div
           dir="ltr"
           className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-2"
         >
-          <div
-            dir="ltr"
-            className="text-[17px]"
-          >
+          <div className="text-[17px]">
             Mr. / Messrs
           </div>
 
@@ -1006,235 +907,171 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
-
+        {/* TABLE */}
         <div
           dir="ltr"
           className="relative mt-4 overflow-hidden rounded-[17px] border-[3px] border-[#292878]"
         >
-          {/* HEADER - 6 PHYSICAL COLUMNS */}
-
+          {/* 6 COLUMN HEADER */}
           <div
-            className="relative z-20 grid bg-[#f5f5fb]"
+            className="grid bg-[#f5f5fb]"
             style={{
               gridTemplateColumns:
                 '3fr .75fr 1fr .58fr 1fr .58fr',
-              gridTemplateRows: '45px 30px',
+              gridTemplateRows: '42px 31px',
             }}
           >
-            {/* DESCRIPTION */}
-
-            <div
-              className="flex flex-col items-center justify-center border-r-2 border-[#292878] px-2 text-center font-black"
+            <HeaderBox
               style={{
                 gridColumn: '1',
                 gridRow: '1 / 3',
               }}
             >
-              <span dir="rtl" className="text-[17px]">
-                البيان
-              </span>
+              <span dir="rtl">البيان</span>
+              <small>Description</small>
+            </HeaderBox>
 
-              <small dir="ltr" className="text-[11px]">
-                Description
-              </small>
-            </div>
-
-            {/* QTY */}
-
-            <div
-              className="flex flex-col items-center justify-center border-r-2 border-[#292878] px-1 text-center font-black"
+            <HeaderBox
               style={{
                 gridColumn: '2',
                 gridRow: '1 / 3',
               }}
             >
-              <span dir="rtl" className="text-[15px]">
-                الكمية
-              </span>
+              <span dir="rtl">الكمية</span>
+              <small>Qty.</small>
+            </HeaderBox>
 
-              <small dir="ltr" className="text-[10px]">
-                Qty.
-              </small>
-            </div>
-
-            {/* UNIT PRICE GROUP */}
-
-            <div
-              className="flex flex-col items-center justify-center border-r-2 border-b border-[#292878] text-center font-black"
+            <HeaderBox
               style={{
                 gridColumn: '3 / 5',
                 gridRow: '1',
               }}
             >
-              <span dir="rtl" className="text-[14px]">
-                سعر الوحدة
-              </span>
+              <span dir="rtl">سعر الوحدة</span>
+              <small>Unit Price</small>
+            </HeaderBox>
 
-              <small dir="ltr" className="text-[9px]">
-                Unit Price
-              </small>
-            </div>
-
-            {/* TOTAL PRICE GROUP */}
-
-            <div
-              className="flex flex-col items-center justify-center border-r-2 border-b border-[#292878] text-center font-black"
+            <HeaderBox
               style={{
                 gridColumn: '5 / 7',
                 gridRow: '1',
               }}
             >
-              <span dir="rtl" className="text-[14px]">
-                السعر الإجمالي
-              </span>
+              <span dir="rtl">السعر الإجمالي</span>
+              <small>Total Price</small>
+            </HeaderBox>
 
-              <small dir="ltr" className="text-[9px]">
-                Total Price
-              </small>
-            </div>
-
-            {/* UNIT SR */}
-
-            <div
-              className="flex items-center justify-center border-r-2 border-[#292878] text-[10px] font-black"
+            <HeaderBox
               style={{
                 gridColumn: '3',
                 gridRow: '2',
               }}
             >
-              S.R. ريال
-            </div>
+              <small>S.R. ريال</small>
+            </HeaderBox>
 
-            {/* UNIT H */}
-
-            <div
-              className="flex items-center justify-center border-r-2 border-[#292878] text-[10px] font-black"
+            <HeaderBox
               style={{
                 gridColumn: '4',
                 gridRow: '2',
               }}
             >
-              H. هـ
-            </div>
+              <small>H. هـ</small>
+            </HeaderBox>
 
-            {/* TOTAL SR */}
-
-            <div
-              className="flex items-center justify-center border-r-2 border-[#292878] text-[10px] font-black"
+            <HeaderBox
               style={{
                 gridColumn: '5',
                 gridRow: '2',
               }}
             >
-              S.R. ريال
-            </div>
+              <small>S.R. ريال</small>
+            </HeaderBox>
 
-            {/* TOTAL H */}
-
-            <div
-              className="flex items-center justify-center text-[10px] font-black"
+            <HeaderBox
               style={{
                 gridColumn: '6',
                 gridRow: '2',
               }}
             >
-              H. هـ
+              <small>H. هـ</small>
+            </HeaderBox>
+          </div>
+
+          {/* WATERMARK */}
+          <img
+            src={EQUIPMENT_IMAGE}
+            alt=""
+            className="pointer-events-none absolute left-1/2 top-[54%] w-[380px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]"
+          />
+
+          {/* 7 ROWS */}
+          {data.rows.map((row, index) => (
+            <div
+              key={index}
+              className="relative z-10 grid min-h-[69px] border-t border-dotted border-slate-400"
+              style={{
+                gridTemplateColumns:
+                  '3fr .75fr 1fr .58fr 1fr .58fr',
+              }}
+            >
+              <InvoiceCell>
+                <span dir="rtl">
+                  {row.description}
+                </span>
+              </InvoiceCell>
+
+              <InvoiceCell>
+                {row.qty}
+              </InvoiceCell>
+
+              <InvoiceCell>
+                {row.unitPrice}
+              </InvoiceCell>
+
+              <InvoiceCell>
+                -
+              </InvoiceCell>
+
+              <InvoiceCell>
+                {row.totalPrice}
+              </InvoiceCell>
+
+              <InvoiceCell>
+                -
+              </InvoiceCell>
             </div>
-          </div>
-
-          {/* TABLE BODY */}
-
-          <div className="relative">
-            {/* WATERMARK */}
-
-            <img
-              src={EQUIPMENT_IMAGE}
-              alt=""
-              className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[360px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]"
-            />
-
-            {/* EXACTLY 7 ROWS */}
-
-            {data.rows.map((row, index) => (
-              <div
-                key={index}
-                className="relative z-10 grid min-h-[66px] border-t border-dotted border-slate-400"
-                style={{
-                  gridTemplateColumns:
-                    '3fr .75fr 1fr .58fr 1fr .58fr',
-                }}
-              >
-                <TableCell>
-                  <span dir="rtl">{row.description}</span>
-                </TableCell>
-
-                <TableCell>
-                  <span dir="ltr">{row.qty}</span>
-                </TableCell>
-
-                <TableCell>
-                  <span dir="ltr">{row.unitPrice}</span>
-                </TableCell>
-
-                <TableCell>
-                  <span dir="ltr">-</span>
-                </TableCell>
-
-                <TableCell>
-                  <span dir="ltr">{row.totalPrice}</span>
-                </TableCell>
-
-                <TableCell last>
-                  <span dir="ltr">-</span>
-                </TableCell>
-              </div>
-            ))}
-          </div>
+          ))}
 
           {/* TOTAL */}
-
           <div
-            dir="ltr"
-            className="relative z-20 grid border-t-[3px] border-[#292878] bg-white"
+            className="relative z-10 grid border-t-[3px] border-[#292878] bg-white"
             style={{
-              gridTemplateColumns: '1.05fr 2.65fr 1.05fr',
+              gridTemplateColumns: '1fr 2.5fr 1fr',
             }}
           >
-            {/* LEFT */}
-
-            <div className="flex min-h-[62px] items-center justify-center border-r-2 border-[#292878] px-2 text-[14px] font-black">
+            <div className="flex min-h-[62px] items-center justify-center px-2 text-[15px] font-black">
               Total S.R.
             </div>
 
-            {/* CENTER */}
-
             <div
               dir="rtl"
-              className="flex items-center justify-center border-r-2 border-[#292878] px-3 text-center text-[16px] font-black text-black"
+              className="flex items-center justify-center border-l-2 border-[#292878] px-3 text-center text-[16px] font-black text-black"
             >
               المجموع : {data.totalWords || 'فقط لا غير'}
             </div>
 
-            {/* RIGHT */}
-
-            <div
-              dir="ltr"
-              className="flex items-center justify-center px-2 text-[27px] font-black text-black"
-            >
+            <div className="flex items-center justify-center border-l-2 border-[#292878] px-2 text-[27px] font-black text-black">
               {grandTotal.toLocaleString('en-US')}
             </div>
           </div>
         </div>
 
-        {/* ================= SIGNATURE ================= */}
-
+        {/* SIGNATURES */}
         <div
           dir="ltr"
-          className="grid grid-cols-2 gap-20 px-16 py-5"
+          className="grid grid-cols-2 gap-20 px-16 py-6"
         >
-          {/* RECEIVED LEFT */}
-
           <div className="text-center">
             <div
               dir="rtl"
@@ -1243,17 +1080,12 @@ function InvoiceDocument({
               توقيع المستلم
             </div>
 
-            <div
-              dir="ltr"
-              className="text-[12px] font-bold"
-            >
+            <div className="text-[13px] font-bold">
               Received
             </div>
 
-            <div className="mx-auto mt-6 w-[120px] border-b-2 border-dotted border-slate-400" />
+            <div className="mx-auto mt-7 w-[120px] border-b-2 border-dotted border-slate-400" />
           </div>
-
-          {/* SALESMAN RIGHT */}
 
           <div className="text-center">
             <div
@@ -1263,54 +1095,43 @@ function InvoiceDocument({
               توقيع البائع
             </div>
 
-            <div
-              dir="ltr"
-              className="text-[12px] font-bold"
-            >
+            <div className="text-[13px] font-bold">
               Salesman Sig.
             </div>
 
-            <div className="mx-auto mt-6 w-[120px] border-b-2 border-dotted border-slate-400" />
+            <div className="mx-auto mt-7 w-[120px] border-b-2 border-dotted border-slate-400" />
           </div>
         </div>
-
-        {/* NOTES */}
 
         {data.notes && (
           <div
             dir="rtl"
-            className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-2 text-center text-[13px] font-bold text-black"
+            className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-center text-[13px] font-bold text-black"
           >
             {data.notes}
           </div>
         )}
 
-        {/* ================= THANKS ================= */}
-
+        {/* THANKS */}
         <div
           dir="ltr"
           className="flex items-center justify-center gap-3 pt-1"
         >
-          <div className="h-[1px] w-[130px] bg-[#292878]" />
-
-          <div className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
+          <div className="h-px w-[125px] bg-[#292878]" />
+          <span className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
 
           <div
             dir="rtl"
-            className="text-[16px] font-black"
+            className="text-[17px] font-black"
           >
             شكراً لتعاملكم معنا
           </div>
 
-          <div className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
-
-          <div className="h-[1px] w-[130px] bg-[#292878]" />
+          <span className="h-[7px] w-[7px] rounded-full bg-[#292878]" />
+          <div className="h-px w-[125px] bg-[#292878]" />
         </div>
 
-        <div
-          dir="ltr"
-          className="mt-4 text-[11px] font-bold text-black"
-        >
+        <div className="mt-3 text-[11px] font-bold text-black">
           1/1
         </div>
       </div>
@@ -1319,7 +1140,7 @@ function InvoiceDocument({
 }
 
 /* =========================================================
-   FIELD
+   FORM FIELD
 ========================================================= */
 
 function Field({
@@ -1382,23 +1203,38 @@ function MiniField({
 }
 
 /* =========================================================
-   TABLE CELL
+   HEADER BOX
 ========================================================= */
 
-function TableCell({
+function HeaderBox({
   children,
-  last = false,
+  style,
 }: {
-  children?: React.ReactNode;
-  last?: boolean;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
 }) {
   return (
     <div
-      className={`flex items-center justify-center px-2 text-center text-[15px] font-bold text-black ${
-        last ? '' : 'border-r-2 border-[#292878]'
-      }`}
+      style={style}
+      className="flex flex-col items-center justify-center border-b border-r-2 border-[#292878] px-1 text-center text-[14px] font-black"
     >
       {children}
     </div>
   );
-  }
+}
+
+/* =========================================================
+   TABLE CELL
+========================================================= */
+
+function InvoiceCell({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-center border-r-2 border-[#292878] px-2 text-center text-[15px] font-bold text-black first:border-r-0">
+      {children}
+    </div>
+  );
+              }
