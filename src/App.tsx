@@ -32,6 +32,13 @@ import { WorkInvoicePage } from '@/pages/WorkInvoicePage';
 
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
+
+/* =========================
+   CALCULATOR
+========================= */
+
+import { CalculatorPage } from '@/pages/CalculatorPage';
+
 import { MonthlyRentalPage } from '@/pages/MonthlyRentalPage';
 
 import { DriversPage } from '@/pages/DriversPage-1';
@@ -534,6 +541,17 @@ function App() {
           path="/daily-calculator"
           element={
             <DailyCalculatorPage />
+          }
+        />
+
+        {/* ===================
+            الحاسبة
+        =================== */}
+
+        <Route
+          path="/calculator"
+          element={
+            <CalculatorPage />
           }
         />
 
