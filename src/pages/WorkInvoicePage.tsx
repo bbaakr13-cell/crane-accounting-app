@@ -693,6 +693,7 @@ export function WorkInvoicePage() {
                 <div className="text-sm font-black">
                   معاينة فاتورة العمل
                 </div>
+
                 <div className="text-[10px] text-slate-400">
                   راجع الفاتورة قبل الحفظ
                 </div>
@@ -772,14 +773,10 @@ function InvoiceDocument({
         fontFamily: 'Arial, Tahoma, sans-serif',
       }}
     >
-      {/* BLUE HEADER */}
-
       <div
         className="relative h-[310px] overflow-hidden px-6 pt-5"
         style={{ background: '#292878' }}
       >
-        {/* TOP TITLES */}
-
         <div
           className="relative z-20 grid items-start gap-4"
           style={{
@@ -827,8 +824,6 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* SECOND TITLES */}
-
         <div className="relative z-20 mx-auto mt-4 grid max-w-[590px] grid-cols-2 gap-5">
           <div
             dir="rtl"
@@ -845,8 +840,6 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* WHITE CURVED AREA */}
-
         <div
           className="absolute -bottom-[78px] left-[-5%] z-10 h-[190px] w-[110%] rounded-[50%] bg-white"
           style={{
@@ -854,29 +847,20 @@ function InvoiceDocument({
           }}
         />
 
-        {/* REAL EQUIPMENT IMAGE */}
-
         <img
           src={EQUIPMENT_IMAGE}
           alt="كرين وبوم ترك"
-          className="absolute left-1/2 top-[153px] z-30 h-[190px] w-[490px] -translate-x-1/2 object-contain"
+          className="absolute left-1/2 top-[165px] z-30 h-[230px] w-[610px] -translate-x-1/2 object-contain"
         />
       </div>
 
-      {/* BODY */}
-
       <div className="px-7 pb-5 pt-1">
-
-        {/* CASH INVOICE / DATE */}
-
         <div
           className="grid items-start gap-4"
           style={{
             gridTemplateColumns: '1fr 1.25fr 1fr',
           }}
         >
-          {/* LEFT */}
-
           <div className="text-left">
             <div
               dir="rtl"
@@ -909,8 +893,6 @@ function InvoiceDocument({
 
           <div />
 
-          {/* RIGHT */}
-
           <div className="pt-3 text-right">
             <div
               dir="rtl"
@@ -927,8 +909,6 @@ function InvoiceDocument({
             </div>
           </div>
         </div>
-
-        {/* CUSTOMER */}
 
         <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-3 border-b-2 border-[#292878] pb-2">
           <div
@@ -953,13 +933,7 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* TABLE */}
-
-        <div
-          className="relative mt-4 overflow-hidden rounded-[14px] border-[3px] border-[#292878]"
-        >
-          {/* GROUPED HEADER - 6 PHYSICAL COLUMNS */}
-
+        <div className="relative mt-4 overflow-hidden rounded-[14px] border-[3px] border-[#292878]">
           <div
             className="grid bg-[#f7f7fb]"
             style={{
@@ -968,8 +942,6 @@ function InvoiceDocument({
               gridTemplateRows: '45px 34px',
             }}
           >
-            {/* DESCRIPTION */}
-
             <TableHeader
               style={{
                 gridColumn: '1',
@@ -981,8 +953,6 @@ function InvoiceDocument({
               <small dir="ltr">Description</small>
             </TableHeader>
 
-            {/* QTY */}
-
             <TableHeader
               style={{
                 gridColumn: '2',
@@ -993,8 +963,6 @@ function InvoiceDocument({
               <small dir="ltr">Qty.</small>
             </TableHeader>
 
-            {/* UNIT PRICE GROUP */}
-
             <TableHeader
               style={{
                 gridColumn: '3 / 5',
@@ -1004,8 +972,6 @@ function InvoiceDocument({
               <span dir="rtl">سعر الوحدة</span>
               <small dir="ltr">Unit Price</small>
             </TableHeader>
-
-            {/* TOTAL PRICE GROUP */}
 
             <TableHeader
               style={{
@@ -1057,8 +1023,6 @@ function InvoiceDocument({
               <small>H.</small>
             </SubHeader>
           </div>
-
-          {/* BODY WITH FAINT WATERMARK */}
 
           <div className="relative">
             <img
@@ -1115,8 +1079,6 @@ function InvoiceDocument({
             ))}
           </div>
 
-          {/* TOTAL BAR */}
-
           <div
             className="grid min-h-[62px] border-t-[3px] border-[#292878]"
             style={{
@@ -1147,11 +1109,7 @@ function InvoiceDocument({
           </div>
         </div>
 
-        {/* SIGNATURES */}
-
         <div className="grid grid-cols-2 gap-24 px-14 py-5">
-          {/* LEFT */}
-
           <div className="text-center">
             <div
               dir="rtl"
@@ -1166,8 +1124,6 @@ function InvoiceDocument({
 
             <div className="mx-auto mt-6 w-[130px] border-b-2 border-dotted border-slate-400" />
           </div>
-
-          {/* RIGHT */}
 
           <div className="text-center">
             <div
@@ -1193,8 +1149,6 @@ function InvoiceDocument({
             {data.notes}
           </div>
         )}
-
-        {/* THANK YOU */}
 
         <div className="flex items-center justify-center gap-4 pt-1">
           <div className="flex w-[170px] items-center">
@@ -1363,4 +1317,4 @@ function TableBodyCell({
       {children}
     </div>
   );
-            }
+      }
