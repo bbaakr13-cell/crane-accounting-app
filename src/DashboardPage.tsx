@@ -197,6 +197,18 @@ export function DashboardPage() {
       path: '/daily-calculator',
       tone: 'gold',
     },
+
+    /* =========================
+       الحاسبة الجديدة
+    ========================= */
+
+    {
+      label: 'الحاسبة',
+      icon: Calculator,
+      path: '/calculator',
+      tone: 'purple',
+    },
+
     {
       label: 'الإعدادات',
       icon: Settings,
@@ -236,8 +248,6 @@ export function DashboardPage() {
               shadow-2xl
             "
           >
-            {/* إضاءة خلفية */}
-
             <div className="absolute -top-16 -left-16 w-44 h-44 rounded-full bg-amber-500/10 blur-3xl" />
 
             <div className="absolute -bottom-20 -right-14 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl" />
@@ -297,8 +307,6 @@ export function DashboardPage() {
                 </p>
               </div>
 
-              {/* خط ديكوري */}
-
               <div className="mt-5 h-[1px] bg-gradient-to-l from-transparent via-white/10 to-transparent" />
 
               <div className="mt-4 flex items-center justify-between">
@@ -340,8 +348,6 @@ export function DashboardPage() {
 
           <div className="grid grid-cols-2 gap-3">
 
-            {/* الدخل */}
-
             <button
               type="button"
               onClick={() => navigate('/transactions')}
@@ -378,8 +384,6 @@ export function DashboardPage() {
                 {formatSAR(totals.totalIncome)}
               </p>
             </button>
-
-            {/* المصروفات */}
 
             <button
               type="button"
@@ -418,8 +422,6 @@ export function DashboardPage() {
               </p>
             </button>
 
-            {/* الربح */}
-
             <button
               type="button"
               onClick={() => navigate('/reports')}
@@ -456,8 +458,6 @@ export function DashboardPage() {
                 {formatSAR(totals.netProfit)}
               </p>
             </button>
-
-            {/* المستحقات */}
 
             <button
               type="button"
@@ -825,4 +825,4 @@ export function DashboardPage() {
       </div>
     </AppLayout>
   );
-            }
+        }
