@@ -1718,4 +1718,4 @@ export function SettingsPage() {
       </div>
     </AppLayout>
   );
-            }
+  }
