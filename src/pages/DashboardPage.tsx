@@ -19,6 +19,8 @@ import {
   ChevronLeft,
   Bot,
   Sparkles,
+  Search,
+  X,
 } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
@@ -27,6 +29,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from 'react';
 
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -62,6 +65,15 @@ type ActionItem = {
   tone: ActionTone;
 };
 
+type SearchResult = {
+  id: string;
+  category: string;
+  title: string;
+  subtitle: string;
+  searchText: string;
+  path: string;
+};
+
 const tones: Record<
   ActionTone,
   {
@@ -70,41 +82,328 @@ const tones: Record<
   }
 > = {
   green: {
-    background:
-      'rgba(34,197,94,0.11)',
+    background: 'rgba(34,197,94,0.11)',
     color: '#4ade80',
   },
 
   red: {
-    background:
-      'rgba(239,68,68,0.11)',
+    background: 'rgba(239,68,68,0.11)',
     color: '#fb7185',
   },
 
   blue: {
-    background:
-      'rgba(59,130,246,0.12)',
+    background: 'rgba(59,130,246,0.12)',
     color: '#60a5fa',
   },
 
   gold: {
-    background:
-      'rgba(245,158,11,0.12)',
+    background: 'rgba(245,158,11,0.12)',
     color: '#fbbf24',
   },
 
   orange: {
-    background:
-      'rgba(249,115,22,0.12)',
+    background: 'rgba(249,115,22,0.12)',
     color: '#fb923c',
   },
 
   purple: {
-    background:
-      'rgba(168,85,247,0.12)',
+    background: 'rgba(168,85,247,0.12)',
     color: '#c084fc',
   },
 };
+
+function normalizeSearch(value: unknown) {
+  return String(value ?? '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function textFromObject(value: unknown) {
+  try {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    return JSON.stringify(value);
+  } catch {
+    return String(value ?? '');
+  }
+}
+
+function firstValue(
+  object: Record<string, any>,
+  keys: string[]
+) {
+  for (const key of keys) {
+    const value = object?.[key];
+
+    if (
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ''
+    ) {
+      return String(value);
+    }
+  }
+
+  return '';
+}
+
+function detectCategory(key: string) {
+  const k = key.toLowerCase();
+
+  if (
+    k.includes('customer') ||
+    k.includes('client') ||
+    k.includes('عميل')
+  ) {
+    return {
+      category: 'العملاء',
+      path: '/customers',
+    };
+  }
+
+  if (
+    k.includes('invoice') ||
+    k.includes('فاتور')
+  ) {
+    return {
+      category: 'الفواتير',
+      path: '/invoices',
+    };
+  }
+
+  if (
+    k.includes('equipment') ||
+    k.includes('crane') ||
+    k.includes('truck') ||
+    k.includes('machine') ||
+    k.includes('كرين') ||
+    k.includes('معدات')
+  ) {
+    return {
+      category: 'المعدات',
+      path: '/equipment',
+    };
+  }
+
+  if (
+    k.includes('driver') ||
+    k.includes('operator') ||
+    k.includes('سواق') ||
+    k.includes('مشغل')
+  ) {
+    return {
+      category: 'السواقين والمشغلين',
+      path: '/drivers',
+    };
+  }
+
+  if (
+    k.includes('transaction') ||
+    k.includes('income') ||
+    k.includes('expense') ||
+    k.includes('دخل') ||
+    k.includes('مصروف')
+  ) {
+    return {
+      category: 'الحركات المالية',
+      path: '/transactions',
+    };
+  }
+
+  if (
+    k.includes('monthly') ||
+    k.includes('month')
+  ) {
+    return {
+      category: 'الحساب الشهري',
+      path: '/monthly',
+    };
+  }
+
+  return {
+    category: 'بيانات أخرى',
+    path: '/',
+  };
+}
+
+function buildLocalSearchItems(): SearchResult[] {
+  const results: SearchResult[] = [];
+
+  try {
+    for (
+      let storageIndex = 0;
+      storageIndex < localStorage.length;
+      storageIndex += 1
+    ) {
+      const key = localStorage.key(storageIndex);
+
+      if (!key) continue;
+
+      const raw = localStorage.getItem(key);
+
+      if (!raw || raw.length > 2_000_000) {
+        continue;
+      }
+
+      let parsed: any;
+
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+
+      const info = detectCategory(key);
+
+      const records = Array.isArray(parsed)
+        ? parsed
+        : parsed &&
+            typeof parsed === 'object'
+          ? [parsed]
+          : [];
+
+      records.slice(0, 300).forEach(
+        (record: any, index: number) => {
+          if (
+            !record ||
+            typeof record !== 'object'
+          ) {
+            return;
+          }
+
+          const title =
+            firstValue(record, [
+              'name',
+              'customerName',
+              'clientName',
+              'driverName',
+              'operatorName',
+              'equipmentName',
+              'equipment',
+              'craneName',
+              'invoiceNumber',
+              'invoiceNo',
+              'number',
+              'title',
+              'description',
+              'phone',
+            ]) ||
+            `${info.category} ${index + 1}`;
+
+          const phone = firstValue(record, [
+            'phone',
+            'mobile',
+            'phoneNumber',
+            'customerPhone',
+          ]);
+
+          const description = firstValue(
+            record,
+            [
+              'description',
+              'notes',
+              'note',
+              'equipment',
+              'type',
+              'category',
+              'date',
+            ]
+          );
+
+          const subtitle = [
+            phone,
+            description,
+          ]
+            .filter(Boolean)
+            .join(' • ');
+
+          results.push({
+            id: `local-${key}-${index}`,
+            category: info.category,
+            title,
+            subtitle,
+            searchText: normalizeSearch(
+              `${key} ${textFromObject(record)}`
+            ),
+            path: info.path,
+          });
+        }
+      );
+    }
+  } catch (error) {
+    console.error(
+      'Local search error:',
+      error
+    );
+  }
+
+  return results;
+}
+
+function buildTransactionSearchItems(
+  transactions: Transaction[]
+): SearchResult[] {
+  return transactions.map(
+    (tx: any, index) => {
+      const data =
+        tx?.data &&
+        typeof tx.data === 'object'
+          ? tx.data
+          : tx;
+
+      const title =
+        firstValue(data, [
+          'customerName',
+          'name',
+          'description',
+          'title',
+          'equipment',
+          'category',
+          'type',
+        ]) || `حركة مالية ${index + 1}`;
+
+      const amount =
+        firstValue(data, [
+          'amount',
+          'total',
+          'value',
+          'price',
+        ]);
+
+      const date =
+        firstValue(data, [
+          'date',
+          'createdAt',
+          'created_at',
+        ]);
+
+      const subtitle = [
+        amount
+          ? `${amount} ر.س`
+          : '',
+        date,
+      ]
+        .filter(Boolean)
+        .join(' • ');
+
+      return {
+        id: `tx-${
+          data?.id ?? index
+        }`,
+        category: 'الحركات المالية',
+        title,
+        subtitle,
+        searchText: normalizeSearch(
+          textFromObject(tx)
+        ),
+        path: '/transactions',
+      };
+    }
+  );
+}
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -117,18 +416,30 @@ export function DashboardPage() {
       receivables: 0,
     });
 
-  const [
-    recentTxs,
-    setRecentTxs,
-  ] = useState<Transaction[]>([]);
+  const [recentTxs, setRecentTxs] =
+    useState<Transaction[]>([]);
+
+  const [allTxs, setAllTxs] =
+    useState<Transaction[]>([]);
 
   const [loading, setLoading] =
     useState(true);
 
-  const [
-    heroImage,
-    setHeroImage,
-  ] = useState('');
+  const [heroImage, setHeroImage] =
+    useState('');
+
+  /* =========================
+     البحث الشامل
+  ========================= */
+
+  const [searchQuery, setSearchQuery] =
+    useState('');
+
+  const [searchOpen, setSearchOpen] =
+    useState(false);
+
+  const [localSearchItems, setLocalSearchItems] =
+    useState<SearchResult[]>([]);
 
   const load = useCallback(
     async () => {
@@ -140,6 +451,7 @@ export function DashboardPage() {
           ]);
 
         setTotals(t);
+        setAllTxs(txs);
 
         setRecentTxs(
           txs.slice(0, 5)
@@ -156,6 +468,13 @@ export function DashboardPage() {
     []
   );
 
+  const refreshSearchData =
+    useCallback(() => {
+      setLocalSearchItems(
+        buildLocalSearchItems()
+      );
+    }, []);
+
   const loadHeroImage =
     useCallback(() => {
       try {
@@ -164,9 +483,7 @@ export function DashboardPage() {
             DASHBOARD_IMAGE_KEY
           ) || '';
 
-        setHeroImage(
-          savedImage
-        );
+        setHeroImage(savedImage);
       } catch (error) {
         console.error(
           'Dashboard image load error:',
@@ -180,11 +497,18 @@ export function DashboardPage() {
   useEffect(() => {
     load();
     loadHeroImage();
+    refreshSearchData();
 
-    const handleStorage =
-      () => {
-        loadHeroImage();
-      };
+    const handleStorage = () => {
+      loadHeroImage();
+      refreshSearchData();
+    };
+
+    const handleFocus = () => {
+      loadHeroImage();
+      refreshSearchData();
+      load();
+    };
 
     window.addEventListener(
       'storage',
@@ -193,7 +517,7 @@ export function DashboardPage() {
 
     window.addEventListener(
       'focus',
-      loadHeroImage
+      handleFocus
     );
 
     return () => {
@@ -204,17 +528,126 @@ export function DashboardPage() {
 
       window.removeEventListener(
         'focus',
-        loadHeroImage
+        handleFocus
       );
     };
   }, [
     load,
     loadHeroImage,
+    refreshSearchData,
   ]);
+
+  const transactionSearchItems =
+    useMemo(
+      () =>
+        buildTransactionSearchItems(
+          allTxs
+        ),
+      [allTxs]
+    );
+
+  const searchResults =
+    useMemo(() => {
+      const query =
+        normalizeSearch(searchQuery);
+
+      if (query.length < 1) {
+        return [];
+      }
+
+      const words =
+        query
+          .split(' ')
+          .filter(Boolean);
+
+      const allItems = [
+        ...transactionSearchItems,
+        ...localSearchItems,
+      ];
+
+      const unique =
+        new Map<
+          string,
+          SearchResult
+        >();
+
+      allItems.forEach((item) => {
+        if (!unique.has(item.id)) {
+          unique.set(
+            item.id,
+            item
+          );
+        }
+      });
+
+      return Array.from(
+        unique.values()
+      )
+        .filter((item) => {
+          return words.every(
+            (word) =>
+              item.searchText.includes(
+                word
+              )
+          );
+        })
+        .slice(0, 50);
+    }, [
+      searchQuery,
+      localSearchItems,
+      transactionSearchItems,
+    ]);
+
+  const groupedSearchResults =
+    useMemo(() => {
+      const groups: Record<
+        string,
+        SearchResult[]
+      > = {};
+
+      searchResults.forEach(
+        (item) => {
+          if (
+            !groups[item.category]
+          ) {
+            groups[item.category] =
+              [];
+          }
+
+          groups[item.category].push(
+            item
+          );
+        }
+      );
+
+      return groups;
+    }, [searchResults]);
+
+  function closeSearch() {
+    setSearchOpen(false);
+    setSearchQuery('');
+  }
+
+  function openSearch() {
+    refreshSearchData();
+    setSearchOpen(true);
+  }
+
+  function openSearchResult(
+    item: SearchResult
+  ) {
+    closeSearch();
+
+    if (item.path === '/') {
+      return;
+    }
+
+    navigate(item.path);
+  }
 
   const actions: ActionItem[] = [
     {
-      label: 'BAAKR AI',
+      label: 'BAKR AI',
       icon: Bot,
       path: '/ai',
       tone: 'purple',
@@ -304,10 +737,6 @@ export function DashboardPage() {
       tone: 'gold',
     },
 
-    /* =========================
-       الحاسبة
-    ========================= */
-
     {
       label: 'الحاسبة',
       icon: Calculator,
@@ -336,24 +765,19 @@ export function DashboardPage() {
         dir="rtl"
         className="w-full"
       >
-
         {/* ========================= */}
         {/* الصورة الرئيسية */}
         {/* ========================= */}
 
-        <section className="mb-5">
+        <section className="mb-4">
           <div
             className="relative overflow-hidden rounded-[25px] w-full"
             style={{
-              aspectRatio:
-                '16 / 7',
-
+              aspectRatio: '16 / 7',
               border:
                 '1px solid rgba(255,255,255,0.09)',
-
               boxShadow:
                 '0 14px 35px rgba(0,0,0,0.28)',
-
               background:
                 'linear-gradient(135deg,#15243b,#081321)',
             }}
@@ -361,7 +785,7 @@ export function DashboardPage() {
             {heroImage ? (
               <img
                 src={heroImage}
-                alt="صورة واجهة BAAKR PRO"
+                alt="صورة واجهة BAKR PRO"
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
@@ -390,7 +814,7 @@ export function DashboardPage() {
             <div className="absolute inset-0 p-5 flex flex-col justify-between">
               <div>
                 <p className="text-[10px] font-bold text-amber-400 tracking-[0.16em]">
-                  BAAKR PRO
+                  BAKR PRO
                 </p>
 
                 <h2 className="text-[21px] font-black text-white mt-1">
@@ -431,7 +855,43 @@ export function DashboardPage() {
         </section>
 
         {/* ========================= */}
-        {/* BAAKR AI */}
+        {/* البحث الشامل */}
+        {/* ========================= */}
+
+        <section className="mb-5">
+          <button
+            type="button"
+            onClick={openSearch}
+            className="w-full rounded-[19px] px-4 h-[58px] flex items-center gap-3 text-right active:scale-[0.99] transition-transform"
+            style={{
+              background:
+                'linear-gradient(145deg,rgba(15,29,49,0.96),rgba(7,17,31,0.98))',
+              border:
+                '1px solid rgba(245,158,11,0.18)',
+              boxShadow:
+                '0 8px 24px rgba(0,0,0,0.17)',
+            }}
+          >
+            <div className="w-10 h-10 rounded-[13px] bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Search className="w-5 h-5 text-amber-400" />
+            </div>
+
+            <div className="flex-1">
+              <p className="text-[12px] font-black text-white">
+                البحث الشامل
+              </p>
+
+              <p className="text-[9px] text-slate-500 mt-0.5">
+                عميل • فاتورة • كرين • سائق • مبلغ • جوال
+              </p>
+            </div>
+
+            <ChevronLeft className="w-5 h-5 text-slate-500" />
+          </button>
+        </section>
+
+        {/* ========================= */}
+        {/* BAKR AI */}
         {/* ========================= */}
 
         <section className="mb-5">
@@ -444,10 +904,8 @@ export function DashboardPage() {
             style={{
               background:
                 'linear-gradient(135deg, rgba(88,28,135,0.92), rgba(76,29,149,0.72), rgba(17,24,39,0.96))',
-
               border:
                 '1px solid rgba(192,132,252,0.24)',
-
               boxShadow:
                 '0 12px 30px rgba(88,28,135,0.20)',
             }}
@@ -457,8 +915,7 @@ export function DashboardPage() {
               style={{
                 background:
                   'rgba(168,85,247,0.16)',
-                filter:
-                  'blur(8px)',
+                filter: 'blur(8px)',
               }}
             />
 
@@ -468,7 +925,6 @@ export function DashboardPage() {
                 style={{
                   background:
                     'linear-gradient(135deg,rgba(168,85,247,0.28),rgba(124,58,237,0.14))',
-
                   border:
                     '1px solid rgba(216,180,254,0.20)',
                 }}
@@ -479,7 +935,7 @@ export function DashboardPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-[16px] font-black text-white">
-                    BAAKR AI
+                    BAKR AI
                   </h2>
 
                   <Sparkles className="w-4 h-4 text-purple-300" />
@@ -538,9 +994,7 @@ export function DashboardPage() {
               value={formatSAR(
                 totals.totalExpenses
               )}
-              icon={
-                TrendingDown
-              }
+              icon={TrendingDown}
               color="#fb7185"
               bg="rgba(239,68,68,0.10)"
               border="rgba(239,68,68,0.17)"
@@ -600,7 +1054,6 @@ export function DashboardPage() {
               style={{
                 background:
                   'linear-gradient(135deg,#15803d,#22c55e)',
-
                 boxShadow:
                   '0 8px 20px rgba(34,197,94,0.14)',
               }}
@@ -618,7 +1071,6 @@ export function DashboardPage() {
               style={{
                 background:
                   'linear-gradient(135deg,#be123c,#ef4444)',
-
                 boxShadow:
                   '0 8px 20px rgba(239,68,68,0.14)',
               }}
@@ -649,7 +1101,6 @@ export function DashboardPage() {
             style={{
               background:
                 'linear-gradient(180deg, rgba(17,31,53,0.75), rgba(8,19,34,0.92))',
-
               border:
                 '1px solid rgba(255,255,255,0.07)',
             }}
@@ -661,68 +1112,61 @@ export function DashboardPage() {
                     item.path !==
                     '/add'
                 )
-                .map(
-                  (item) => {
-                    const Icon =
-                      item.icon;
+                .map((item) => {
+                  const Icon =
+                    item.icon;
 
-                    const tone =
-                      tones[
-                        item.tone
-                      ];
+                  const tone =
+                    tones[
+                      item.tone
+                    ];
 
-                    return (
-                      <button
-                        key={`${item.path}-${item.label}`}
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            item.path
-                          )
-                        }
-                        className="min-h-[96px] rounded-[18px] flex flex-col items-center justify-center gap-2 px-1 active:scale-[0.96] transition-transform"
+                  return (
+                    <button
+                      key={`${item.path}-${item.label}`}
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          item.path
+                        )
+                      }
+                      className="min-h-[96px] rounded-[18px] flex flex-col items-center justify-center gap-2 px-1 active:scale-[0.96] transition-transform"
+                      style={{
+                        background:
+                          item.path ===
+                          '/ai'
+                            ? 'linear-gradient(145deg,rgba(88,28,135,0.22),rgba(255,255,255,0.025))'
+                            : 'rgba(255,255,255,0.025)',
+                        border:
+                          item.path ===
+                          '/ai'
+                            ? '1px solid rgba(192,132,252,0.16)'
+                            : '1px solid rgba(255,255,255,0.045)',
+                      }}
+                    >
+                      <div
+                        className="w-11 h-11 rounded-[15px] flex items-center justify-center"
                         style={{
                           background:
-                            item.path ===
-                            '/ai'
-                              ? 'linear-gradient(145deg,rgba(88,28,135,0.22),rgba(255,255,255,0.025))'
-                              : 'rgba(255,255,255,0.025)',
-
-                          border:
-                            item.path ===
-                            '/ai'
-                              ? '1px solid rgba(192,132,252,0.16)'
-                              : '1px solid rgba(255,255,255,0.045)',
+                            tone.background,
                         }}
                       >
-                        <div
-                          className="w-11 h-11 rounded-[15px] flex items-center justify-center"
+                        <Icon
+                          className="w-5 h-5"
                           style={{
-                            background:
-                              tone.background,
+                            color:
+                              tone.color,
                           }}
-                        >
-                          <Icon
-                            className="w-5 h-5"
-                            style={{
-                              color:
-                                tone.color,
-                            }}
-                            strokeWidth={
-                              2
-                            }
-                          />
-                        </div>
+                          strokeWidth={2}
+                        />
+                      </div>
 
-                        <span className="text-[10px] leading-[15px] font-bold text-slate-200 text-center">
-                          {
-                            item.label
-                          }
-                        </span>
-                      </button>
-                    );
-                  }
-                )}
+                      <span className="text-[10px] leading-[15px] font-bold text-slate-200 text-center">
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
             </div>
           </div>
         </section>
@@ -758,7 +1202,6 @@ export function DashboardPage() {
               style={{
                 background:
                   'rgba(255,255,255,0.025)',
-
                 border:
                   '1px solid rgba(255,255,255,0.06)',
               }}
@@ -776,7 +1219,6 @@ export function DashboardPage() {
               style={{
                 background:
                   'rgba(255,255,255,0.025)',
-
                 border:
                   '1px solid rgba(255,255,255,0.06)',
               }}
@@ -796,9 +1238,7 @@ export function DashboardPage() {
               <button
                 type="button"
                 onClick={() =>
-                  navigate(
-                    '/add'
-                  )
+                  navigate('/add')
                 }
                 className="mt-4 px-5 py-2.5 rounded-xl font-bold text-[12px] text-slate-950 bg-gradient-to-br from-amber-400 to-orange-500 inline-flex items-center gap-2"
               >
@@ -812,13 +1252,9 @@ export function DashboardPage() {
               {recentTxs.map(
                 (tx, i) => (
                   <TransactionItem
-                    key={
-                      tx.data.id
-                    }
+                    key={tx.data.id}
                     tx={tx}
-                    delay={
-                      i * 50
-                    }
+                    delay={i * 50}
                   />
                 )
               )}
@@ -827,6 +1263,246 @@ export function DashboardPage() {
         </section>
 
         <div className="h-4" />
+
+        {/* ========================= */}
+        {/* نافذة البحث الشامل */}
+        {/* ========================= */}
+
+        {searchOpen && (
+          <div
+            className="fixed inset-0 z-[99999] flex justify-center"
+            style={{
+              background:
+                'rgba(2,6,15,0.94)',
+              backdropFilter:
+                'blur(10px)',
+            }}
+          >
+            <div
+              dir="rtl"
+              className="w-full max-w-[430px] min-h-[100dvh] overflow-y-auto px-4 pb-8"
+              style={{
+                paddingTop:
+                  'calc(env(safe-area-inset-top, 0px) + 18px)',
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-[20px] font-black text-white">
+                    البحث الشامل
+                  </h2>
+
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    ابحث في بيانات BAKR PRO
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeSearch}
+                  className="w-10 h-10 rounded-[13px] flex items-center justify-center"
+                  style={{
+                    background:
+                      'rgba(255,255,255,0.05)',
+                    border:
+                      '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <X className="w-5 h-5 text-slate-300" />
+                </button>
+              </div>
+
+              <div
+                className="h-[58px] rounded-[18px] px-4 flex items-center gap-3"
+                style={{
+                  background:
+                    'linear-gradient(145deg,#101d30,#07111e)',
+                  border:
+                    '1px solid rgba(245,158,11,0.27)',
+                  boxShadow:
+                    '0 10px 30px rgba(0,0,0,0.25)',
+                }}
+              >
+                <Search className="w-5 h-5 text-amber-400 shrink-0" />
+
+                <input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(event) =>
+                    setSearchQuery(
+                      event.target.value
+                    )
+                  }
+                  placeholder="اسم، جوال، فاتورة، كرين، مبلغ..."
+                  className="flex-1 bg-transparent outline-none text-white text-[13px] placeholder:text-slate-600"
+                />
+
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearchQuery('')
+                    }
+                    className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-slate-500" />
+                  </button>
+                )}
+              </div>
+
+              {!searchQuery && (
+                <div className="mt-6">
+                  <p className="text-[11px] text-slate-500 mb-3">
+                    يمكنك البحث عن
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      'اسم العميل',
+                      'رقم الجوال',
+                      'رقم الفاتورة',
+                      'اسم الكرين',
+                      'السائق',
+                      'المبلغ',
+                    ].map((text) => (
+                      <button
+                        type="button"
+                        key={text}
+                        onClick={() =>
+                          setSearchQuery(
+                            text ===
+                              'المبلغ'
+                              ? ''
+                              : ''
+                          )
+                        }
+                        className="rounded-[13px] py-3 px-2 text-[9px] text-slate-400"
+                        style={{
+                          background:
+                            'rgba(255,255,255,0.025)',
+                          border:
+                            '1px solid rgba(255,255,255,0.055)',
+                        }}
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {searchQuery &&
+                searchResults.length ===
+                  0 && (
+                  <div className="mt-16 text-center">
+                    <div className="w-16 h-16 rounded-[20px] bg-amber-500/8 flex items-center justify-center mx-auto">
+                      <Search className="w-7 h-7 text-amber-400/50" />
+                    </div>
+
+                    <p className="text-[14px] font-bold text-white mt-4">
+                      لا توجد نتائج
+                    </p>
+
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      جرّب الاسم أو رقم الجوال أو رقم الفاتورة
+                    </p>
+                  </div>
+                )}
+
+              {searchQuery &&
+                searchResults.length >
+                  0 && (
+                  <div className="mt-5 space-y-5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">
+                        النتائج
+                      </span>
+
+                      <span className="text-[10px] text-amber-400">
+                        {
+                          searchResults.length
+                        }{' '}
+                        نتيجة
+                      </span>
+                    </div>
+
+                    {Object.entries(
+                      groupedSearchResults
+                    ).map(
+                      ([
+                        category,
+                        items,
+                      ]) => (
+                        <section
+                          key={
+                            category
+                          }
+                        >
+                          <h3 className="text-[12px] font-black text-slate-300 mb-2">
+                            {
+                              category
+                            }
+                          </h3>
+
+                          <div className="space-y-2">
+                            {items.map(
+                              (
+                                item
+                              ) => (
+                                <button
+                                  key={
+                                    item.id
+                                  }
+                                  type="button"
+                                  onClick={() =>
+                                    openSearchResult(
+                                      item
+                                    )
+                                  }
+                                  className="w-full rounded-[16px] p-3.5 flex items-center gap-3 text-right active:scale-[0.99]"
+                                  style={{
+                                    background:
+                                      'linear-gradient(145deg,rgba(15,28,47,0.96),rgba(8,17,30,0.98))',
+                                    border:
+                                      '1px solid rgba(255,255,255,0.055)',
+                                  }}
+                                >
+                                  <div className="w-10 h-10 rounded-[13px] bg-amber-500/10 flex items-center justify-center shrink-0">
+                                    <Search className="w-4 h-4 text-amber-400" />
+                                  </div>
+
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[12px] font-bold text-white truncate">
+                                      {
+                                        item.title
+                                      }
+                                    </p>
+
+                                    {item.subtitle && (
+                                      <p className="text-[9px] text-slate-500 mt-1 truncate">
+                                        {
+                                          item.subtitle
+                                        }
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  {item.path !==
+                                    '/' && (
+                                    <ChevronLeft className="w-4 h-4 text-slate-600 shrink-0" />
+                                  )}
+                                </button>
+                              )
+                            )}
+                          </div>
+                        </section>
+                      )
+                    )}
+                  </div>
+                )}
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
@@ -859,9 +1535,7 @@ function MoneyCard({
       style={{
         background:
           'linear-gradient(145deg, rgba(13,27,47,0.94), rgba(7,17,31,0.98))',
-
         border: `1px solid ${border}`,
-
         boxShadow:
           '0 10px 25px rgba(0,0,0,0.18)',
       }}
@@ -876,15 +1550,12 @@ function MoneyCard({
         <div
           className="w-10 h-10 rounded-[14px] flex items-center justify-center"
           style={{
-            background:
-              bg,
+            background: bg,
           }}
         >
           <Icon
             className="w-5 h-5"
-            style={{
-              color,
-            }}
+            style={{ color }}
             strokeWidth={2.1}
           />
         </div>
@@ -892,12 +1563,10 @@ function MoneyCard({
 
       <p
         className="text-[15px] font-black mt-4 leading-tight"
-        style={{
-          color,
-        }}
+        style={{ color }}
       >
         {value}
       </p>
     </button>
   );
-      }
+         }
