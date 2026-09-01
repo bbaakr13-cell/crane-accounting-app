@@ -30,7 +30,13 @@ import {
   LockOpen,
   Mail,
   Truck,
+  Fingerprint,
+  ScanFace,
 } from 'lucide-react';
+
+import {
+  BiometricAuth,
+} from '@aparajita/capacitor-biometric-auth';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -61,6 +67,38 @@ import {
 
 const DASHBOARD_IMAGE_KEY =
   'baakr_pro_dashboard_image';
+
+const BIOMETRIC_ENABLED_KEY =
+  'baakr_pro_biometric_enabled';
+
+/* =========================
+   البصمة والوجه
+========================= */
+
+function getBiometricEnabled() {
+  try {
+    return (
+      localStorage.getItem(
+        BIOMETRIC_ENABLED_KEY
+      ) === 'true'
+    );
+  } catch {
+    return false;
+  }
+}
+
+function saveBiometricEnabled(
+  value: boolean
+) {
+  try {
+    localStorage.setItem(
+      BIOMETRIC_ENABLED_KEY,
+      String(value)
+    );
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 /* =========================
    ضغط الصور
@@ -147,13 +185,12 @@ async function compressImage(
           height
         );
 
-        const result =
+        resolve(
           canvas.toDataURL(
             'image/jpeg',
             quality
-          );
-
-        resolve(result);
+          )
+        );
       };
 
       image.src = String(
@@ -279,9 +316,9 @@ export function SettingsPage() {
   ] = useState(false);
 
   const [pinMode, setPinMode] =
-    useState<
-      'create' | 'change'
-    >('create');
+    useState<'create' | 'change'>(
+      'create'
+    );
 
   const [oldPin, setOldPin] =
     useState('');
@@ -302,6 +339,37 @@ export function SettingsPage() {
   const [
     pinError,
     setPinError,
+  ] = useState('');
+
+  /* =========================
+     البصمة والوجه
+  ========================= */
+
+  const [
+    biometricEnabled,
+    setBiometricEnabledState,
+  ] = useState(
+    getBiometricEnabled()
+  );
+
+  const [
+    biometricAvailable,
+    setBiometricAvailable,
+  ] = useState(false);
+
+  const [
+    biometricChecking,
+    setBiometricChecking,
+  ] = useState(true);
+
+  const [
+    biometricMessage,
+    setBiometricMessage,
+  ] = useState('');
+
+  const [
+    biometricError,
+    setBiometricError,
   ] = useState('');
 
   /* =========================
@@ -332,8 +400,32 @@ export function SettingsPage() {
     []
   );
 
+  const checkBiometric =
+    useCallback(async () => {
+      setBiometricChecking(true);
+
+      try {
+        const info =
+          await BiometricAuth.checkBiometry();
+
+        setBiometricAvailable(
+          info.isAvailable
+        );
+      } catch (error) {
+        console.error(
+          'Biometric check error:',
+          error
+        );
+
+        setBiometricAvailable(false);
+      } finally {
+        setBiometricChecking(false);
+      }
+    }, []);
+
   useEffect(() => {
     load();
+    checkBiometric();
 
     try {
       const savedImage =
@@ -347,7 +439,7 @@ export function SettingsPage() {
     } catch (error) {
       console.error(error);
     }
-  }, [load]);
+  }, [load, checkBiometric]);
 
   function showMessage(
     text: string,
@@ -361,6 +453,84 @@ export function SettingsPage() {
     window.setTimeout(() => {
       setMessage('');
     }, 2800);
+  }
+
+  /* =========================
+     تشغيل البصمة والوجه
+  ========================= */
+
+  async function handleBiometricToggle() {
+    setBiometricMessage('');
+    setBiometricError('');
+
+    if (biometricEnabled) {
+      saveBiometricEnabled(false);
+
+      setBiometricEnabledState(
+        false
+      );
+
+      setBiometricMessage(
+        'تم إيقاف فتح التطبيق بالبصمة والوجه'
+      );
+
+      return;
+    }
+
+    setBiometricChecking(true);
+
+    try {
+      const info =
+        await BiometricAuth.checkBiometry();
+
+      setBiometricAvailable(
+        info.isAvailable
+      );
+
+      if (!info.isAvailable) {
+        setBiometricError(
+          'المصادقة الحيوية غير متاحة. سجّل بصمة الإصبع أو الوجه في إعدادات الجوال أولاً.'
+        );
+
+        return;
+      }
+
+      await BiometricAuth.authenticate({
+        reason:
+          'تأكيد تفعيل الحماية في BAAKR PRO',
+        cancelTitle:
+          'إلغاء',
+        allowDeviceCredential:
+          false,
+        androidTitle:
+          'BAAKR PRO',
+        androidSubtitle:
+          'استخدم بصمة الإصبع أو الوجه',
+        androidConfirmationRequired:
+          false,
+      });
+
+      saveBiometricEnabled(true);
+
+      setBiometricEnabledState(
+        true
+      );
+
+      setBiometricMessage(
+        'تم تفعيل بصمة الإصبع والوجه بنجاح ✓'
+      );
+    } catch (error) {
+      console.error(
+        'Biometric authentication error:',
+        error
+      );
+
+      setBiometricError(
+        'لم يتم التحقق من بصمة الإصبع أو الوجه'
+      );
+    } finally {
+      setBiometricChecking(false);
+    }
   }
 
   /* =========================
@@ -460,10 +630,6 @@ export function SettingsPage() {
         'جاري تجهيز الصورة...'
       );
 
-      /*
-       * حجم صغير نسبيًا حتى
-       * لا تمتلئ مساحة localStorage
-       */
       const compressed =
         await compressImage(
           file,
@@ -1193,6 +1359,7 @@ export function SettingsPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="flex items-center gap-2 text-gold-400">
             <Building2 className="w-4 h-4" />
+
             <b className="text-sm">
               بيانات النشاط
             </b>
@@ -1328,7 +1495,7 @@ export function SettingsPage() {
           />
         </Card>
 
-        {/* خيارات */}
+        {/* خيارات التشغيل */}
 
         <Card className="p-4 mb-4 space-y-5">
           <div className="flex items-center gap-2 text-gold-400">
@@ -1406,7 +1573,7 @@ export function SettingsPage() {
           />
         </Card>
 
-        {/* القفل */}
+        {/* أمان التطبيق */}
 
         <Card className="p-4 mb-4">
           <div className="flex items-center gap-2 mb-4">
@@ -1422,6 +1589,93 @@ export function SettingsPage() {
               </p>
             </div>
           </div>
+
+          {/* البصمة والوجه */}
+
+          <div className="p-4 mb-5 rounded-2xl bg-gold-500/5 border border-gold-500/20">
+            <button
+              type="button"
+              disabled={
+                biometricChecking
+              }
+              onClick={
+                handleBiometricToggle
+              }
+              className="w-full flex items-center gap-3 disabled:opacity-60"
+            >
+              <div className="relative w-12 h-12 shrink-0 rounded-xl bg-gold-500/10 flex items-center justify-center">
+                <Fingerprint className="w-7 h-7 text-gold-400" />
+
+                <div className="absolute -bottom-1 -left-1 w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <ScanFace className="w-4 h-4 text-blue-400" />
+                </div>
+              </div>
+
+              <div className="flex-1 text-right">
+                <b className="text-sm text-white">
+                  بصمة الإصبع والوجه
+                </b>
+
+                <p className="text-[10px] text-slate-500 mt-1">
+                  {biometricChecking
+                    ? 'جاري فحص الجهاز...'
+                    : biometricEnabled
+                    ? 'الحماية الحيوية مفعلة'
+                    : biometricAvailable
+                    ? 'فتح التطبيق ببصمة الإصبع أو الوجه'
+                    : 'المصادقة الحيوية غير متاحة حاليًا'}
+                </p>
+              </div>
+
+              <div
+                className={`w-12 h-7 rounded-full p-1 ${
+                  biometricEnabled
+                    ? 'bg-green-500'
+                    : 'bg-white/10'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                    biometricEnabled
+                      ? '-translate-x-5'
+                      : ''
+                  }`}
+                />
+              </div>
+            </button>
+
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <div className="py-2.5 rounded-xl bg-black/20 border border-white/5 flex items-center justify-center gap-2">
+                <Fingerprint className="w-4 h-4 text-gold-400" />
+
+                <span className="text-[10px] text-slate-300">
+                  بصمة الإصبع
+                </span>
+              </div>
+
+              <div className="py-2.5 rounded-xl bg-black/20 border border-white/5 flex items-center justify-center gap-2">
+                <ScanFace className="w-4 h-4 text-blue-400" />
+
+                <span className="text-[10px] text-slate-300">
+                  بصمة الوجه
+                </span>
+              </div>
+            </div>
+
+            {biometricMessage && (
+              <p className="mt-3 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] text-center">
+                {biometricMessage}
+              </p>
+            )}
+
+            {biometricError && (
+              <p className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] text-center">
+                {biometricError}
+              </p>
+            )}
+          </div>
+
+          {/* قفل PIN */}
 
           <button
             type="button"
@@ -1487,6 +1741,7 @@ export function SettingsPage() {
 
           {showPinForm && (
             <div className="mt-4 p-4 rounded-xl bg-black/20 border border-white/10 space-y-3">
+
               {pinMode ===
                 'change' && (
                 <input
@@ -1576,7 +1831,7 @@ export function SettingsPage() {
             </div>
           )}
 
-          {/* البريد */}
+          {/* بريد الاسترجاع */}
 
           <div className="mt-4 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
             <div className="flex items-center gap-2">
@@ -1638,7 +1893,7 @@ export function SettingsPage() {
           )}
         </Card>
 
-        {/* الرسالة */}
+        {/* الرسائل */}
 
         {message && (
           <div
@@ -1653,7 +1908,7 @@ export function SettingsPage() {
           </div>
         )}
 
-        {/* الحفظ */}
+        {/* حفظ الإعدادات */}
 
         <button
           type="button"
@@ -1668,7 +1923,7 @@ export function SettingsPage() {
             : 'حفظ جميع الإعدادات'}
         </button>
 
-        {/* النسخ */}
+        {/* النسخ الاحتياطي */}
 
         <div className="grid grid-cols-2 gap-3 mt-4">
           <button
@@ -1718,4 +1973,4 @@ export function SettingsPage() {
       </div>
     </AppLayout>
   );
-  }
+}
