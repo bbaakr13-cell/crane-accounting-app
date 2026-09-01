@@ -24,7 +24,6 @@ import {
   RotateCcw,
   Trash2,
   ImagePlus,
-  LockKeyhole,
   ShieldCheck,
   KeyRound,
   LockOpen,
@@ -32,6 +31,7 @@ import {
   Truck,
   Fingerprint,
   ScanFace,
+  LockKeyhole,
 } from 'lucide-react';
 
 import {
@@ -55,10 +55,8 @@ import { paymentMethods } from '@/lib/transactions';
 
 import {
   hasAppPin,
-  isAppLockEnabled,
   setAppPin,
   verifyAppPin,
-  disableAppLock,
   removeAppPin,
   setRecoveryEmail,
   getRecoveryEmail,
@@ -149,12 +147,16 @@ async function compressImage(
 
         width = Math.max(
           1,
-          Math.round(width * ratio)
+          Math.round(
+            width * ratio
+          )
         );
 
         height = Math.max(
           1,
-          Math.round(height * ratio)
+          Math.round(
+            height * ratio
+          )
         );
 
         const canvas =
@@ -214,7 +216,9 @@ function Toggle({
   icon: Icon,
 }: {
   value: boolean;
-  onChange: (value: boolean) => void;
+  onChange: (
+    value: boolean
+  ) => void;
   label: string;
   desc: string;
   icon: any;
@@ -264,10 +268,14 @@ export function SettingsPage() {
   const nav = useNavigate();
 
   const logoRef =
-    useRef<HTMLInputElement>(null);
+    useRef<HTMLInputElement>(
+      null
+    );
 
   const dashboardImageRef =
-    useRef<HTMLInputElement>(null);
+    useRef<HTMLInputElement>(
+      null
+    );
 
   const [settings, setSettings] =
     useState<AppSettings | null>(
@@ -293,15 +301,8 @@ export function SettingsPage() {
   ] = useState('');
 
   /* =========================
-     القفل
+     PIN
   ========================= */
-
-  const [
-    lockEnabled,
-    setLockEnabled,
-  ] = useState(
-    isAppLockEnabled()
-  );
 
   const [
     pinExists,
@@ -315,16 +316,22 @@ export function SettingsPage() {
     setShowPinForm,
   ] = useState(false);
 
-  const [pinMode, setPinMode] =
-    useState<'create' | 'change'>(
-      'create'
-    );
+  const [
+    pinMode,
+    setPinMode,
+  ] = useState<
+    'create' | 'change'
+  >('create');
 
-  const [oldPin, setOldPin] =
-    useState('');
+  const [
+    oldPin,
+    setOldPin,
+  ] = useState('');
 
-  const [newPin, setNewPin] =
-    useState('');
+  const [
+    newPin,
+    setNewPin,
+  ] = useState('');
 
   const [
     confirmPin,
@@ -342,7 +349,7 @@ export function SettingsPage() {
   ] = useState('');
 
   /* =========================
-     البصمة والوجه
+     قفل البصمة والوجه
   ========================= */
 
   const [
@@ -402,7 +409,9 @@ export function SettingsPage() {
 
   const checkBiometric =
     useCallback(async () => {
-      setBiometricChecking(true);
+      setBiometricChecking(
+        true
+      );
 
       try {
         const info =
@@ -417,9 +426,13 @@ export function SettingsPage() {
           error
         );
 
-        setBiometricAvailable(false);
+        setBiometricAvailable(
+          false
+        );
       } finally {
-        setBiometricChecking(false);
+        setBiometricChecking(
+          false
+        );
       }
     }, []);
 
@@ -439,7 +452,10 @@ export function SettingsPage() {
     } catch (error) {
       console.error(error);
     }
-  }, [load, checkBiometric]);
+  }, [
+    load,
+    checkBiometric,
+  ]);
 
   function showMessage(
     text: string,
@@ -456,28 +472,80 @@ export function SettingsPage() {
   }
 
   /* =========================
-     تشغيل البصمة والوجه
+     تشغيل / إيقاف
+     قفل التطبيق بالبصمة
   ========================= */
 
   async function handleBiometricToggle() {
     setBiometricMessage('');
     setBiometricError('');
 
+    /*
+     * إذا القفل مفعّل:
+     * نطلب بصمة للتأكد
+     * ثم نوقف القفل.
+     */
     if (biometricEnabled) {
-      saveBiometricEnabled(false);
-
-      setBiometricEnabledState(
-        false
+      setBiometricChecking(
+        true
       );
 
-      setBiometricMessage(
-        'تم إيقاف فتح التطبيق بالبصمة والوجه'
-      );
+      try {
+        await BiometricAuth.authenticate({
+          reason:
+            'تأكيد إيقاف قفل BAAKR PRO',
+
+          cancelTitle:
+            'إلغاء',
+
+          allowDeviceCredential:
+            false,
+
+          androidTitle:
+            'BAAKR PRO',
+
+          androidSubtitle:
+            'أكد هويتك لإيقاف قفل التطبيق',
+
+          androidConfirmationRequired:
+            false,
+        });
+
+        saveBiometricEnabled(
+          false
+        );
+
+        setBiometricEnabledState(
+          false
+        );
+
+        setBiometricMessage(
+          'تم إيقاف قفل التطبيق ✓'
+        );
+      } catch (error) {
+        console.error(
+          'Disable biometric error:',
+          error
+        );
+
+        setBiometricError(
+          'لم يتم إيقاف القفل لأن المصادقة لم تنجح'
+        );
+      } finally {
+        setBiometricChecking(
+          false
+        );
+      }
 
       return;
     }
 
-    setBiometricChecking(true);
+    /*
+     * تشغيل القفل
+     */
+    setBiometricChecking(
+      true
+    );
 
     try {
       const info =
@@ -489,7 +557,7 @@ export function SettingsPage() {
 
       if (!info.isAvailable) {
         setBiometricError(
-          'المصادقة الحيوية غير متاحة. سجّل بصمة الإصبع أو الوجه في إعدادات الجوال أولاً.'
+          'لا توجد بصمة إصبع أو بصمة وجه متاحة للتطبيق. أضف البصمة من إعدادات الجوال أولاً.'
         );
 
         return;
@@ -497,39 +565,48 @@ export function SettingsPage() {
 
       await BiometricAuth.authenticate({
         reason:
-          'تأكيد تفعيل الحماية في BAAKR PRO',
+          'تفعيل قفل تطبيق BAAKR PRO',
+
         cancelTitle:
           'إلغاء',
+
         allowDeviceCredential:
           false,
+
         androidTitle:
-          'BAAKR PRO',
+          'قفل BAAKR PRO',
+
         androidSubtitle:
-          'استخدم بصمة الإصبع أو الوجه',
+          'استخدم بصمة الإصبع أو الوجه لتفعيل القفل',
+
         androidConfirmationRequired:
           false,
       });
 
-      saveBiometricEnabled(true);
+      saveBiometricEnabled(
+        true
+      );
 
       setBiometricEnabledState(
         true
       );
 
       setBiometricMessage(
-        'تم تفعيل بصمة الإصبع والوجه بنجاح ✓'
+        'تم تشغيل قفل التطبيق بالبصمة والوجه ✓'
       );
     } catch (error) {
       console.error(
-        'Biometric authentication error:',
+        'Enable biometric error:',
         error
       );
 
       setBiometricError(
-        'لم يتم التحقق من بصمة الإصبع أو الوجه'
+        'لم يتم تفعيل القفل لأن المصادقة لم تنجح'
       );
     } finally {
-      setBiometricChecking(false);
+      setBiometricChecking(
+        false
+      );
     }
   }
 
@@ -543,7 +620,10 @@ export function SettingsPage() {
     const file =
       event.target.files?.[0];
 
-    if (!file || !settings) {
+    if (
+      !file ||
+      !settings
+    ) {
       return;
     }
 
@@ -556,6 +636,7 @@ export function SettingsPage() {
         'الملف المختار ليس صورة',
         'error'
       );
+
       return;
     }
 
@@ -610,7 +691,9 @@ export function SettingsPage() {
     const file =
       event.target.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     if (
       !file.type.startsWith(
@@ -668,7 +751,9 @@ export function SettingsPage() {
         'هل تريد حذف صورة الواجهة الرئيسية؟'
       );
 
-    if (!approved) return;
+    if (!approved) {
+      return;
+    }
 
     try {
       localStorage.removeItem(
@@ -722,7 +807,9 @@ export function SettingsPage() {
 
     try {
       await Promise.race([
-        saveSettings(settings),
+        saveSettings(
+          settings
+        ),
         timeout,
       ]);
 
@@ -764,6 +851,7 @@ export function SettingsPage() {
 
       const out: any = {
         version: 2,
+
         createdAt:
           new Date().toISOString(),
       };
@@ -810,7 +898,10 @@ export function SettingsPage() {
       a.download =
         `crane-backup-${new Date()
           .toISOString()
-          .slice(0, 10)}.json`;
+          .slice(
+            0,
+            10
+          )}.json`;
 
       a.click();
 
@@ -835,7 +926,9 @@ export function SettingsPage() {
     const file =
       event.target.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     const approved =
       window.confirm(
@@ -855,8 +948,10 @@ export function SettingsPage() {
         JSON.parse(text);
 
       for (
-        const [table, rows]
-        of Object.entries(
+        const [
+          table,
+          rows,
+        ] of Object.entries(
           backup
         )
       ) {
@@ -905,29 +1000,35 @@ export function SettingsPage() {
   ========================= */
 
   function openCreatePin() {
-    setPinMode('create');
+    setPinMode(
+      'create'
+    );
 
     setOldPin('');
     setNewPin('');
     setConfirmPin('');
-
     setPinError('');
     setPinMessage('');
 
-    setShowPinForm(true);
+    setShowPinForm(
+      true
+    );
   }
 
   function openChangePin() {
-    setPinMode('change');
+    setPinMode(
+      'change'
+    );
 
     setOldPin('');
     setNewPin('');
     setConfirmPin('');
-
     setPinError('');
     setPinMessage('');
 
-    setShowPinForm(true);
+    setShowPinForm(
+      true
+    );
   }
 
   async function handleSavePin() {
@@ -947,7 +1048,8 @@ export function SettingsPage() {
     }
 
     if (
-      newPin !== confirmPin
+      newPin !==
+      confirmPin
     ) {
       setPinError(
         'تأكيد الرقم السري غير مطابق'
@@ -958,7 +1060,8 @@ export function SettingsPage() {
 
     try {
       if (
-        pinMode === 'change'
+        pinMode ===
+        'change'
       ) {
         if (
           !/^\d{4}$/.test(
@@ -990,19 +1093,23 @@ export function SettingsPage() {
         newPin
       );
 
-      setPinExists(true);
-      setLockEnabled(true);
+      setPinExists(
+        true
+      );
 
-      setShowPinForm(false);
+      setShowPinForm(
+        false
+      );
 
       setOldPin('');
       setNewPin('');
       setConfirmPin('');
 
       setPinMessage(
-        pinMode === 'create'
-          ? 'تم إنشاء القفل بنجاح'
-          : 'تم تغيير الرقم السري بنجاح'
+        pinMode ===
+          'create'
+          ? 'تم إنشاء PIN بنجاح'
+          : 'تم تغيير PIN بنجاح'
       );
     } catch (error) {
       console.error(error);
@@ -1013,67 +1120,15 @@ export function SettingsPage() {
     }
   }
 
-  async function handleLockToggle() {
-    setPinError('');
-    setPinMessage('');
-
-    if (!pinExists) {
-      openCreatePin();
-      return;
-    }
-
-    const entered =
-      window.prompt(
-        lockEnabled
-          ? 'أدخل PIN لإيقاف القفل'
-          : 'أدخل PIN لتشغيل القفل'
-      );
-
-    if (entered === null) {
-      return;
-    }
-
-    const correct =
-      await verifyAppPin(
-        entered
-      );
-
-    if (!correct) {
-      setPinError(
-        'الرقم السري غير صحيح'
-      );
-
-      return;
-    }
-
-    if (lockEnabled) {
-      disableAppLock();
-
-      setLockEnabled(false);
-
-      setPinMessage(
-        'تم إيقاف القفل'
-      );
-    } else {
-      await setAppPin(
-        entered
-      );
-
-      setLockEnabled(true);
-
-      setPinMessage(
-        'تم تشغيل القفل'
-      );
-    }
-  }
-
   async function handleRemovePin() {
     const entered =
       window.prompt(
         'أدخل الرقم السري الحالي'
       );
 
-    if (entered === null) {
+    if (
+      entered === null
+    ) {
       return;
     }
 
@@ -1092,7 +1147,7 @@ export function SettingsPage() {
 
     const approved =
       window.confirm(
-        'هل تريد حذف قفل التطبيق؟'
+        'هل تريد حذف PIN؟'
       );
 
     if (!approved) {
@@ -1101,12 +1156,16 @@ export function SettingsPage() {
 
     removeAppPin();
 
-    setPinExists(false);
-    setLockEnabled(false);
-    setShowPinForm(false);
+    setPinExists(
+      false
+    );
+
+    setShowPinForm(
+      false
+    );
 
     setPinMessage(
-      'تم حذف القفل'
+      'تم حذف PIN'
     );
   }
 
@@ -1158,8 +1217,13 @@ export function SettingsPage() {
 
     removeRecoveryEmail();
 
-    setRecoveryEmailValue('');
-    setSavedRecoveryEmail('');
+    setRecoveryEmailValue(
+      ''
+    );
+
+    setSavedRecoveryEmail(
+      ''
+    );
 
     setPinMessage(
       'تم حذف بريد الاسترجاع'
@@ -1209,6 +1273,7 @@ export function SettingsPage() {
 
         <Card className="p-5 mb-4">
           <div className="flex items-center gap-4">
+
             <div className="w-20 h-20 rounded-3xl bg-ink-900 overflow-hidden flex items-center justify-center">
 
               {settings.logo ? (
@@ -1244,6 +1309,7 @@ export function SettingsPage() {
                 className="mt-3 px-3 py-2 rounded-xl bg-gold-500/10 text-gold-400 text-xs flex items-center gap-2"
               >
                 <Image className="w-4 h-4" />
+
                 تغيير الشعار
               </button>
 
@@ -1256,13 +1322,15 @@ export function SettingsPage() {
                   handleLogo
                 }
               />
+
             </div>
           </div>
         </Card>
 
-        {/* صورة الرئيسية */}
+        {/* صورة الواجهة */}
 
         <Card className="p-4 mb-4">
+
           <div className="flex items-center gap-2 mb-3">
             <ImagePlus className="w-5 h-5 text-gold-400" />
 
@@ -1307,6 +1375,7 @@ export function SettingsPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 mt-3">
+
             <button
               type="button"
               onClick={() =>
@@ -1335,6 +1404,7 @@ export function SettingsPage() {
 
               حذف الصورة
             </button>
+
           </div>
 
           <input
@@ -1352,11 +1422,13 @@ export function SettingsPage() {
           <p className="text-[10px] text-green-400/70 text-center mt-3">
             ✓ يتم ضغط الصورة وحفظها تلقائيًا
           </p>
+
         </Card>
 
         {/* بيانات النشاط */}
 
         <Card className="p-4 mb-4 space-y-3">
+
           <div className="flex items-center gap-2 text-gold-400">
             <Building2 className="w-4 h-4" />
 
@@ -1396,6 +1468,7 @@ export function SettingsPage() {
           />
 
           <div className="grid grid-cols-2 gap-2">
+
             <div className="relative">
               <Phone className="absolute right-3 top-3.5 w-4 h-4 text-slate-500" />
 
@@ -1433,9 +1506,11 @@ export function SettingsPage() {
                 placeholder="المدينة"
               />
             </div>
+
           </div>
 
           <div className="grid grid-cols-2 gap-2">
+
             <div className="relative">
               <CreditCard className="absolute right-3 top-3.5 w-4 h-4 text-slate-500" />
 
@@ -1470,13 +1545,16 @@ export function SettingsPage() {
               {paymentMethods.map(
                 (method) => (
                   <option
-                    key={method}
+                    key={
+                      method
+                    }
                   >
                     {method}
                   </option>
                 )
               )}
             </select>
+
           </div>
 
           <input
@@ -1493,11 +1571,13 @@ export function SettingsPage() {
             }
             placeholder="عنوان التقارير"
           />
+
         </Card>
 
         {/* خيارات التشغيل */}
 
         <Card className="p-4 mb-4 space-y-5">
+
           <div className="flex items-center gap-2 text-gold-400">
             <SlidersHorizontal className="w-4 h-4" />
 
@@ -1571,11 +1651,15 @@ export function SettingsPage() {
             desc="إظهار الرقم في التقارير"
             icon={Printer}
           />
+
         </Card>
 
-        {/* أمان التطبيق */}
+        {/* =========================
+            أمان التطبيق
+        ========================= */}
 
         <Card className="p-4 mb-4">
+
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="w-5 h-5 text-gold-400" />
 
@@ -1590,9 +1674,16 @@ export function SettingsPage() {
             </div>
           </div>
 
-          {/* البصمة والوجه */}
+          {/* القفل بالبصمة */}
 
-          <div className="p-4 mb-5 rounded-2xl bg-gold-500/5 border border-gold-500/20">
+          <div
+            className={`p-4 rounded-2xl border ${
+              biometricEnabled
+                ? 'bg-green-500/5 border-green-500/25'
+                : 'bg-gold-500/5 border-gold-500/20'
+            }`}
+          >
+
             <button
               type="button"
               disabled={
@@ -1603,37 +1694,55 @@ export function SettingsPage() {
               }
               className="w-full flex items-center gap-3 disabled:opacity-60"
             >
-              <div className="relative w-12 h-12 shrink-0 rounded-xl bg-gold-500/10 flex items-center justify-center">
-                <Fingerprint className="w-7 h-7 text-gold-400" />
+
+              <div
+                className={`relative w-12 h-12 shrink-0 rounded-xl flex items-center justify-center ${
+                  biometricEnabled
+                    ? 'bg-green-500/10'
+                    : 'bg-gold-500/10'
+                }`}
+              >
+
+                {biometricEnabled ? (
+                  <LockKeyhole className="w-7 h-7 text-green-400" />
+                ) : (
+                  <Fingerprint className="w-7 h-7 text-gold-400" />
+                )}
 
                 <div className="absolute -bottom-1 -left-1 w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
                   <ScanFace className="w-4 h-4 text-blue-400" />
                 </div>
+
               </div>
 
               <div className="flex-1 text-right">
+
                 <b className="text-sm text-white">
-                  بصمة الإصبع والوجه
+                  قفل التطبيق بالبصمة والوجه
                 </b>
 
                 <p className="text-[10px] text-slate-500 mt-1">
+
                   {biometricChecking
-                    ? 'جاري فحص الجهاز...'
+                    ? 'جاري التحقق...'
                     : biometricEnabled
-                    ? 'الحماية الحيوية مفعلة'
+                    ? 'القفل مفعل — سيطلب البصمة عند فتح التطبيق'
                     : biometricAvailable
-                    ? 'فتح التطبيق ببصمة الإصبع أو الوجه'
-                    : 'المصادقة الحيوية غير متاحة حاليًا'}
+                    ? 'القفل متوقف — اضغط لتفعيله'
+                    : 'البصمة أو الوجه غير متاحين حاليًا'}
+
                 </p>
+
               </div>
 
               <div
-                className={`w-12 h-7 rounded-full p-1 ${
+                className={`w-12 h-7 rounded-full p-1 transition-colors ${
                   biometricEnabled
                     ? 'bg-green-500'
                     : 'bg-white/10'
                 }`}
               >
+
                 <div
                   className={`w-5 h-5 rounded-full bg-white transition-transform ${
                     biometricEnabled
@@ -1641,10 +1750,13 @@ export function SettingsPage() {
                       : ''
                   }`}
                 />
+
               </div>
+
             </button>
 
             <div className="grid grid-cols-2 gap-2 mt-4">
+
               <div className="py-2.5 rounded-xl bg-black/20 border border-white/5 flex items-center justify-center gap-2">
                 <Fingerprint className="w-4 h-4 text-gold-400" />
 
@@ -1660,90 +1772,112 @@ export function SettingsPage() {
                   بصمة الوجه
                 </span>
               </div>
+
             </div>
 
             {biometricMessage && (
               <p className="mt-3 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] text-center">
-                {biometricMessage}
+                {
+                  biometricMessage
+                }
               </p>
             )}
 
             {biometricError && (
               <p className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] text-center">
-                {biometricError}
+                {
+                  biometricError
+                }
               </p>
             )}
+
           </div>
 
-          {/* قفل PIN */}
+          {/* PIN */}
 
-          <button
-            type="button"
-            onClick={
-              handleLockToggle
-            }
-            className="w-full flex items-center gap-3"
-          >
-            <div className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center">
-              <LockKeyhole
-                className={
-                  lockEnabled
-                    ? 'w-5 h-5 text-green-400'
-                    : 'w-5 h-5 text-gold-400'
+          <div className="mt-5 pt-5 border-t border-white/10">
+
+            <div className="flex items-center gap-2 mb-3">
+              <KeyRound className="w-5 h-5 text-gold-400" />
+
+              <div>
+                <b className="text-sm text-white">
+                  الرقم السري PIN
+                </b>
+
+                <p className="text-[10px] text-slate-500">
+                  إدارة الرقم السري
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+
+              <button
+                type="button"
+                onClick={
+                  pinExists
+                    ? openChangePin
+                    : openCreatePin
                 }
-              />
+                className="py-3 rounded-xl bg-gold-500/10 border border-gold-500/20 text-gold-400 text-xs font-bold flex items-center justify-center gap-2"
+              >
+                <KeyRound className="w-4 h-4" />
+
+                {pinExists
+                  ? 'تغيير PIN'
+                  : 'إنشاء PIN'}
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  !pinExists
+                }
+                onClick={
+                  handleRemovePin
+                }
+                className="py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-30"
+              >
+                <LockOpen className="w-4 h-4" />
+
+                حذف PIN
+              </button>
+
             </div>
 
-            <div className="flex-1 text-right">
-              <b className="text-sm text-white">
-                قفل التطبيق
-              </b>
+            {showPinForm && (
+              <div className="mt-4 p-4 rounded-xl bg-black/20 border border-white/10 space-y-3">
 
-              <p className="text-[10px] text-slate-500">
-                {lockEnabled
-                  ? 'القفل مفعل'
-                  : 'القفل متوقف'}
-              </p>
-            </div>
-          </button>
+                {pinMode ===
+                  'change' && (
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    className={
+                      pinInput
+                    }
+                    placeholder="PIN الحالي"
+                    value={
+                      oldPin
+                    }
+                    onChange={(e) =>
+                      setOldPin(
+                        e.target.value
+                          .replace(
+                            /\D/g,
+                            ''
+                          )
+                          .slice(
+                            0,
+                            4
+                          )
+                      )
+                    }
+                  />
+                )}
 
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            <button
-              type="button"
-              onClick={
-                pinExists
-                  ? openChangePin
-                  : openCreatePin
-              }
-              className="py-3 rounded-xl bg-gold-500/10 border border-gold-500/20 text-gold-400 text-xs font-bold flex items-center justify-center gap-2"
-            >
-              <KeyRound className="w-4 h-4" />
-
-              {pinExists
-                ? 'تغيير PIN'
-                : 'إنشاء PIN'}
-            </button>
-
-            <button
-              type="button"
-              disabled={
-                !pinExists
-              }
-              onClick={
-                handleRemovePin
-              }
-              className="py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-30"
-            >
-              <LockOpen className="w-4 h-4" />
-              حذف القفل
-            </button>
-          </div>
-
-          {showPinForm && (
-            <div className="mt-4 p-4 rounded-xl bg-black/20 border border-white/10 space-y-3">
-
-              {pinMode ===
-                'change' && (
                 <input
                   type="password"
                   inputMode="numeric"
@@ -1751,10 +1885,12 @@ export function SettingsPage() {
                   className={
                     pinInput
                   }
-                  placeholder="PIN الحالي"
-                  value={oldPin}
+                  placeholder="PIN الجديد"
+                  value={
+                    newPin
+                  }
                   onChange={(e) =>
-                    setOldPin(
+                    setNewPin(
                       e.target.value
                         .replace(
                           /\D/g,
@@ -1767,73 +1903,52 @@ export function SettingsPage() {
                     )
                   }
                 />
-              )}
 
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                className={
-                  pinInput
-                }
-                placeholder="PIN الجديد"
-                value={newPin}
-                onChange={(e) =>
-                  setNewPin(
-                    e.target.value
-                      .replace(
-                        /\D/g,
-                        ''
-                      )
-                      .slice(
-                        0,
-                        4
-                      )
-                  )
-                }
-              />
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className={
+                    pinInput
+                  }
+                  placeholder="تأكيد PIN"
+                  value={
+                    confirmPin
+                  }
+                  onChange={(e) =>
+                    setConfirmPin(
+                      e.target.value
+                        .replace(
+                          /\D/g,
+                          ''
+                        )
+                        .slice(
+                          0,
+                          4
+                        )
+                    )
+                  }
+                />
 
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                className={
-                  pinInput
-                }
-                placeholder="تأكيد PIN"
-                value={
-                  confirmPin
-                }
-                onChange={(e) =>
-                  setConfirmPin(
-                    e.target.value
-                      .replace(
-                        /\D/g,
-                        ''
-                      )
-                      .slice(
-                        0,
-                        4
-                      )
-                  )
-                }
-              />
+                <button
+                  type="button"
+                  onClick={
+                    handleSavePin
+                  }
+                  className="w-full py-3 rounded-xl bg-gold-500 text-ink-950 font-bold text-sm"
+                >
+                  حفظ PIN
+                </button>
 
-              <button
-                type="button"
-                onClick={
-                  handleSavePin
-                }
-                className="w-full py-3 rounded-xl bg-gold-500 text-ink-950 font-bold text-sm"
-              >
-                حفظ PIN
-              </button>
-            </div>
-          )}
+              </div>
+            )}
+
+          </div>
 
           {/* بريد الاسترجاع */}
 
           <div className="mt-4 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+
             <div className="flex items-center gap-2">
               <Mail className="w-5 h-5 text-blue-400" />
 
@@ -1878,6 +1993,7 @@ export function SettingsPage() {
                 حذف بريد الاسترجاع
               </button>
             )}
+
           </div>
 
           {pinError && (
@@ -1891,9 +2007,10 @@ export function SettingsPage() {
               {pinMessage}
             </p>
           )}
+
         </Card>
 
-        {/* الرسائل */}
+        {/* الرسالة */}
 
         {message && (
           <div
@@ -1908,12 +2025,16 @@ export function SettingsPage() {
           </div>
         )}
 
-        {/* حفظ الإعدادات */}
+        {/* الحفظ */}
 
         <button
           type="button"
-          disabled={saving}
-          onClick={save}
+          disabled={
+            saving
+          }
+          onClick={
+            save
+          }
           className="w-full py-3.5 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 text-ink-950 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <Save className="w-5 h-5" />
@@ -1923,9 +2044,10 @@ export function SettingsPage() {
             : 'حفظ جميع الإعدادات'}
         </button>
 
-        {/* النسخ الاحتياطي */}
+        {/* النسخ */}
 
         <div className="grid grid-cols-2 gap-3 mt-4">
+
           <button
             type="button"
             onClick={
@@ -1934,11 +2056,14 @@ export function SettingsPage() {
             className="py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
+
             نسخة احتياطية
           </button>
 
           <label className="py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white flex items-center justify-center gap-2">
+
             <Upload className="w-4 h-4" />
+
             استعادة
 
             <input
@@ -1949,7 +2074,9 @@ export function SettingsPage() {
                 importBackup
               }
             />
+
           </label>
+
         </div>
 
         <button
@@ -1966,11 +2093,13 @@ export function SettingsPage() {
           className="w-full mt-3 py-3 rounded-xl text-xs text-slate-400 flex items-center justify-center gap-2"
         >
           <RotateCcw className="w-4 h-4" />
+
           استعادة الإعدادات الافتراضية
         </button>
 
         <div className="h-8" />
+
       </div>
     </AppLayout>
   );
-}
+  }
