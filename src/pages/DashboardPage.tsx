@@ -304,6 +304,17 @@ export function DashboardPage() {
       tone: 'gold',
     },
 
+    /* =========================
+       الحاسبة
+    ========================= */
+
+    {
+      label: 'الحاسبة',
+      icon: Calculator,
+      path: '/calculator',
+      tone: 'purple',
+    },
+
     {
       label: 'الإعدادات',
       icon: Settings,
@@ -889,4 +900,4 @@ function MoneyCard({
       </p>
     </button>
   );
-                  }
+      }
