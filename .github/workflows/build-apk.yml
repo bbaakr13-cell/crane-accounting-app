@@ -50,9 +50,16 @@ jobs:
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm install
 
-      - name: Install PDF and sharing libraries
+      - name: Install PDF, sharing and biometric libraries
         working-directory: ${{ steps.project.outputs.dir }}
-        run: npm install jspdf html2canvas @capacitor/filesystem @capacitor/share @capacitor/app
+        run: |
+          npm install \
+            jspdf \
+            html2canvas \
+            @capacitor/filesystem \
+            @capacitor/share \
+            @capacitor/app \
+            @aparajita/capacitor-biometric-auth
 
       - name: Fix fetchEquipment export
         working-directory: ${{ steps.project.outputs.dir }}
@@ -68,12 +75,17 @@ jobs:
 
       - name: Install Capacitor
         working-directory: ${{ steps.project.outputs.dir }}
-        run: npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+        run: |
+          npm install \
+            @capacitor/core@latest \
+            @capacitor/cli@latest \
+            @capacitor/android@latest
 
       - name: Create Capacitor config
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
           rm -f capacitor.config.json capacitor.config.ts
+
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.crane.accounting",
@@ -93,10 +105,16 @@ jobs:
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
           npm install --no-save @capacitor/assets
+
           rm -rf assets
           mkdir -p assets
+
           cp src/app-icon.png assets/icon.png
-          npx @capacitor/assets generate --android --iconBackgroundColor '#07101f' --iconBackgroundColorDark '#07101f'
+
+          npx @capacitor/assets generate \
+            --android \
+            --iconBackgroundColor '#07101f' \
+            --iconBackgroundColorDark '#07101f'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -109,7 +127,10 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 --decode > android/app/crane-release.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" \
+            | tr -d '\r\n ' \
+            | base64 --decode \
+            > android/app/crane-release.jks
 
       - name: Build signed APK
         working-directory: ${{ steps.project.outputs.dir }}/android
@@ -118,6 +139,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           chmod +x gradlew
+
           ./gradlew assembleRelease
 
           $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/apksigner sign \
