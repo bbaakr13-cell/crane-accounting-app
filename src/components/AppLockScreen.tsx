@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
-  LockKeyhole,
   Delete,
   ShieldCheck,
   Mail,
   ArrowRight,
   KeyRound,
+  LockKeyhole,
 } from 'lucide-react';
 
 import {
@@ -27,9 +27,16 @@ type AppLockScreenProps = {
   onUnlock: () => void;
 };
 
-type RecoveryStep = 'none' | 'send' | 'verify' | 'newPin' | 'confirmPin';
+type RecoveryStep =
+  | 'none'
+  | 'send'
+  | 'verify'
+  | 'newPin'
+  | 'confirmPin';
 
-export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
+export function AppLockScreen({
+  onUnlock,
+}: AppLockScreenProps) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
@@ -166,10 +173,7 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
     setRecoveryMessage('');
 
     try {
-      await verifyRecoveryCode(
-        recoveryEmail,
-        cleanCode
-      );
+      await verifyRecoveryCode(recoveryEmail, cleanCode);
 
       setRecoveryVerified(true);
 
@@ -208,9 +212,7 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
     }
 
     if (newPin !== confirmPin) {
-      setRecoveryMessage(
-        'الرقمان غير متطابقين'
-      );
+      setRecoveryMessage('الرقمان غير متطابقين');
       setConfirmPin('');
       return;
     }
@@ -223,9 +225,7 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
 
       await signOutRecovery();
 
-      setRecoveryMessage(
-        'تم تغيير الرقم السري بنجاح'
-      );
+      setRecoveryMessage('تم تغيير الرقم السري بنجاح');
 
       window.setTimeout(() => {
         setRecoveryStep('none');
@@ -249,106 +249,45 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
 
   if (recoveryStep !== 'none') {
     return (
-      <div
-        dir="rtl"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 999999,
-          minHeight: '100dvh',
-          background:
-            'radial-gradient(circle at top, #132a4a 0%, #07101f 45%, #030712 100%)',
-          color: '#ffffff',
-          display: 'flex',
-          justifyContent: 'center',
-          overflowY: 'auto',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 430,
-            minHeight: '100dvh',
-            padding:
-              'calc(env(safe-area-inset-top, 0px) + 35px) 24px calc(env(safe-area-inset-bottom, 0px) + 30px)',
-            boxSizing: 'border-box',
-          }}
-        >
+      <div dir="rtl" style={screenStyle}>
+        <Decorations />
+
+        <div style={recoveryContainerStyle}>
           <button
             type="button"
             onClick={closeRecovery}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: '#cbd5e1',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-              fontSize: 14,
-              cursor: 'pointer',
-              padding: 0,
-            }}
+            style={backButtonStyle}
           >
             <ArrowRight size={20} />
             رجوع
           </button>
 
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              marginTop: 40,
-            }}
-          >
-            <div
-              style={{
-                width: 82,
-                height: 82,
-                borderRadius: 26,
-                background:
-                  'linear-gradient(145deg,#3b82f6,#1d4ed8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow:
-                  '0 18px 50px rgba(37,99,235,0.30)',
-              }}
-            >
-              {recoveryStep === 'newPin' ||
-              recoveryStep === 'confirmPin' ? (
-                <KeyRound size={40} />
-              ) : (
-                <Mail size={40} />
-              )}
-            </div>
+          <div style={recoveryContentStyle}>
+            <GoldLogo
+              icon={
+                recoveryStep === 'newPin' ||
+                recoveryStep === 'confirmPin' ? (
+                  <KeyRound size={34} />
+                ) : (
+                  <Mail size={34} />
+                )
+              }
+            />
 
-            <h1
-              style={{
-                fontSize: 25,
-                margin: '24px 0 8px',
-                fontWeight: 900,
-                textAlign: 'center',
-              }}
-            >
+            <h1 style={recoveryTitleStyle}>
               استعادة الرقم السري
             </h1>
 
+            <div style={goldSmallLineStyle} />
+
             {recoveryStep === 'send' && (
               <>
-                <p
-                  style={{
-                    color: '#94a3b8',
-                    textAlign: 'center',
-                    lineHeight: 1.8,
-                    fontSize: 14,
-                  }}
-                >
-                  سيتم إرسال رمز تحقق إلى البريد
+                <p style={descriptionStyle}>
+                  سيتم إرسال رمز تحقق إلى البريد المسجل
                 </p>
 
                 <div style={emailBoxStyle}>
-                  <Mail size={19} color="#60a5fa" />
+                  <Mail size={18} color="#e7bd5a" />
 
                   <span>
                     {maskRecoveryEmail(recoveryEmail)}
@@ -373,7 +312,7 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
                 <p style={descriptionStyle}>
                   أدخل رمز التحقق الذي تم إرساله إلى
                   <br />
-                  <strong style={{ color: '#ffffff' }}>
+                  <strong style={{ color: '#f5d77c' }}>
                     {maskRecoveryEmail(recoveryEmail)}
                   </strong>
                 </p>
@@ -416,7 +355,7 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
             {recoveryStep === 'newPin' && (
               <>
                 <p style={descriptionStyle}>
-                  تم التحقق من بريدك.
+                  تم التحقق من بريدك بنجاح
                   <br />
                   اختر رقمًا سريًا جديدًا
                 </p>
@@ -483,22 +422,7 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
             )}
 
             {recoveryMessage && (
-              <div
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginTop: 18,
-                  padding: '12px 14px',
-                  borderRadius: 12,
-                  background: 'rgba(59,130,246,0.10)',
-                  border:
-                    '1px solid rgba(96,165,250,0.20)',
-                  color: '#bfdbfe',
-                  fontSize: 13,
-                  textAlign: 'center',
-                  lineHeight: 1.7,
-                }}
-              >
+              <div style={recoveryMessageStyle}>
                 {recoveryMessage}
               </div>
             )}
@@ -509,171 +433,84 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
   }
 
   return (
-    <div
-      dir="rtl"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 999999,
-        minHeight: '100dvh',
-        background:
-          'radial-gradient(circle at top, #132a4a 0%, #07101f 45%, #030712 100%)',
-        color: '#ffffff',
-        display: 'flex',
-        justifyContent: 'center',
-        overflowY: 'auto',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 430,
-          minHeight: '100dvh',
-          padding:
-            'calc(env(safe-area-inset-top, 0px) + 42px) 24px calc(env(safe-area-inset-bottom, 0px) + 30px)',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 86,
-            height: 86,
-            borderRadius: 28,
-            background:
-              'linear-gradient(145deg,#3b82f6,#1d4ed8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow:
-              '0 18px 50px rgba(37,99,235,0.32)',
-            marginBottom: 24,
-          }}
-        >
-          <LockKeyhole size={42} strokeWidth={2.2} />
+    <div dir="rtl" style={screenStyle}>
+      <Decorations />
+
+      <div style={mainContainerStyle}>
+        <div style={topBrandStyle}>
+          <BrandLogo />
+
+          <h1 style={brandTitleStyle}>BAKR PRO</h1>
+
+          <div style={brandSubtitleStyle}>
+            تطبيق المحاسبة الاحترافي
+          </div>
+
+          <div style={phoneStyle}>
+            0558995962
+          </div>
         </div>
 
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 30,
-            fontWeight: 900,
-            textAlign: 'center',
-          }}
-        >
-          BAAKR PRO
-        </h1>
-
-        <div
-          style={{
-            marginTop: 8,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            color: '#94a3b8',
-            fontSize: 14,
-          }}
-        >
-          <ShieldCheck size={16} />
-          التطبيق محمي
+        <div style={securityBadgeStyle}>
+          <ShieldCheck size={15} strokeWidth={2.3} />
+          <span>التطبيق محمي</span>
         </div>
 
-        <h2
-          style={{
-            margin: '36px 0 7px',
-            fontSize: 20,
-            fontWeight: 800,
-          }}
-        >
+        <div style={goldDividerStyle}>
+          <span />
+          <div />
+          <span />
+        </div>
+
+        <div style={lockIconStyle}>
+          <LockKeyhole size={24} />
+        </div>
+
+        <h2 style={pinTitleStyle}>
           أدخل الرقم السري
         </h2>
 
-        <p
-          style={{
-            margin: 0,
-            color: '#94a3b8',
-            fontSize: 13,
-          }}
-        >
+        <p style={pinDescriptionStyle}>
           أدخل رمز PIN المكون من 4 أرقام
         </p>
 
-        <div
-          dir="ltr"
-          style={{
-            display: 'flex',
-            gap: 18,
-            marginTop: 30,
-            height: 22,
-            alignItems: 'center',
-          }}
-        >
-          {[0, 1, 2, 3].map((index) => (
-            <div
-              key={index}
-              style={{
-                width: pin.length > index ? 17 : 14,
-                height: pin.length > index ? 17 : 14,
-                borderRadius: '50%',
-                boxSizing: 'border-box',
-                background:
-                  pin.length > index
-                    ? '#3b82f6'
-                    : 'transparent',
-                border:
-                  pin.length > index
-                    ? '2px solid #60a5fa'
-                    : '2px solid #64748b',
-                boxShadow:
-                  pin.length > index
-                    ? '0 0 16px rgba(59,130,246,0.65)'
-                    : 'none',
-              }}
-            />
-          ))}
+        <div dir="ltr" style={pinDotsContainerStyle}>
+          {[0, 1, 2, 3].map((index) => {
+            const active = pin.length > index;
+
+            return (
+              <div
+                key={index}
+                style={{
+                  width: active ? 16 : 14,
+                  height: active ? 16 : 14,
+                  borderRadius: '50%',
+                  boxSizing: 'border-box',
+                  background: active
+                    ? 'linear-gradient(145deg,#fff1a8,#d49a24)'
+                    : 'rgba(255,255,255,0.025)',
+                  border: active
+                    ? '2px solid #f3ca63'
+                    : '2px solid rgba(229,184,75,0.65)',
+                  boxShadow: active
+                    ? '0 0 18px rgba(234,184,66,0.65)'
+                    : '0 0 8px rgba(234,184,66,0.08)',
+                  transition: 'all 120ms ease',
+                }}
+              />
+            );
+          })}
         </div>
 
-        <div
-          style={{
-            minHeight: 40,
-            marginTop: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+        <div style={errorContainerStyle}>
           {error && (
-            <div
-              style={{
-                color: '#fca5a5',
-                fontSize: 13,
-                fontWeight: 700,
-                background: 'rgba(239,68,68,0.10)',
-                border:
-                  '1px solid rgba(239,68,68,0.18)',
-                borderRadius: 10,
-                padding: '7px 13px',
-                textAlign: 'center',
-              }}
-            >
+            <div style={errorStyle}>
               {error}
             </div>
           )}
         </div>
 
-        <div
-          dir="ltr"
-          style={{
-            width: '100%',
-            maxWidth: 330,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 15,
-            marginTop: 12,
-          }}
-        >
+        <div dir="ltr" style={keypadStyle}>
           {[
             '1',
             '2',
@@ -709,61 +546,157 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
             onClick={removeNumber}
             aria-label="حذف رقم"
             style={{
-              width: 76,
-              height: 76,
-              justifySelf: 'center',
-              borderRadius: '50%',
-              border: 'none',
-              background: 'transparent',
-              color:
-                pin.length === 0
-                  ? '#475569'
-                  : '#cbd5e1',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
+              ...deleteButtonStyle,
+              opacity:
+                checking || pin.length === 0
+                  ? 0.35
+                  : 1,
             }}
           >
-            <Delete size={28} />
+            <Delete size={25} />
           </button>
         </div>
 
         <button
           type="button"
           onClick={openRecovery}
-          style={{
-            marginTop: 24,
-            border: 'none',
-            background: 'transparent',
-            color: '#60a5fa',
-            fontSize: 14,
-            fontWeight: 800,
-            cursor: 'pointer',
-            padding: '10px 16px',
-          }}
+          style={forgotButtonStyle}
         >
           نسيت الرقم السري؟
         </button>
 
-        <div
-          style={{
-            marginTop: 'auto',
-            paddingTop: 20,
-            color: '#64748b',
-            fontSize: 12,
-            textAlign: 'center',
-          }}
-        >
-          🔒 بياناتك محمية داخل BAAKR PRO
+        <div style={bottomAreaStyle}>
+          <div style={featuresStyle}>
+            <Feature
+              icon={<ShieldCheck size={15} />}
+              text="أمان"
+            />
+
+            <Feature
+              icon={<KeyRound size={15} />}
+              text="حماية"
+            />
+
+            <Feature
+              icon={<LockKeyhole size={15} />}
+              text="خصوصية"
+            />
+          </div>
+
+          <div style={copyrightStyle}>
+            © BAKR_ALMASBHI — جميع حقوق التصميم محفوظة
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+function Decorations() {
+  return (
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          width: 260,
+          height: 260,
+          borderRadius: '50%',
+          top: -140,
+          right: -110,
+          background:
+            'radial-gradient(circle, rgba(213,162,49,0.13) 0%, rgba(213,162,49,0) 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div
+        style={{
+          position: 'fixed',
+          width: 320,
+          height: 320,
+          borderRadius: '50%',
+          bottom: -190,
+          left: -160,
+          background:
+            'radial-gradient(circle, rgba(195,144,35,0.10) 0%, rgba(195,144,35,0) 72%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div
+        style={{
+          position: 'fixed',
+          top: 115,
+          left: -50,
+          width: 160,
+          height: 1,
+          background:
+            'linear-gradient(90deg, transparent, rgba(221,174,64,0.28), transparent)',
+          transform: 'rotate(-45deg)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 155,
+          right: -45,
+          width: 170,
+          height: 1,
+          background:
+            'linear-gradient(90deg, transparent, rgba(221,174,64,0.22), transparent)',
+          transform: 'rotate(-45deg)',
+          pointerEvents: 'none',
+        }}
+      />
+    </>
+  );
+}
+
+function BrandLogo() {
+  return (
+    <div style={brandLogoOuterStyle}>
+      <div style={brandLogoInnerStyle}>
+        <span
+          style={{
+            fontSize: 43,
+            lineHeight: 1,
+            fontWeight: 950,
+            fontFamily:
+              'Arial Black, Arial, sans-serif',
+            letterSpacing: -4,
+            background:
+              'linear-gradient(180deg,#fff1a6 0%,#e4b74e 42%,#a96d0b 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter:
+              'drop-shadow(0 4px 7px rgba(0,0,0,0.45))',
+          }}
+        >
+          B
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function GoldLogo({
+  icon,
+}: {
+  icon: ReactNode;
+}) {
+  return (
+    <div style={recoveryLogoOuterStyle}>
+      <div style={recoveryLogoInnerStyle}>
+        {icon}
+      </div>
+    </div>
+  );
+}
+
 type PinButtonProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick: () => void;
   disabled?: boolean;
 };
@@ -779,21 +712,25 @@ function PinButton({
       disabled={disabled}
       onClick={onClick}
       style={{
-        width: 76,
-        height: 76,
+        width: 70,
+        height: 70,
         justifySelf: 'center',
         borderRadius: '50%',
-        border: '1px solid rgba(255,255,255,0.10)',
-        background: 'rgba(255,255,255,0.055)',
-        color: '#ffffff',
-        fontSize: 27,
-        fontWeight: 700,
+        border:
+          '1px solid rgba(229,184,75,0.65)',
+        background:
+          'radial-gradient(circle at 35% 25%, rgba(255,255,255,0.075), rgba(255,255,255,0.025) 48%, rgba(0,0,0,0.10) 100%)',
+        color: '#f9e8ae',
+        fontSize: 25,
+        fontWeight: 800,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+        boxShadow:
+          'inset 0 0 0 1px rgba(255,255,255,0.025), 0 7px 18px rgba(0,0,0,0.24), 0 0 10px rgba(212,158,38,0.07)',
         cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
+        opacity: disabled ? 0.55 : 1,
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       {children}
@@ -801,67 +738,439 @@ function PinButton({
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  height: 56,
-  boxSizing: 'border-box',
-  marginTop: 24,
-  borderRadius: 14,
-  border: '1px solid rgba(255,255,255,0.12)',
-  background: 'rgba(255,255,255,0.055)',
+function Feature({
+  icon,
+  text,
+}: {
+  icon: ReactNode;
+  text: string;
+}) {
+  return (
+    <div style={featureItemStyle}>
+      <div style={featureIconStyle}>
+        {icon}
+      </div>
+
+      <span>{text}</span>
+    </div>
+  );
+}
+
+const screenStyle: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 999999,
+  minHeight: '100dvh',
+  background:
+    'radial-gradient(circle at 50% -15%, #182231 0%, #0c121b 31%, #070b11 64%, #040609 100%)',
   color: '#ffffff',
-  outline: 'none',
-  padding: '0 16px',
-  fontSize: 17,
+  display: 'flex',
+  justifyContent: 'center',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+};
+
+const mainContainerStyle: CSSProperties = {
+  position: 'relative',
+  zIndex: 2,
+  width: '100%',
+  maxWidth: 430,
+  minHeight: '100dvh',
+  padding:
+    'calc(env(safe-area-inset-top, 0px) + 27px) 24px calc(env(safe-area-inset-bottom, 0px) + 18px)',
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+};
+
+const topBrandStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+};
+
+const brandLogoOuterStyle: CSSProperties = {
+  width: 77,
+  height: 77,
+  borderRadius: 24,
+  padding: 1,
+  boxSizing: 'border-box',
+  background:
+    'linear-gradient(145deg,#f4d170,#9b6612,#f2cc64)',
+  boxShadow:
+    '0 13px 38px rgba(0,0,0,0.42), 0 0 26px rgba(214,162,42,0.12)',
+};
+
+const brandLogoInnerStyle: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  borderRadius: 23,
+  background:
+    'linear-gradient(145deg,#121922,#080c12)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const brandTitleStyle: CSSProperties = {
+  margin: '12px 0 0',
+  fontSize: 27,
+  lineHeight: 1,
+  fontWeight: 950,
+  letterSpacing: 1.3,
+  textAlign: 'center',
+  background:
+    'linear-gradient(180deg,#fff1b0 0%,#e2b34b 55%,#a66c0e 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+};
+
+const brandSubtitleStyle: CSSProperties = {
+  marginTop: 6,
+  color: '#d9c28c',
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: 0.1,
+};
+
+const phoneStyle: CSSProperties = {
+  marginTop: 3,
+  color: 'rgba(218,194,139,0.52)',
+  fontSize: 9,
+  fontWeight: 600,
+  letterSpacing: 1.3,
+  direction: 'ltr',
+};
+
+const securityBadgeStyle: CSSProperties = {
+  marginTop: 16,
+  padding: '6px 14px',
+  borderRadius: 999,
+  border:
+    '1px solid rgba(226,180,73,0.25)',
+  background:
+    'rgba(218,166,46,0.055)',
+  color: '#dcb95e',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  fontSize: 11,
+  fontWeight: 800,
+};
+
+const goldDividerStyle: CSSProperties = {
+  width: '100%',
+  maxWidth: 300,
+  marginTop: 15,
+  display: 'grid',
+  gridTemplateColumns: '1fr auto 1fr',
+  alignItems: 'center',
+  gap: 8,
+};
+
+const lockIconStyle: CSSProperties = {
+  marginTop: 14,
+  width: 38,
+  height: 38,
+  borderRadius: 13,
+  border:
+    '1px solid rgba(227,181,72,0.28)',
+  background:
+    'linear-gradient(145deg,rgba(225,176,61,0.10),rgba(255,255,255,0.015))',
+  color: '#e2b64e',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const pinTitleStyle: CSSProperties = {
+  margin: '10px 0 0',
+  fontSize: 19,
+  lineHeight: 1.3,
+  fontWeight: 900,
+  color: '#f4f1e8',
+};
+
+const pinDescriptionStyle: CSSProperties = {
+  margin: '5px 0 0',
+  color: '#777d86',
+  fontSize: 11,
+};
+
+const pinDotsContainerStyle: CSSProperties = {
+  display: 'flex',
+  gap: 18,
+  marginTop: 18,
+  height: 20,
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const errorContainerStyle: CSSProperties = {
+  minHeight: 34,
+  marginTop: 5,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const errorStyle: CSSProperties = {
+  color: '#ffb3a8',
+  fontSize: 11,
+  fontWeight: 800,
+  background: 'rgba(190,51,38,0.10)',
+  border:
+    '1px solid rgba(255,105,90,0.18)',
+  borderRadius: 9,
+  padding: '6px 12px',
   textAlign: 'center',
 };
 
-const primaryButtonStyle: React.CSSProperties = {
+const keypadStyle: CSSProperties = {
   width: '100%',
-  height: 54,
-  marginTop: 18,
-  border: 'none',
-  borderRadius: 14,
-  background:
-    'linear-gradient(145deg,#3b82f6,#2563eb)',
-  color: '#ffffff',
-  fontSize: 15,
-  fontWeight: 800,
-  cursor: 'pointer',
+  maxWidth: 290,
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: 12,
+  marginTop: 2,
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
+const deleteButtonStyle: CSSProperties = {
+  width: 70,
+  height: 70,
+  justifySelf: 'center',
+  borderRadius: '50%',
+  border:
+    '1px solid rgba(229,184,75,0.65)',
+  background:
+    'linear-gradient(145deg,#f1cb67,#bd831c)',
+  color: '#171006',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow:
+    '0 8px 22px rgba(177,117,13,0.18)',
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+};
+
+const forgotButtonStyle: CSSProperties = {
+  marginTop: 11,
+  border: 'none',
+  background: 'transparent',
+  color: '#dcb558',
+  fontSize: 12,
+  fontWeight: 800,
+  cursor: 'pointer',
+  padding: '8px 16px',
+};
+
+const bottomAreaStyle: CSSProperties = {
+  width: '100%',
+  marginTop: 'auto',
+  paddingTop: 13,
+};
+
+const featuresStyle: CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  display: 'flex',
+  justifyContent: 'center',
+  gap: 8,
+  padding: '8px',
+  borderRadius: 13,
+  border:
+    '1px solid rgba(224,177,67,0.16)',
+  background:
+    'linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))',
+};
+
+const featureItemStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  color: '#a99d82',
+  fontSize: 9,
+  fontWeight: 700,
+};
+
+const featureIconStyle: CSSProperties = {
+  color: '#d8aa42',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const copyrightStyle: CSSProperties = {
+  marginTop: 8,
+  textAlign: 'center',
+  color: '#595b5f',
+  fontSize: 8,
+  letterSpacing: 0.15,
+};
+
+const recoveryContainerStyle: CSSProperties = {
+  position: 'relative',
+  zIndex: 2,
+  width: '100%',
+  maxWidth: 430,
+  minHeight: '100dvh',
+  padding:
+    'calc(env(safe-area-inset-top, 0px) + 30px) 24px calc(env(safe-area-inset-bottom, 0px) + 28px)',
+  boxSizing: 'border-box',
+};
+
+const backButtonStyle: CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#c9a957',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 7,
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+  padding: 0,
+};
+
+const recoveryContentStyle: CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  marginTop: 38,
+};
+
+const recoveryLogoOuterStyle: CSSProperties = {
+  width: 78,
+  height: 78,
+  borderRadius: 24,
+  padding: 1,
+  background:
+    'linear-gradient(145deg,#f1ce6d,#9e6914,#e7b94f)',
+  boxSizing: 'border-box',
+  boxShadow:
+    '0 16px 40px rgba(0,0,0,0.35)',
+};
+
+const recoveryLogoInnerStyle: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  borderRadius: 23,
+  background:
+    'linear-gradient(145deg,#141b24,#080c12)',
+  color: '#e7ba50',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const recoveryTitleStyle: CSSProperties = {
+  fontSize: 23,
+  margin: '20px 0 8px',
+  fontWeight: 900,
+  textAlign: 'center',
+  color: '#f2e9d0',
+};
+
+const goldSmallLineStyle: CSSProperties = {
+  width: 44,
+  height: 2,
+  borderRadius: 10,
+  background:
+    'linear-gradient(90deg,#8e5a08,#f0cd6c,#8e5a08)',
+  marginBottom: 10,
+};
+
+const inputStyle: CSSProperties = {
+  width: '100%',
+  height: 55,
+  boxSizing: 'border-box',
+  marginTop: 22,
+  borderRadius: 14,
+  border:
+    '1px solid rgba(226,180,73,0.30)',
+  background:
+    'rgba(255,255,255,0.035)',
+  color: '#f7e7b2',
+  outline: 'none',
+  padding: '0 16px',
+  fontSize: 16,
+  textAlign: 'center',
+  boxShadow:
+    'inset 0 0 18px rgba(0,0,0,0.16)',
+};
+
+const primaryButtonStyle: CSSProperties = {
+  width: '100%',
+  height: 53,
+  marginTop: 18,
+  border:
+    '1px solid rgba(255,224,139,0.45)',
+  borderRadius: 14,
+  background:
+    'linear-gradient(145deg,#edc761,#b67a18)',
+  color: '#151006',
+  fontSize: 14,
+  fontWeight: 900,
+  cursor: 'pointer',
+  boxShadow:
+    '0 10px 26px rgba(173,112,13,0.18)',
+};
+
+const secondaryButtonStyle: CSSProperties = {
   width: '100%',
   height: 48,
   marginTop: 10,
   borderRadius: 14,
-  border: '1px solid rgba(255,255,255,0.10)',
-  background: 'rgba(255,255,255,0.04)',
-  color: '#93c5fd',
-  fontSize: 14,
-  fontWeight: 700,
+  border:
+    '1px solid rgba(226,180,73,0.25)',
+  background:
+    'rgba(255,255,255,0.025)',
+  color: '#d9b758',
+  fontSize: 13,
+  fontWeight: 800,
   cursor: 'pointer',
 };
 
-const emailBoxStyle: React.CSSProperties = {
+const emailBoxStyle: CSSProperties = {
   width: '100%',
   boxSizing: 'border-box',
-  marginTop: 22,
-  padding: '16px',
+  marginTop: 20,
+  padding: '15px',
   borderRadius: 14,
-  background: 'rgba(59,130,246,0.08)',
-  border: '1px solid rgba(96,165,250,0.18)',
+  background:
+    'rgba(218,165,45,0.055)',
+  border:
+    '1px solid rgba(226,180,73,0.22)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 10,
-  color: '#bfdbfe',
+  gap: 9,
+  color: '#e0c77e',
 };
 
-const descriptionStyle: React.CSSProperties = {
-  color: '#94a3b8',
+const descriptionStyle: CSSProperties = {
+  color: '#8c9198',
   textAlign: 'center',
   lineHeight: 1.8,
-  fontSize: 14,
+  fontSize: 13,
   marginTop: 10,
+};
+
+const recoveryMessageStyle: CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  marginTop: 17,
+  padding: '11px 14px',
+  borderRadius: 12,
+  background:
+    'rgba(218,165,45,0.055)',
+  border:
+    '1px solid rgba(226,180,73,0.18)',
+  color: '#e4c979',
+  fontSize: 12,
+  textAlign: 'center',
+  lineHeight: 1.7,
 };
