@@ -390,9 +390,7 @@ function buildTransactionSearchItems(
         .join(' • ');
 
       return {
-        id: `tx-${
-          data?.id ?? index
-        }`,
+        id: `tx-${data?.id ?? index}`,
         category: 'الحركات المالية',
         title,
         subtitle,
@@ -428,18 +426,16 @@ export function DashboardPage() {
   const [heroImage, setHeroImage] =
     useState('');
 
-  /* =========================
-     البحث الشامل
-  ========================= */
-
   const [searchQuery, setSearchQuery] =
     useState('');
 
   const [searchOpen, setSearchOpen] =
     useState(false);
 
-  const [localSearchItems, setLocalSearchItems] =
-    useState<SearchResult[]>([]);
+  const [
+    localSearchItems,
+    setLocalSearchItems,
+  ] = useState<SearchResult[]>([]);
 
   const load = useCallback(
     async () => {
@@ -682,6 +678,13 @@ export function DashboardPage() {
     },
 
     {
+      label: 'مشاوير يومية',
+      icon: Truck,
+      path: '/daily-trips',
+      tone: 'green',
+    },
+
+    {
       label: 'الحساب الشهري',
       icon: CalendarClock,
       path: '/monthly',
@@ -765,10 +768,6 @@ export function DashboardPage() {
         dir="rtl"
         className="w-full"
       >
-        {/* ========================= */}
-        {/* الصورة الرئيسية */}
-        {/* ========================= */}
-
         <section className="mb-4">
           <div
             className="relative overflow-hidden rounded-[25px] w-full"
@@ -854,10 +853,6 @@ export function DashboardPage() {
           </div>
         </section>
 
-        {/* ========================= */}
-        {/* البحث الشامل */}
-        {/* ========================= */}
-
         <section className="mb-5">
           <button
             type="button"
@@ -889,10 +884,6 @@ export function DashboardPage() {
             <ChevronLeft className="w-5 h-5 text-slate-500" />
           </button>
         </section>
-
-        {/* ========================= */}
-        {/* BAKR AI */}
-        {/* ========================= */}
 
         <section className="mb-5">
           <button
@@ -956,10 +947,6 @@ export function DashboardPage() {
             </div>
           </button>
         </section>
-
-        {/* ========================= */}
-        {/* الملخص المالي */}
-        {/* ========================= */}
 
         <section>
           <div className="flex items-center justify-between mb-3">
@@ -1039,10 +1026,6 @@ export function DashboardPage() {
           </div>
         </section>
 
-        {/* ========================= */}
-        {/* إضافة سريعة */}
-        {/* ========================= */}
-
         <section className="mt-5">
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -1080,10 +1063,6 @@ export function DashboardPage() {
             </button>
           </div>
         </section>
-
-        {/* ========================= */}
-        {/* الاختصارات */}
-        {/* ========================= */}
 
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
@@ -1170,10 +1149,6 @@ export function DashboardPage() {
             </div>
           </div>
         </section>
-
-        {/* ========================= */}
-        {/* أحدث الحركات */}
-        {/* ========================= */}
 
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
@@ -1263,10 +1238,6 @@ export function DashboardPage() {
         </section>
 
         <div className="h-4" />
-
-        {/* ========================= */}
-        {/* نافذة البحث الشامل */}
-        {/* ========================= */}
 
         {searchOpen && (
           <div
@@ -1368,14 +1339,6 @@ export function DashboardPage() {
                       <button
                         type="button"
                         key={text}
-                        onClick={() =>
-                          setSearchQuery(
-                            text ===
-                              'المبلغ'
-                              ? ''
-                              : ''
-                          )
-                        }
                         className="rounded-[13px] py-3 px-2 text-[9px] text-slate-400"
                         style={{
                           background:
@@ -1541,11 +1504,9 @@ function MoneyCard({
       }}
     >
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[10px] text-slate-400">
-            {label}
-          </p>
-        </div>
+        <p className="text-[10px] text-slate-400">
+          {label}
+        </p>
 
         <div
           className="w-10 h-10 rounded-[14px] flex items-center justify-center"
@@ -1555,7 +1516,9 @@ function MoneyCard({
         >
           <Icon
             className="w-5 h-5"
-            style={{ color }}
+            style={{
+              color,
+            }}
             strokeWidth={2.1}
           />
         </div>
@@ -1563,10 +1526,12 @@ function MoneyCard({
 
       <p
         className="text-[15px] font-black mt-4 leading-tight"
-        style={{ color }}
+        style={{
+          color,
+        }}
       >
         {value}
       </p>
     </button>
   );
-         }
+      }
