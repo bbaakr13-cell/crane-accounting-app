@@ -2,6 +2,7 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+
   push:
     branches:
       - main
@@ -11,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -18,8 +20,11 @@ jobs:
         run: |
           rm -rf project
           mkdir project
+
           ZIP=$(find . -maxdepth 1 -type f -name "*GitHub-Actions-APK*.zip" | head -1)
+
           echo "Using ZIP: $ZIP"
+
           unzip -q "$ZIP" -d project
 
       - name: Setup Node
@@ -32,25 +37,32 @@ jobs:
         shell: bash
         run: |
           if [ -f project/web/package.json ]; then
+
             echo "dir=project/web" >> "$GITHUB_OUTPUT"
+
           else
+
             echo "project/web/package.json not found"
+
             exit 1
+
           fi
 
       - name: Apply latest source changes
         run: |
           mkdir -p project/web/src
+
           cp -r src/. project/web/src/
 
           mkdir -p project/web/public
+
           cp -r public/. project/web/public/
 
       - name: Install dependencies
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm install
 
-      - name: Install PDF, sharing and biometric libraries
+      - name: Install Capacitor app libraries
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
           npm install \
@@ -59,7 +71,8 @@ jobs:
             @capacitor/filesystem \
             @capacitor/share \
             @capacitor/app \
-            @aparajita/capacitor-biometric-auth
+            @aparajita/capacitor-biometric-auth \
+            @capgo/capacitor-social-login
 
       - name: Fix fetchEquipment export
         working-directory: ${{ steps.project.outputs.dir }}
@@ -90,7 +103,18 @@ jobs:
           {
             "appId": "com.crane.accounting",
             "appName": "BAAKR PRO",
-            "webDir": "dist"
+            "webDir": "dist",
+            "plugins": {
+              "SocialLogin": {
+                "providers": {
+                  "google": true,
+                  "facebook": false,
+                  "apple": false,
+                  "twitter": false
+                },
+                "logLevel": 1
+              }
+            }
           }
           EOF
 
@@ -98,7 +122,9 @@ jobs:
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
           rm -rf android
+
           npx cap add android
+
           npx cap sync android
 
       - name: Generate BAAKR PRO app icon
@@ -107,6 +133,7 @@ jobs:
           npm install --no-save @capacitor/assets
 
           rm -rf assets
+
           mkdir -p assets
 
           cp src/app-icon.png assets/icon.png
