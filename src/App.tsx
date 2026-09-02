@@ -34,6 +34,12 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 
 /* =========================
+   DAILY TRIPS
+========================= */
+
+import { DailyTripsPage } from '@/pages/DailyTripsPage';
+
+/* =========================
    CALCULATOR
 ========================= */
 
@@ -50,7 +56,7 @@ import AboutPage from '@/pages/AboutPage';
 import { BackupPage } from '@/pages/BackupPage';
 
 /* =========================
-   BAAKR AI
+   BAKR AI
 ========================= */
 
 import { AIAssistantPage } from '@/pages/AIAssistantPage';
@@ -389,7 +395,7 @@ function App() {
         />
 
         {/* ===================
-            BAAKR AI
+            BAKR AI
         =================== */}
 
         <Route
@@ -476,6 +482,15 @@ function App() {
           path="/monthly/:id"
           element={
             <MonthlyDetailPage />
+          }
+        />
+
+        {/* مشاوير يومية */}
+
+        <Route
+          path="/daily-trips"
+          element={
+            <DailyTripsPage />
           }
         />
 
