@@ -18,7 +18,6 @@ import { CustomersPage } from '@/pages/CustomersPage';
 import { CustomerDetailPage } from '@/pages/CustomerDetailPage';
 import { EquipmentPage } from '@/pages/EquipmentPage';
 import { EquipmentDetailPage } from '@/pages/EquipmentDetailPage';
-import { MonthlyPage } from '@/pages/MonthlyPage';
 import { MonthlyDetailPage } from '@/pages/MonthlyDetailPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 
@@ -164,18 +163,10 @@ function App() {
           await CapacitorApp.addListener(
             'backButton',
             () => {
-              /*
-               * إذا التطبيق مقفل
-               * لا نسمح بالرجوع
-               */
               if (locked) {
                 return;
               }
 
-              /*
-               * إذا لسنا في الرئيسية
-               * نرجع صفحة واحدة
-               */
               if (
                 location.pathname !==
                 '/'
@@ -184,10 +175,6 @@ function App() {
                 return;
               }
 
-              /*
-               * في الرئيسية:
-               * ضغطتين للخروج
-               */
               const now =
                 Date.now();
 
@@ -394,9 +381,7 @@ function App() {
           }
         />
 
-        {/* ===================
-            BAKR AI
-        =================== */}
+        {/* BAKR AI */}
 
         <Route
           path="/ai"
@@ -469,12 +454,15 @@ function App() {
           }
         />
 
-        {/* الحساب الشهري */}
+        {/* =========================
+            الحساب الشهري
+            نفس صفحة حساب المعدة
+        ========================= */}
 
         <Route
           path="/monthly"
           element={
-            <MonthlyPage />
+            <MonthlyDetailPage />
           }
         />
 
@@ -485,7 +473,9 @@ function App() {
           }
         />
 
-        {/* مشاوير يومية */}
+        {/* =========================
+            مشاوير يومية
+        ========================= */}
 
         <Route
           path="/daily-trips"
@@ -521,7 +511,7 @@ function App() {
           }
         />
 
-        {/* الفواتير القديمة */}
+        {/* الفواتير */}
 
         <Route
           path="/invoices"
@@ -530,9 +520,7 @@ function App() {
           }
         />
 
-        {/* ===================
-            فاتورة عمل الجديدة
-        =================== */}
+        {/* فاتورة عمل */}
 
         <Route
           path="/work-invoice"
@@ -559,9 +547,7 @@ function App() {
           }
         />
 
-        {/* ===================
-            الحاسبة
-        =================== */}
+        {/* الحاسبة */}
 
         <Route
           path="/calculator"
