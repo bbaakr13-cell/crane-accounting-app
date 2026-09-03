@@ -8,6 +8,14 @@ import {
   uploadBackupObjectToDrive,
 } from '@/lib/googleDrive';
 
+import {
+  supabase,
+} from '@/lib/supabase';
+
+/* ==============================
+   إعدادات النسخ
+============================== */
+
 const BACKUP_FOLDER =
   'BAAKR_PRO_BACKUPS';
 
@@ -19,6 +27,8 @@ const APP_STORAGE_PREFIXES = [
 const APP_STORAGE_KEYS = [
   'crane_accounting_offline_db_v2',
   'crane_drivers_v1',
+  'monthly-rentals',
+  'baakr-work-invoice-v3',
 ];
 
 const DAILY_DRIVE_MARKER =
@@ -26,6 +36,32 @@ const DAILY_DRIVE_MARKER =
 
 const WEEKLY_DRIVE_MARKER =
   'bakr_drive_weekly_uploaded';
+
+/* ==============================
+   جداول Supabase
+============================== */
+
+const SUPABASE_TABLES = [
+  'equipment',
+  'customers',
+  'jobs',
+  'expenses',
+  'payments',
+  'invoices',
+] as const;
+
+export type SupabaseTableName =
+  (typeof SUPABASE_TABLES)[number];
+
+export type SupabaseBackupData =
+  Record<
+    SupabaseTableName,
+    any[]
+  >;
+
+/* ==============================
+   أنواع النسخة
+============================== */
 
 export type BackupType =
   | 'daily'
@@ -38,24 +74,36 @@ export type BackupFile = {
     | 'BAKR PRO'
     | 'BAAKR PRO';
 
-  version: 2;
+  version:
+    | 2
+    | 3;
 
-  createdAt: string;
+  createdAt:
+    string;
 
-  type: BackupType;
+  type:
+    BackupType;
 
   data:
-    Record<string, string>;
+    Record<
+      string,
+      string
+    >;
+
+  supabaseData?:
+    SupabaseBackupData;
 };
 
 export type SavedBackup = {
-  fileName: string;
+  fileName:
+    string;
 
-  backup: BackupFile;
+  backup:
+    BackupFile;
 };
 
 /* ==============================
-   معرفة بيانات التطبيق
+   معرفة بيانات التطبيق المحلية
 ============================== */
 
 function isAppDataKey(
@@ -71,18 +119,23 @@ function isAppDataKey(
 
   return APP_STORAGE_PREFIXES.some(
     (prefix) =>
-      key.startsWith(prefix)
+      key.startsWith(
+        prefix
+      )
   );
 }
 
 /* ==============================
-   جمع بيانات التطبيق
+   جمع localStorage
 ============================== */
 
 function getAppData():
   Record<string, string> {
   const data:
-    Record<string, string> = {};
+    Record<
+      string,
+      string
+    > = {};
 
   for (
     let i = 0;
@@ -96,15 +149,24 @@ function getAppData():
       continue;
     }
 
-    if (!isAppDataKey(key)) {
+    if (
+      !isAppDataKey(
+        key
+      )
+    ) {
       continue;
     }
 
     const value =
-      localStorage.getItem(key);
+      localStorage.getItem(
+        key
+      );
 
-    if (value !== null) {
-      data[key] = value;
+    if (
+      value !== null
+    ) {
+      data[key] =
+        value;
     }
   }
 
@@ -112,26 +174,131 @@ function getAppData():
 }
 
 /* ==============================
+   قراءة جدول كامل من Supabase
+============================== */
+
+async function fetchAllTableRows(
+  table:
+    SupabaseTableName
+): Promise<any[]> {
+  const allRows:
+    any[] = [];
+
+  const pageSize =
+    500;
+
+  let from =
+    0;
+
+  while (true) {
+    const to =
+      from +
+      pageSize -
+      1;
+
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from(table)
+        .select('*')
+        .order(
+          'id',
+          {
+            ascending:
+              true,
+          }
+        )
+        .range(
+          from,
+          to
+        );
+
+    if (error) {
+      console.error(
+        `Backup read ${table} error:`,
+        error
+      );
+
+      throw new Error(
+        `تعذر قراءة جدول ${table}`
+      );
+    }
+
+    const rows =
+      data || [];
+
+    allRows.push(
+      ...rows
+    );
+
+    if (
+      rows.length <
+      pageSize
+    ) {
+      break;
+    }
+
+    from +=
+      pageSize;
+  }
+
+  return allRows;
+}
+
+/* ==============================
+   جمع Supabase
+============================== */
+
+async function getSupabaseData():
+  Promise<SupabaseBackupData> {
+  const result =
+    {} as SupabaseBackupData;
+
+  for (
+    const table
+    of SUPABASE_TABLES
+  ) {
+    result[table] =
+      await fetchAllTableRows(
+        table
+      );
+  }
+
+  return result;
+}
+
+/* ==============================
    إنشاء محتوى النسخة
 ============================== */
 
-function makeBackup(
+async function makeBackup(
   type: BackupType
-): BackupFile {
+): Promise<BackupFile> {
+  const localData =
+    getAppData();
+
+  const supabaseData =
+    await getSupabaseData();
+
   return {
     app:
       'BAKR PRO',
 
     version:
-      2,
+      3,
 
     createdAt:
-      new Date().toISOString(),
+      new Date()
+        .toISOString(),
 
     type,
 
     data:
-      getAppData(),
+      localData,
+
+    supabaseData,
   };
 }
 
@@ -238,15 +405,36 @@ function validateBackup(
     backup?.app ===
       'BAAKR PRO';
 
+  const validVersion =
+    backup?.version ===
+      2 ||
+    backup?.version ===
+      3;
+
   if (
     !backup ||
     !validApp ||
+    !validVersion ||
     !backup.data ||
     typeof backup.data !==
       'object'
   ) {
     throw new Error(
       'ملف النسخة الاحتياطية غير صالح'
+    );
+  }
+
+  if (
+    backup.version ===
+      3 &&
+    (
+      !backup.supabaseData ||
+      typeof backup.supabaseData !==
+        'object'
+    )
+  ) {
+    throw new Error(
+      'بيانات Supabase غير موجودة في النسخة'
     );
   }
 }
@@ -366,7 +554,8 @@ function weekId() {
         days +
         firstDay.getDay() +
         1
-      ) / 7
+      ) /
+        7
     );
 
   return (
@@ -528,6 +717,66 @@ async function keepLatest(
 }
 
 /* ==============================
+   فحص نسخة يومية قديمة
+============================== */
+
+async function dailyBackupNeedsUpgrade(
+  fileName: string
+) {
+  if (
+    !(await fileExists(
+      fileName
+    ))
+  ) {
+    return true;
+  }
+
+  try {
+    const backup =
+      await readBackupFile(
+        fileName
+      );
+
+    return (
+      backup.version !==
+      3
+    );
+  } catch {
+    return true;
+  }
+}
+
+/* ==============================
+   فحص نسخة أسبوعية قديمة
+============================== */
+
+async function weeklyBackupNeedsUpgrade(
+  fileName: string
+) {
+  if (
+    !(await fileExists(
+      fileName
+    ))
+  ) {
+    return true;
+  }
+
+  try {
+    const backup =
+      await readBackupFile(
+        fileName
+      );
+
+    return (
+      backup.version !==
+      3
+    );
+  } catch {
+    return true;
+  }
+}
+
+/* ==============================
    نسخة يومية محلية
 ============================== */
 
@@ -535,13 +784,16 @@ export async function createDailyBackup() {
   const fileName =
     dailyFileName();
 
-  if (
-    !(await fileExists(
+  const needsUpgrade =
+    await dailyBackupNeedsUpgrade(
       fileName
-    ))
+    );
+
+  if (
+    needsUpgrade
   ) {
     const backup =
-      makeBackup(
+      await makeBackup(
         'daily'
       );
 
@@ -567,13 +819,16 @@ export async function createWeeklyBackup() {
   const fileName =
     weeklyFileName();
 
-  if (
-    !(await fileExists(
+  const needsUpgrade =
+    await weeklyBackupNeedsUpgrade(
       fileName
-    ))
+    );
+
+  if (
+    needsUpgrade
   ) {
     const backup =
-      makeBackup(
+      await makeBackup(
         'weekly'
       );
 
@@ -599,6 +854,9 @@ async function uploadDailyBackupToDrive() {
   const today =
     dateId();
 
+  const markerValue =
+    `${today}-v3`;
+
   const alreadyUploaded =
     localStorage.getItem(
       DAILY_DRIVE_MARKER
@@ -606,7 +864,7 @@ async function uploadDailyBackupToDrive() {
 
   if (
     alreadyUploaded ===
-    today
+    markerValue
   ) {
     return true;
   }
@@ -626,7 +884,7 @@ async function uploadDailyBackupToDrive() {
 
   localStorage.setItem(
     DAILY_DRIVE_MARKER,
-    today
+    markerValue
   );
 
   return true;
@@ -640,6 +898,9 @@ async function uploadWeeklyBackupToDrive() {
   const currentWeek =
     weekId();
 
+  const markerValue =
+    `${currentWeek}-v3`;
+
   const alreadyUploaded =
     localStorage.getItem(
       WEEKLY_DRIVE_MARKER
@@ -647,7 +908,7 @@ async function uploadWeeklyBackupToDrive() {
 
   if (
     alreadyUploaded ===
-    currentWeek
+    markerValue
   ) {
     return true;
   }
@@ -667,7 +928,7 @@ async function uploadWeeklyBackupToDrive() {
 
   localStorage.setItem(
     WEEKLY_DRIVE_MARKER,
-    currentWeek
+    markerValue
   );
 
   return true;
@@ -680,6 +941,7 @@ async function uploadWeeklyBackupToDrive() {
 export async function runAutomaticBackup() {
   try {
     await createDailyBackup();
+
     await createWeeklyBackup();
 
     try {
@@ -717,7 +979,7 @@ export async function runAutomaticBackup() {
 
 export async function createManualBackup() {
   const backup =
-    makeBackup(
+    await makeBackup(
       'manual'
     );
 
@@ -741,7 +1003,7 @@ export async function createManualBackup() {
 
 async function createBeforeRestoreBackup() {
   const backup =
-    makeBackup(
+    await makeBackup(
       'before_restore'
     );
 
@@ -765,18 +1027,12 @@ async function createBeforeRestoreBackup() {
 }
 
 /* ==============================
-   استعادة البيانات
+   استعادة localStorage
 ============================== */
 
-export async function restoreBackup(
+function restoreLocalData(
   backup: BackupFile
 ) {
-  validateBackup(
-    backup
-  );
-
-  await createBeforeRestoreBackup();
-
   const keysToDelete:
     string[] = [];
 
@@ -812,11 +1068,197 @@ export async function restoreBackup(
     backup.data
   ).forEach(
     ([key, value]) => {
-      localStorage.setItem(
-        key,
-        value
+      if (
+        isAppDataKey(
+          key
+        )
+      ) {
+        localStorage.setItem(
+          key,
+          value
+        );
+      }
+    }
+  );
+}
+
+/* ==============================
+   تقسيم السجلات
+============================== */
+
+function chunkRows<T>(
+  rows: T[],
+  size = 50
+): T[][] {
+  const chunks:
+    T[][] = [];
+
+  for (
+    let i = 0;
+    i < rows.length;
+    i += size
+  ) {
+    chunks.push(
+      rows.slice(
+        i,
+        i + size
+      )
+    );
+  }
+
+  return chunks;
+}
+
+/* ==============================
+   استعادة جدول Supabase
+============================== */
+
+async function restoreSupabaseTable(
+  table:
+    SupabaseTableName,
+  rows:
+    any[]
+) {
+  if (
+    !Array.isArray(
+      rows
+    ) ||
+    rows.length ===
+      0
+  ) {
+    return;
+  }
+
+  const chunks =
+    chunkRows(
+      rows,
+      50
+    );
+
+  for (
+    const chunk
+    of chunks
+  ) {
+    const {
+      error,
+    } =
+      await supabase
+        .from(table)
+        .upsert(
+          chunk,
+          {
+            onConflict:
+              'id',
+          }
+        );
+
+    if (error) {
+      console.error(
+        `Restore ${table} error:`,
+        error
+      );
+
+      throw new Error(
+        `تعذر استعادة جدول ${table}`
       );
     }
+  }
+}
+
+/* ==============================
+   استعادة Supabase
+============================== */
+
+async function restoreSupabaseData(
+  backup: BackupFile
+) {
+  if (
+    backup.version !==
+      3 ||
+    !backup.supabaseData
+  ) {
+    return;
+  }
+
+  /*
+    الترتيب مهم بسبب العلاقات:
+    المعدات والعملاء أولاً
+    ثم الأعمال والمصروفات
+    ثم الدفعات والفواتير
+  */
+
+  await restoreSupabaseTable(
+    'equipment',
+    backup.supabaseData
+      .equipment || []
+  );
+
+  await restoreSupabaseTable(
+    'customers',
+    backup.supabaseData
+      .customers || []
+  );
+
+  await restoreSupabaseTable(
+    'jobs',
+    backup.supabaseData
+      .jobs || []
+  );
+
+  await restoreSupabaseTable(
+    'expenses',
+    backup.supabaseData
+      .expenses || []
+  );
+
+  await restoreSupabaseTable(
+    'payments',
+    backup.supabaseData
+      .payments || []
+  );
+
+  await restoreSupabaseTable(
+    'invoices',
+    backup.supabaseData
+      .invoices || []
+  );
+}
+
+/* ==============================
+   استعادة البيانات
+============================== */
+
+export async function restoreBackup(
+  backup: BackupFile
+) {
+  validateBackup(
+    backup
+  );
+
+  /*
+    أولاً ننشئ نسخة أمان شاملة
+    من البيانات الحالية قبل أي تغيير.
+  */
+
+  await createBeforeRestoreBackup();
+
+  /*
+    استعادة البيانات السحابية أولاً.
+    إذا حدث خطأ لن نمسح البيانات
+    المحلية الحالية.
+  */
+
+  await restoreSupabaseData(
+    backup
+  );
+
+  /*
+    بعد نجاح Supabase
+    نستعيد البيانات المحلية.
+  */
+
+  restoreLocalData(
+    backup
   );
 
   return true;
@@ -970,4 +1412,4 @@ export async function saveBackupForExport(
         fileName
       ),
   };
-  }
+    }
