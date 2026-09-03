@@ -16,6 +16,11 @@ const APP_STORAGE_PREFIXES = [
   'monthly-ledger-',
 ];
 
+const APP_STORAGE_KEYS = [
+  'crane_accounting_offline_db_v2',
+  'crane_drivers_v1',
+];
+
 const DAILY_DRIVE_MARKER =
   'bakr_drive_daily_uploaded';
 
@@ -57,8 +62,9 @@ function isAppDataKey(
   key: string
 ): boolean {
   if (
-    key ===
-    'crane_accounting_offline_db_v2'
+    APP_STORAGE_KEYS.includes(
+      key
+    )
   ) {
     return true;
   }
@@ -964,4 +970,4 @@ export async function saveBackupForExport(
         fileName
       ),
   };
-}
+  }
