@@ -80,6 +80,10 @@ import {
 } from '@/pages/DailyTripsPage';
 
 import {
+  DriverEquipmentExpensesPage,
+} from '@/pages/DriverEquipmentExpensesPage';
+
+import {
   CalculatorPage,
 } from '@/pages/CalculatorPage';
 
@@ -587,6 +591,13 @@ function App() {
           path="/daily-trips"
           element={
             <DailyTripsPage />
+          }
+        />
+
+        <Route
+          path="/operating-expenses"
+          element={
+            <DriverEquipmentExpensesPage />
           }
         />
 
