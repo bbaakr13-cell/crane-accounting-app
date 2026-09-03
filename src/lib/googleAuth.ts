@@ -5,6 +5,9 @@ import {
 const GOOGLE_WEB_CLIENT_ID =
   '596721536334-198eqh9fqggaav3hshg53enl54h44o2k.apps.googleusercontent.com';
 
+const GOOGLE_DRIVE_FILE_SCOPE =
+  'https://www.googleapis.com/auth/drive.file';
+
 let initialized = false;
 
 export type GoogleUser = {
@@ -62,10 +65,14 @@ export async function loginWithGoogle(): Promise<GoogleUser> {
         scopes: [
           'email',
           'profile',
+          GOOGLE_DRIVE_FILE_SCOPE,
         ],
 
         filterByAuthorizedAccounts:
           false,
+
+        autoSelectEnabled:
+          true,
       },
     });
 
@@ -104,6 +111,67 @@ export async function loginWithGoogle(): Promise<GoogleUser> {
     imageUrl:
       profile.imageUrl || '',
   };
+}
+
+/* ==============================
+   الحصول على Access Token
+   لاستخدام Google Drive API
+============================== */
+
+export async function getGoogleAccessToken(): Promise<string> {
+  await initializeGoogle();
+
+  try {
+    const auth =
+      await SocialLogin.getAuthorizationCode({
+        provider: 'google',
+      });
+
+    if (
+      auth?.accessToken
+    ) {
+      return auth.accessToken;
+    }
+  } catch (error) {
+    console.warn(
+      'Google token unavailable, trying login again:',
+      error
+    );
+  }
+
+  const response =
+    await SocialLogin.login({
+      provider: 'google',
+
+      options: {
+        scopes: [
+          'email',
+          'profile',
+          GOOGLE_DRIVE_FILE_SCOPE,
+        ],
+
+        filterByAuthorizedAccounts:
+          true,
+
+        autoSelectEnabled:
+          true,
+      },
+    });
+
+  const result: any =
+    response.result;
+
+  if (
+    result?.responseType !==
+      'online' ||
+    !result?.accessToken
+  ) {
+    throw new Error(
+      'تعذر الحصول على صلاحية Google Drive'
+    );
+  }
+
+  return result.accessToken;
 }
 
 export async function logoutGoogle() {
