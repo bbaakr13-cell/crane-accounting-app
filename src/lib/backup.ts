@@ -18,7 +18,7 @@ export type BackupType =
   | 'before_restore';
 
 export type BackupFile = {
-  app: 'BAAKR PRO';
+  app: 'BAKR PRO' | 'BAAKR PRO';
   version: 2;
   createdAt: string;
   type: BackupType;
@@ -34,31 +34,47 @@ export type SavedBackup = {
    معرفة بيانات التطبيق
 ============================== */
 
-function isAppDataKey(key: string): boolean {
-  if (key === 'crane_accounting_offline_db_v2') {
+function isAppDataKey(
+  key: string
+): boolean {
+  if (
+    key ===
+    'crane_accounting_offline_db_v2'
+  ) {
     return true;
   }
 
-  return APP_STORAGE_PREFIXES.some((prefix) =>
-    key.startsWith(prefix)
+  return APP_STORAGE_PREFIXES.some(
+    (prefix) =>
+      key.startsWith(prefix)
   );
 }
 
 /* ==============================
-   جمع بيانات التطبيق كاملة
+   جمع بيانات التطبيق
 ============================== */
 
-function getAppData(): Record<string, string> {
-  const data: Record<string, string> = {};
+function getAppData():
+  Record<string, string> {
+  const data:
+    Record<string, string> = {};
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
+  for (
+    let i = 0;
+    i < localStorage.length;
+    i++
+  ) {
+    const key =
+      localStorage.key(i);
 
     if (!key) continue;
 
-    if (!isAppDataKey(key)) continue;
+    if (!isAppDataKey(key)) {
+      continue;
+    }
 
-    const value = localStorage.getItem(key);
+    const value =
+      localStorage.getItem(key);
 
     if (value !== null) {
       data[key] = value;
@@ -72,34 +88,38 @@ function getAppData(): Record<string, string> {
    إنشاء محتوى النسخة
 ============================== */
 
-function makeBackup(type: BackupType): BackupFile {
+function makeBackup(
+  type: BackupType
+): BackupFile {
   return {
-    app: 'BAAKR PRO',
+    app: 'BAKR PRO',
     version: 2,
-    createdAt: new Date().toISOString(),
+    createdAt:
+      new Date().toISOString(),
     type,
     data: getAppData(),
   };
 }
 
 /* ==============================
-   تجهيز مجلد النسخ
+   تجهيز المجلد
 ============================== */
 
 async function ensureBackupFolder() {
   try {
     await Filesystem.mkdir({
       path: BACKUP_FOLDER,
-      directory: Directory.Data,
+      directory:
+        Directory.Data,
       recursive: true,
     });
   } catch {
-    // المجلد موجود مسبقًا
+    // المجلد موجود
   }
 }
 
 /* ==============================
-   كتابة ملف نسخة
+   كتابة ملف النسخة
 ============================== */
 
 async function writeBackupFile(
@@ -109,33 +129,54 @@ async function writeBackupFile(
   await ensureBackupFolder();
 
   await Filesystem.writeFile({
-    path: `${BACKUP_FOLDER}/${fileName}`,
-    data: JSON.stringify(backup, null, 2),
-    directory: Directory.Data,
-    encoding: Encoding.UTF8,
+    path:
+      `${BACKUP_FOLDER}/${fileName}`,
+
+    data:
+      JSON.stringify(
+        backup,
+        null,
+        2
+      ),
+
+    directory:
+      Directory.Data,
+
+    encoding:
+      Encoding.UTF8,
+
     recursive: true,
   });
 }
 
 /* ==============================
-   قراءة ملف نسخة
+   قراءة ملف النسخة
 ============================== */
 
 async function readBackupFile(
   fileName: string
 ): Promise<BackupFile> {
-  const result = await Filesystem.readFile({
-    path: `${BACKUP_FOLDER}/${fileName}`,
-    directory: Directory.Data,
-    encoding: Encoding.UTF8,
-  });
+  const result =
+    await Filesystem.readFile({
+      path:
+        `${BACKUP_FOLDER}/${fileName}`,
+
+      directory:
+        Directory.Data,
+
+      encoding:
+        Encoding.UTF8,
+    });
 
   const text =
     typeof result.data === 'string'
       ? result.data
       : '';
 
-  const backup = JSON.parse(text) as BackupFile;
+  const backup =
+    JSON.parse(
+      text
+    ) as BackupFile;
 
   validateBackup(backup);
 
@@ -149,9 +190,13 @@ async function readBackupFile(
 function validateBackup(
   backup: BackupFile
 ): void {
+  const validApp =
+    backup?.app === 'BAKR PRO' ||
+    backup?.app === 'BAAKR PRO';
+
   if (
     !backup ||
-    backup.app !== 'BAAKR PRO' ||
+    !validApp ||
     !backup.data ||
     typeof backup.data !== 'object'
   ) {
@@ -166,19 +211,82 @@ function validateBackup(
 ============================== */
 
 function dateId() {
-  const date = new Date();
+  const date =
+    new Date();
 
-  const year = date.getFullYear();
+  const year =
+    date.getFullYear();
 
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, '0');
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      '0'
+    );
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, '0');
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      '0'
+    );
 
   return `${year}-${month}-${day}`;
+}
+
+function dateTimeId() {
+  const date =
+    new Date();
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      '0'
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      '0'
+    );
+
+  const hour =
+    String(
+      date.getHours()
+    ).padStart(
+      2,
+      '0'
+    );
+
+  const minute =
+    String(
+      date.getMinutes()
+    ).padStart(
+      2,
+      '0'
+    );
+
+  const second =
+    String(
+      date.getSeconds()
+    ).padStart(
+      2,
+      '0'
+    );
+
+  return (
+    `${year}-${month}-${day}` +
+    `_${hour}-${minute}-${second}`
+  );
 }
 
 /* ==============================
@@ -186,31 +294,43 @@ function dateId() {
 ============================== */
 
 function weekId() {
-  const date = new Date();
+  const date =
+    new Date();
 
-  const firstDay = new Date(
-    date.getFullYear(),
-    0,
-    1
-  );
-
-  const days = Math.floor(
-    (date.getTime() -
-      firstDay.getTime()) /
-      86400000
-  );
-
-  const week = Math.ceil(
-    (
-      days +
-      firstDay.getDay() +
+  const firstDay =
+    new Date(
+      date.getFullYear(),
+      0,
       1
-    ) / 7
-  );
+    );
 
-  return `${date.getFullYear()}-W${String(
-    week
-  ).padStart(2, '0')}`;
+  const days =
+    Math.floor(
+      (
+        date.getTime() -
+        firstDay.getTime()
+      ) /
+        86400000
+    );
+
+  const week =
+    Math.ceil(
+      (
+        days +
+        firstDay.getDay() +
+        1
+      ) / 7
+    );
+
+  return (
+    `${date.getFullYear()}` +
+    `-W${String(
+      week
+    ).padStart(
+      2,
+      '0'
+    )}`
+  );
 }
 
 /* ==============================
@@ -218,19 +338,31 @@ function weekId() {
 ============================== */
 
 function dailyFileName() {
-  return `daily-${dateId()}.json`;
+  return (
+    `daily-` +
+    `${dateId()}.json`
+  );
 }
 
 function weeklyFileName() {
-  return `weekly-${weekId()}.json`;
+  return (
+    `weekly-` +
+    `${weekId()}.json`
+  );
 }
 
 function manualFileName() {
-  return `manual-${Date.now()}.json`;
+  return (
+    `BAKR-PRO-BACKUP-` +
+    `${dateTimeId()}.json`
+  );
 }
 
 function beforeRestoreFileName() {
-  return `before-restore-${Date.now()}.json`;
+  return (
+    `before-restore-` +
+    `${Date.now()}.json`
+  );
 }
 
 /* ==============================
@@ -242,8 +374,11 @@ async function fileExists(
 ): Promise<boolean> {
   try {
     await Filesystem.stat({
-      path: `${BACKUP_FOLDER}/${fileName}`,
-      directory: Directory.Data,
+      path:
+        `${BACKUP_FOLDER}/${fileName}`,
+
+      directory:
+        Directory.Data,
     });
 
     return true;
@@ -253,22 +388,33 @@ async function fileExists(
 }
 
 /* ==============================
-   قائمة أسماء الملفات
+   قائمة الملفات
 ============================== */
 
-async function listFileNames(): Promise<string[]> {
+async function listFileNames():
+  Promise<string[]> {
   await ensureBackupFolder();
 
   try {
-    const result = await Filesystem.readdir({
-      path: BACKUP_FOLDER,
-      directory: Directory.Data,
-    });
+    const result =
+      await Filesystem.readdir({
+        path:
+          BACKUP_FOLDER,
+
+        directory:
+          Directory.Data,
+      });
 
     return result.files
-      .map((file) => file.name)
-      .filter((name) =>
-        name.endsWith('.json')
+      .map(
+        (file) =>
+          file.name
+      )
+      .filter(
+        (name) =>
+          name.endsWith(
+            '.json'
+          )
       );
   } catch {
     return [];
@@ -276,30 +422,43 @@ async function listFileNames(): Promise<string[]> {
 }
 
 /* ==============================
-   الاحتفاظ بآخر عدد محدد
+   الاحتفاظ بآخر عدد
 ============================== */
 
 async function keepLatest(
   prefix: string,
   maximum: number
 ) {
-  const names = await listFileNames();
+  const names =
+    await listFileNames();
 
-  const matching = names
-    .filter((name) =>
-      name.startsWith(prefix)
-    )
-    .sort()
-    .reverse();
+  const matching =
+    names
+      .filter(
+        (name) =>
+          name.startsWith(
+            prefix
+          )
+      )
+      .sort()
+      .reverse();
 
   const oldFiles =
-    matching.slice(maximum);
+    matching.slice(
+      maximum
+    );
 
-  for (const fileName of oldFiles) {
+  for (
+    const fileName
+    of oldFiles
+  ) {
     try {
       await Filesystem.deleteFile({
-        path: `${BACKUP_FOLDER}/${fileName}`,
-        directory: Directory.Data,
+        path:
+          `${BACKUP_FOLDER}/${fileName}`,
+
+        directory:
+          Directory.Data,
       });
     } catch {
       // تجاهل
@@ -312,16 +471,26 @@ async function keepLatest(
 ============================== */
 
 export async function createDailyBackup() {
-  const fileName = dailyFileName();
+  const fileName =
+    dailyFileName();
 
-  if (!(await fileExists(fileName))) {
+  if (
+    !(await fileExists(
+      fileName
+    ))
+  ) {
     await writeBackupFile(
       fileName,
-      makeBackup('daily')
+      makeBackup(
+        'daily'
+      )
     );
   }
 
-  await keepLatest('daily-', 7);
+  await keepLatest(
+    'daily-',
+    7
+  );
 
   return true;
 }
@@ -331,22 +500,32 @@ export async function createDailyBackup() {
 ============================== */
 
 export async function createWeeklyBackup() {
-  const fileName = weeklyFileName();
+  const fileName =
+    weeklyFileName();
 
-  if (!(await fileExists(fileName))) {
+  if (
+    !(await fileExists(
+      fileName
+    ))
+  ) {
     await writeBackupFile(
       fileName,
-      makeBackup('weekly')
+      makeBackup(
+        'weekly'
+      )
     );
   }
 
-  await keepLatest('weekly-', 4);
+  await keepLatest(
+    'weekly-',
+    4
+  );
 
   return true;
 }
 
 /* ==============================
-   تشغيل النسخ التلقائي
+   النسخ التلقائي
 ============================== */
 
 export async function runAutomaticBackup() {
@@ -370,9 +549,13 @@ export async function runAutomaticBackup() {
 ============================== */
 
 export async function createManualBackup() {
-  const backup = makeBackup('manual');
+  const backup =
+    makeBackup(
+      'manual'
+    );
 
-  const fileName = manualFileName();
+  const fileName =
+    manualFileName();
 
   await writeBackupFile(
     fileName,
@@ -391,7 +574,9 @@ export async function createManualBackup() {
 
 async function createBeforeRestoreBackup() {
   const backup =
-    makeBackup('before_restore');
+    makeBackup(
+      'before_restore'
+    );
 
   const fileName =
     beforeRestoreFileName();
@@ -421,10 +606,10 @@ export async function restoreBackup(
 ) {
   validateBackup(backup);
 
-  // نسخة أمان قبل الاستعادة
   await createBeforeRestoreBackup();
 
-  const keysToDelete: string[] = [];
+  const keysToDelete:
+    string[] = [];
 
   for (
     let i = 0;
@@ -438,39 +623,50 @@ export async function restoreBackup(
       key &&
       isAppDataKey(key)
     ) {
-      keysToDelete.push(key);
+      keysToDelete.push(
+        key
+      );
     }
   }
 
-  keysToDelete.forEach((key) => {
-    localStorage.removeItem(key);
-  });
+  keysToDelete.forEach(
+    (key) => {
+      localStorage.removeItem(
+        key
+      );
+    }
+  );
 
   Object.entries(
     backup.data
-  ).forEach(([key, value]) => {
-    localStorage.setItem(
-      key,
-      value
-    );
-  });
+  ).forEach(
+    ([key, value]) => {
+      localStorage.setItem(
+        key,
+        value
+      );
+    }
+  );
 
   return true;
 }
 
 /* ==============================
-   جلب النسخ المحفوظة
+   جلب النسخ
 ============================== */
 
-export async function getSavedBackups(): Promise<
-  SavedBackup[]
-> {
+export async function getSavedBackups():
+  Promise<SavedBackup[]> {
   const names =
     await listFileNames();
 
-  const backups: SavedBackup[] = [];
+  const backups:
+    SavedBackup[] = [];
 
-  for (const fileName of names) {
+  for (
+    const fileName
+    of names
+  ) {
     try {
       const backup =
         await readBackupFile(
@@ -482,7 +678,7 @@ export async function getSavedBackups(): Promise<
         backup,
       });
     } catch {
-      // تجاهل الملف التالف
+      // تجاهل التالف
     }
   }
 
@@ -505,21 +701,26 @@ export async function deleteBackup(
   fileName: string
 ) {
   if (
-    !fileName.endsWith('.json')
+    !fileName.endsWith(
+      '.json'
+    )
   ) {
     return false;
   }
 
   await Filesystem.deleteFile({
-    path: `${BACKUP_FOLDER}/${fileName}`,
-    directory: Directory.Data,
+    path:
+      `${BACKUP_FOLDER}/${fileName}`,
+
+    directory:
+      Directory.Data,
   });
 
   return true;
 }
 
 /* ==============================
-   تحويل النسخة إلى JSON
+   تحويل إلى JSON
 ============================== */
 
 export function backupToJson(
@@ -540,7 +741,9 @@ export function parseBackupFile(
   text: string
 ): BackupFile {
   const backup =
-    JSON.parse(text) as BackupFile;
+    JSON.parse(
+      text
+    ) as BackupFile;
 
   validateBackup(backup);
 
@@ -548,8 +751,7 @@ export function parseBackupFile(
 }
 
 /* ==============================
-   الحصول على رابط ملف النسخة
-   للمشاركة أو التصدير
+   رابط الملف
 ============================== */
 
 export async function getBackupFileUri(
@@ -557,15 +759,18 @@ export async function getBackupFileUri(
 ) {
   const result =
     await Filesystem.getUri({
-      path: `${BACKUP_FOLDER}/${fileName}`,
-      directory: Directory.Data,
+      path:
+        `${BACKUP_FOLDER}/${fileName}`,
+
+      directory:
+        Directory.Data,
     });
 
   return result.uri;
 }
 
 /* ==============================
-   تصدير نسخة مستوردة/مؤقتة
+   تصدير نسخة
 ============================== */
 
 export async function saveBackupForExport(
@@ -574,7 +779,8 @@ export async function saveBackupForExport(
   validateBackup(backup);
 
   const fileName =
-    `BAAKR-PRO-BACKUP-${Date.now()}.json`;
+    `BAKR-PRO-BACKUP-` +
+    `${dateTimeId()}.json`;
 
   await writeBackupFile(
     fileName,
@@ -583,6 +789,7 @@ export async function saveBackupForExport(
 
   return {
     fileName,
+
     uri:
       await getBackupFileUri(
         fileName
