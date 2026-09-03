@@ -673,19 +673,8 @@ async function uploadWeeklyBackupToDrive() {
 
 export async function runAutomaticBackup() {
   try {
-    /*
-      أولًا نحفظ النسخة
-      محليًا على الجهاز
-    */
-
     await createDailyBackup();
-
     await createWeeklyBackup();
-
-    /*
-      ثم نحاول رفعها
-      إلى Google Drive
-    */
 
     try {
       await uploadDailyBackupToDrive();
@@ -704,12 +693,6 @@ export async function runAutomaticBackup() {
         error
       );
     }
-
-    /*
-      نجاح النسخة المحلية
-      يعتبر نجاحًا حتى لو
-      تعذر الإنترنت مؤقتًا
-    */
 
     return true;
   } catch (error) {
@@ -981,4 +964,4 @@ export async function saveBackupForExport(
         fileName
       ),
   };
-      }
+}
