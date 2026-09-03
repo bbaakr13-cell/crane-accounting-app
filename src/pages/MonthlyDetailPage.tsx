@@ -30,6 +30,10 @@ import {
   type Equipment,
 } from '@/lib/equipment';
 
+/* =========================
+   الحساب الشهري الأساسي
+========================= */
+
 type DayRow = {
   day: number;
   workType: string;
@@ -39,6 +43,35 @@ type DayRow = {
   expenseAmount: number;
   notes: string;
 };
+
+/* =========================
+   مصاريف السواقين والمعدات
+========================= */
+
+type ExternalExpenseRecord = {
+  id: number;
+  date: string;
+
+  driverId: string;
+  driverName: string;
+
+  equipmentId: string;
+  equipmentName: string;
+
+  category: string;
+  amount: number;
+
+  location: string;
+  notes: string;
+
+  affectsDriverBalance: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+};
+
+const EXPENSE_STORAGE_KEY =
+  'crane_accounting_driver_equipment_expenses_v1';
 
 const monthNames = [
   'يناير',
@@ -69,8 +102,6 @@ function normalizeArabicNumbers(value: string) {
 
 /* =========================
    ترتيب اسم المعدة
-   مثال:
-   كرين25طن -> كرين 25 طن
 ========================= */
 
 function formatEquipmentName(value: string) {
@@ -81,6 +112,42 @@ function formatEquipmentName(value: string) {
     .replace(/(\d+)\s*طن/g, '$1 طن')
     .replace(/طن([^\s])/g, 'طن $1')
     .trim();
+}
+
+/* =========================
+   قراءة التاريخ بأمان
+========================= */
+
+function getDateParts(dateValue: string) {
+  const parts =
+    String(dateValue || '').split('-');
+
+  if (parts.length < 3) {
+    return null;
+  }
+
+  const year =
+    Number(parts[0]);
+
+  const month =
+    Number(parts[1]);
+
+  const day =
+    Number(parts[2]);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
+    return null;
+  }
+
+  return {
+    year,
+    month,
+    day,
+  };
 }
 
 export function MonthlyDetailPage() {
@@ -118,6 +185,20 @@ export function MonthlyDetailPage() {
     setCreatingPdf,
   ] = useState(false);
 
+  const [
+    externalExpenses,
+    setExternalExpenses,
+  ] = useState<ExternalExpenseRecord[]>([]);
+
+  const [
+    rowsLoaded,
+    setRowsLoaded,
+  ] = useState(false);
+
+  /* =========================
+     تحميل المعدات
+  ========================= */
+
   useEffect(() => {
     let cancelled = false;
 
@@ -128,7 +209,9 @@ export function MonthlyDetailPage() {
         const list =
           await fetchEquipment();
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         setEquipmentList(list);
 
@@ -176,6 +259,10 @@ export function MonthlyDetailPage() {
     };
   }, [id]);
 
+  /* =========================
+     المعدة المختارة
+  ========================= */
+
   const selectedEquipment =
     useMemo(() => {
       return (
@@ -199,6 +286,10 @@ export function MonthlyDetailPage() {
       equipmentName
     );
 
+  /* =========================
+     عدد أيام الشهر
+  ========================= */
+
   const daysInMonth =
     useMemo(() => {
       return new Date(
@@ -208,11 +299,9 @@ export function MonthlyDetailPage() {
       ).getDate();
     }, [year, month]);
 
-  /*
-   * مهم:
-   * هذا هو مفتاح الحساب الشهري الصحيح
-   * لا نغيره حتى تبقى البيانات القديمة محفوظة
-   */
+  /* =========================
+     مفتاح الحساب الشهري
+  ========================= */
 
   const storageKey =
     equipmentId
@@ -241,11 +330,20 @@ export function MonthlyDetailPage() {
       createEmptyRows()
     );
 
+  /* =========================
+     تحميل الحساب الشهري
+  ========================= */
+
   useEffect(() => {
+    setRowsLoaded(false);
+
     if (!equipmentId) {
       setRows(
         createEmptyRows()
       );
+
+      setRowsLoaded(true);
+
       return;
     }
 
@@ -259,6 +357,9 @@ export function MonthlyDetailPage() {
         setRows(
           createEmptyRows()
         );
+
+        setRowsLoaded(true);
+
         return;
       }
 
@@ -289,10 +390,17 @@ export function MonthlyDetailPage() {
         );
 
       setRows(prepared);
-    } catch {
+    } catch (error) {
+      console.error(
+        'تعذر قراءة الحساب الشهري:',
+        error
+      );
+
       setRows(
         createEmptyRows()
       );
+    } finally {
+      setRowsLoaded(true);
     }
   }, [
     equipmentId,
@@ -302,8 +410,15 @@ export function MonthlyDetailPage() {
     storageKey,
   ]);
 
+  /* =========================
+     حفظ الحساب الشهري
+  ========================= */
+
   useEffect(() => {
-    if (!equipmentId) {
+    if (
+      !equipmentId ||
+      !rowsLoaded
+    ) {
       return;
     }
 
@@ -312,14 +427,275 @@ export function MonthlyDetailPage() {
         storageKey,
         JSON.stringify(rows)
       );
-    } catch {
-      // تجاهل خطأ الحفظ
+    } catch (error) {
+      console.error(
+        'تعذر حفظ الحساب الشهري:',
+        error
+      );
     }
   }, [
     rows,
     storageKey,
     equipmentId,
+    rowsLoaded,
   ]);
+
+  /* =========================
+     تحميل مصاريف
+     السواقين والمعدات
+  ========================= */
+
+  function loadExternalExpenses() {
+    try {
+      const raw =
+        localStorage.getItem(
+          EXPENSE_STORAGE_KEY
+        );
+
+      if (!raw) {
+        setExternalExpenses([]);
+
+        return;
+      }
+
+      const parsed =
+        JSON.parse(raw);
+
+      if (!Array.isArray(parsed)) {
+        setExternalExpenses([]);
+
+        return;
+      }
+
+      setExternalExpenses(
+        parsed as ExternalExpenseRecord[]
+      );
+    } catch (error) {
+      console.error(
+        'تعذر تحميل مصاريف السواقين والمعدات:',
+        error
+      );
+
+      setExternalExpenses([]);
+    }
+  }
+
+  useEffect(() => {
+    loadExternalExpenses();
+
+    const handleStorage = (
+      event: StorageEvent
+    ) => {
+      if (
+        !event.key ||
+        event.key ===
+          EXPENSE_STORAGE_KEY
+      ) {
+        loadExternalExpenses();
+      }
+    };
+
+    const handleFocus = () => {
+      loadExternalExpenses();
+    };
+
+    const handleUpdated = () => {
+      loadExternalExpenses();
+    };
+
+    window.addEventListener(
+      'storage',
+      handleStorage
+    );
+
+    window.addEventListener(
+      'focus',
+      handleFocus
+    );
+
+    window.addEventListener(
+      'driver-equipment-expenses-updated',
+      handleUpdated
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        handleStorage
+      );
+
+      window.removeEventListener(
+        'focus',
+        handleFocus
+      );
+
+      window.removeEventListener(
+        'driver-equipment-expenses-updated',
+        handleUpdated
+      );
+    };
+  }, []);
+
+  /* =========================
+     مصاريف المعدة للشهر الحالي
+  ========================= */
+
+  const monthlyExternalExpenses =
+    useMemo(() => {
+      if (!equipmentId) {
+        return [];
+      }
+
+      return externalExpenses.filter(
+        (expense) => {
+          if (
+            String(
+              expense.equipmentId ||
+                ''
+            ) !==
+            String(equipmentId)
+          ) {
+            return false;
+          }
+
+          const date =
+            getDateParts(
+              expense.date
+            );
+
+          if (!date) {
+            return false;
+          }
+
+          return (
+            date.year === year &&
+            date.month ===
+              month + 1
+          );
+        }
+      );
+    }, [
+      externalExpenses,
+      equipmentId,
+      year,
+      month,
+    ]);
+
+  /* =========================
+     تجميع المصاريف حسب اليوم
+  ========================= */
+
+  const externalExpensesByDay =
+    useMemo(() => {
+      const map =
+        new Map<
+          number,
+          ExternalExpenseRecord[]
+        >();
+
+      monthlyExternalExpenses.forEach(
+        (expense) => {
+          const date =
+            getDateParts(
+              expense.date
+            );
+
+          if (!date) {
+            return;
+          }
+
+          const current =
+            map.get(date.day) ||
+            [];
+
+          current.push(expense);
+
+          map.set(
+            date.day,
+            current
+          );
+        }
+      );
+
+      return map;
+    }, [
+      monthlyExternalExpenses,
+    ]);
+
+  function getDayExternalExpenses(
+    day: number
+  ) {
+    return (
+      externalExpensesByDay.get(
+        day
+      ) || []
+    );
+  }
+
+  function getDayExternalTotal(
+    day: number
+  ) {
+    return getDayExternalExpenses(
+      day
+    ).reduce(
+      (sum, expense) =>
+        sum +
+        (Number(
+          expense.amount
+        ) || 0),
+      0
+    );
+  }
+
+  function getDayExternalCategories(
+    day: number
+  ) {
+    const records =
+      getDayExternalExpenses(
+        day
+      );
+
+    return Array.from(
+      new Set(
+        records
+          .map(
+            (expense) =>
+              expense.category
+          )
+          .filter(Boolean)
+      )
+    ).join(' + ');
+  }
+
+  function getDayExternalNotes(
+    day: number
+  ) {
+    const records =
+      getDayExternalExpenses(
+        day
+      );
+
+    return records
+      .map((expense) => {
+        const parts = [
+          expense.driverName
+            ? `السائق: ${expense.driverName}`
+            : '',
+          expense.location
+            ? `الموقع: ${expense.location}`
+            : '',
+          expense.notes || '',
+        ].filter(Boolean);
+
+        return parts.join(' - ');
+      })
+      .filter(Boolean)
+      .join(' | ');
+  }
+
+  /* =========================
+     تعديل الصفوف اليدوية
+  ========================= */
 
   function updateTextRow(
     day: number,
@@ -377,17 +753,41 @@ export function MonthlyDetailPage() {
     );
   }
 
+  /* =========================
+     الإجماليات
+  ========================= */
+
   const totals =
     useMemo(() => {
       return rows.reduce(
         (sum, row) => {
+          const linkedExpenses =
+            externalExpensesByDay.get(
+              row.day
+            ) || [];
+
+          const linkedTotal =
+            linkedExpenses.reduce(
+              (
+                expenseSum,
+                expense
+              ) =>
+                expenseSum +
+                (Number(
+                  expense.amount
+                ) || 0),
+              0
+            );
+
           const hasWork =
             row.workType.trim() ||
             row.tripType.trim() ||
             row.tripPrice > 0 ||
             row.expenseType.trim() ||
             row.expenseAmount > 0 ||
-            row.notes.trim();
+            row.notes.trim() ||
+            linkedExpenses.length >
+              0;
 
           if (hasWork) {
             sum.registeredDays +=
@@ -402,25 +802,44 @@ export function MonthlyDetailPage() {
           }
 
           sum.income +=
-            row.tripPrice;
+            Number(
+              row.tripPrice
+            ) || 0;
 
-          sum.expense +=
-            row.expenseAmount;
+          sum.manualExpense +=
+            Number(
+              row.expenseAmount
+            ) || 0;
+
+          sum.linkedExpense +=
+            linkedTotal;
 
           return sum;
         },
         {
           trips: 0,
           income: 0,
-          expense: 0,
+          manualExpense: 0,
+          linkedExpense: 0,
           registeredDays: 0,
         }
       );
-    }, [rows]);
+    }, [
+      rows,
+      externalExpensesByDay,
+    ]);
+
+  const totalExpense =
+    totals.manualExpense +
+    totals.linkedExpense;
 
   const net =
     totals.income -
-    totals.expense;
+    totalExpense;
+
+  /* =========================
+     الأنماط
+  ========================= */
 
   const inputStyle:
     React.CSSProperties = {
@@ -469,6 +888,10 @@ export function MonthlyDetailPage() {
     gap: 6,
     color: '#ffffff',
   };
+
+  /* =========================
+     PDF
+  ========================= */
 
   function getFileName() {
     const cleanEquipment =
@@ -710,7 +1133,8 @@ export function MonthlyDetailPage() {
           `المعدة: ${displayEquipmentName}\n` +
           `الشهر: ${monthNames[month]} ${year}\n` +
           `إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
-          `إجمالي المصروفات: ${totals.expense.toLocaleString('en-US')} ر.س\n` +
+          `إجمالي المصروفات: ${totalExpense.toLocaleString('en-US')} ر.س\n` +
+          `مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString('en-US')} ر.س\n` +
           `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
 
         url: fileUri,
@@ -750,7 +1174,8 @@ export function MonthlyDetailPage() {
       `📅 الشهر: ${monthNames[month]} ${year}\n\n` +
       `🚚 عدد المشاوير: ${totals.trips}\n` +
       `💰 إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
-      `💸 إجمالي المصروفات: ${totals.expense.toLocaleString('en-US')} ر.س\n` +
+      `💸 إجمالي المصروفات: ${totalExpense.toLocaleString('en-US')} ر.س\n` +
+      `👷 مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString('en-US')} ر.س\n` +
       `✅ صافي الشهر: ${net.toLocaleString('en-US')} ر.س\n` +
       `📝 أيام مسجلة: ${totals.registeredDays}`;
 
@@ -790,7 +1215,6 @@ export function MonthlyDetailPage() {
           style={{
             color:
               '#94a3b8',
-
             marginTop: 7,
           }}
         >
@@ -798,26 +1222,18 @@ export function MonthlyDetailPage() {
           {displayEquipmentName}
         </p>
 
-        {/* =========================
-            اختيار المعدة والشهر
-        ========================= */}
+        {/* اختيار المعدة والشهر */}
 
         <div
           style={{
             background:
               '#0b1527',
-
             border:
               '1px solid #1d2d47',
-
             borderRadius: 18,
-
             padding: 14,
-
             marginBottom: 18,
-
             display: 'grid',
-
             gap: 10,
           }}
         >
@@ -882,10 +1298,8 @@ export function MonthlyDetailPage() {
           <div
             style={{
               display: 'grid',
-
               gridTemplateColumns:
                 '1fr 1fr',
-
               gap: 10,
             }}
           >
@@ -965,19 +1379,14 @@ export function MonthlyDetailPage() {
           </div>
         </div>
 
-        {/* =========================
-            ملخص الحساب
-        ========================= */}
+        {/* ملخص الحساب */}
 
         <div
           style={{
             display: 'grid',
-
             gridTemplateColumns:
               'repeat(2, 1fr)',
-
             gap: 10,
-
             marginBottom:
               18,
           }}
@@ -1027,11 +1436,29 @@ export function MonthlyDetailPage() {
                   '#ef4444',
               }}
             >
-              {totals.expense.toLocaleString(
+              {totalExpense.toLocaleString(
                 'en-US'
               )}{' '}
               ر.س
             </h2>
+
+            {totals.linkedExpense >
+              0 && (
+              <div
+                style={{
+                  marginTop: 5,
+                  fontSize: 10,
+                  color:
+                    '#fca5a5',
+                }}
+              >
+                منها مصاريف السواقين والمعدات:{' '}
+                {totals.linkedExpense.toLocaleString(
+                  'en-US'
+                )}{' '}
+                ر.س
+              </div>
+            )}
           </div>
 
           <div
@@ -1057,30 +1484,23 @@ export function MonthlyDetailPage() {
           </div>
         </div>
 
-        {/* =========================
-            الجدول
-        ========================= */}
+        {/* الجدول */}
 
         <div
           style={{
             overflowX:
               'auto',
-
             border:
               '1px solid #1d2d47',
-
             borderRadius: 18,
           }}
         >
           <table
             style={{
               width: '100%',
-
               minWidth: 1050,
-
               borderCollapse:
                 'collapse',
-
               textAlign:
                 'center',
             }}
@@ -1120,105 +1540,42 @@ export function MonthlyDetailPage() {
 
             <tbody>
               {rows.map(
-                (row) => (
-                  <tr
-                    key={
+                (row) => {
+                  const linked =
+                    getDayExternalExpenses(
                       row.day
-                    }
-                    style={{
-                      borderTop:
-                        '1px solid #1d2d47',
-                    }}
-                  >
-                    <td>
-                      {row.day}
-                    </td>
+                    );
 
-                    <td>
-                      <input
-                        value={
-                          row.workType
-                        }
-                        onChange={(
-                          e
-                        ) =>
-                          updateTextRow(
-                            row.day,
-                            'workType',
-                            e.target
-                              .value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                      />
-                    </td>
+                  const linkedTotal =
+                    getDayExternalTotal(
+                      row.day
+                    );
 
-                    <td>
-                      <input
-                        value={
-                          row.tripType
-                        }
-                        onChange={(
-                          e
-                        ) =>
-                          updateTextRow(
-                            row.day,
-                            'tripType',
-                            e.target
-                              .value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                      />
-                    </td>
+                  return (
+                    <tr
+                      key={
+                        row.day
+                      }
+                      style={{
+                        borderTop:
+                          '1px solid #1d2d47',
+                      }}
+                    >
+                      <td>
+                        {row.day}
+                      </td>
 
-                    <td>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={
-                          row.tripPrice ||
-                          ''
-                        }
-                        onChange={(
-                          e
-                        ) =>
-                          updateNumberRow(
-                            row.day,
-                            'tripPrice',
-                            e.target
-                              .value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                      />
-                    </td>
-
-                    <td>
-                      <div
-                        style={{
-                          display:
-                            'flex',
-
-                          gap: 5,
-                        }}
-                      >
+                      <td>
                         <input
                           value={
-                            row.expenseType
+                            row.workType
                           }
                           onChange={(
                             e
                           ) =>
                             updateTextRow(
                               row.day,
-                              'expenseType',
+                              'workType',
                               e.target
                                 .value
                             )
@@ -1227,12 +1584,35 @@ export function MonthlyDetailPage() {
                             inputStyle
                           }
                         />
+                      </td>
 
+                      <td>
+                        <input
+                          value={
+                            row.tripType
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updateTextRow(
+                              row.day,
+                              'tripType',
+                              e.target
+                                .value
+                            )
+                          }
+                          style={
+                            inputStyle
+                          }
+                        />
+                      </td>
+
+                      <td>
                         <input
                           type="text"
                           inputMode="decimal"
                           value={
-                            row.expenseAmount ||
+                            row.tripPrice ||
                             ''
                           }
                           onChange={(
@@ -1240,61 +1620,213 @@ export function MonthlyDetailPage() {
                           ) =>
                             updateNumberRow(
                               row.day,
-                              'expenseAmount',
+                              'tripPrice',
                               e.target
                                 .value
                             )
                           }
-                          style={{
-                            ...inputStyle,
-
-                            minWidth:
-                              80,
-                          }}
+                          style={
+                            inputStyle
+                          }
                         />
-                      </div>
-                    </td>
+                      </td>
 
-                    <td>
-                      <input
-                        value={
-                          row.notes
-                        }
-                        onChange={(
-                          e
-                        ) =>
-                          updateTextRow(
-                            row.day,
-                            'notes',
-                            e.target
-                              .value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                      />
-                    </td>
-                  </tr>
-                )
+                      <td>
+                        <div
+                          style={{
+                            display:
+                              'grid',
+                            gap: 6,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display:
+                                'flex',
+                              gap: 5,
+                            }}
+                          >
+                            <input
+                              value={
+                                row.expenseType
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                updateTextRow(
+                                  row.day,
+                                  'expenseType',
+                                  e.target
+                                    .value
+                                )
+                              }
+                              placeholder="مصروف يدوي"
+                              style={
+                                inputStyle
+                              }
+                            />
+
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={
+                                row.expenseAmount ||
+                                ''
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                updateNumberRow(
+                                  row.day,
+                                  'expenseAmount',
+                                  e.target
+                                    .value
+                                )
+                              }
+                              style={{
+                                ...inputStyle,
+                                minWidth:
+                                  80,
+                              }}
+                            />
+                          </div>
+
+                          {linked.length >
+                            0 && (
+                            <div
+                              style={{
+                                background:
+                                  'rgba(239,68,68,0.10)',
+                                border:
+                                  '1px solid rgba(239,68,68,0.25)',
+                                borderRadius:
+                                  10,
+                                padding:
+                                  '7px 8px',
+                                textAlign:
+                                  'right',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize:
+                                    10,
+                                  color:
+                                    '#fca5a5',
+                                  fontWeight:
+                                    800,
+                                }}
+                              >
+                                مصاريف السواقين والمعدات
+                              </div>
+
+                              {linked.map(
+                                (
+                                  expense
+                                ) => (
+                                  <div
+                                    key={
+                                      expense.id
+                                    }
+                                    style={{
+                                      marginTop:
+                                        4,
+                                      fontSize:
+                                        10,
+                                      color:
+                                        '#e2e8f0',
+                                      lineHeight:
+                                        1.5,
+                                    }}
+                                  >
+                                    {expense.category ||
+                                      'مصروف'}{' '}
+                                    —{' '}
+                                    <b
+                                      style={{
+                                        color:
+                                          '#fb7185',
+                                      }}
+                                    >
+                                      {Number(
+                                        expense.amount ||
+                                          0
+                                      ).toLocaleString(
+                                        'en-US'
+                                      )}{' '}
+                                      ر.س
+                                    </b>
+
+                                    {expense.driverName
+                                      ? ` • ${expense.driverName}`
+                                      : ''}
+                                  </div>
+                                )
+                              )}
+
+                              <div
+                                style={{
+                                  marginTop:
+                                    5,
+                                  paddingTop:
+                                    5,
+                                  borderTop:
+                                    '1px solid rgba(239,68,68,0.18)',
+                                  fontSize:
+                                    11,
+                                  color:
+                                    '#fb7185',
+                                  fontWeight:
+                                    900,
+                                }}
+                              >
+                                الإجمالي:{' '}
+                                {linkedTotal.toLocaleString(
+                                  'en-US'
+                                )}{' '}
+                                ر.س
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td>
+                        <input
+                          value={
+                            row.notes
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updateTextRow(
+                              row.day,
+                              'notes',
+                              e.target
+                                .value
+                            )
+                          }
+                          style={
+                            inputStyle
+                          }
+                        />
+                      </td>
+                    </tr>
+                  );
+                }
               )}
             </tbody>
           </table>
         </div>
 
-        {/* =========================
-            أزرار PDF والمشاركة
-        ========================= */}
+        {/* أزرار PDF والمشاركة */}
 
         <div
           style={{
             marginTop: 18,
-
             display: 'grid',
-
             gridTemplateColumns:
               'repeat(3,1fr)',
-
             gap: 8,
           }}
         >
@@ -1307,7 +1839,6 @@ export function MonthlyDetailPage() {
             }
             style={{
               ...buttonStyle,
-
               background:
                 '#2563eb',
             }}
@@ -1330,7 +1861,6 @@ export function MonthlyDetailPage() {
             }
             style={{
               ...buttonStyle,
-
               background:
                 '#7c3aed',
             }}
@@ -1348,7 +1878,6 @@ export function MonthlyDetailPage() {
             }
             style={{
               ...buttonStyle,
-
               background:
                 '#16a34a',
             }}
@@ -1361,9 +1890,7 @@ export function MonthlyDetailPage() {
           </button>
         </div>
 
-        {/* =========================
-            تقرير PDF الاحترافي
-        ========================= */}
+        {/* تقرير PDF */}
 
         <div
           ref={reportRef}
@@ -1371,28 +1898,19 @@ export function MonthlyDetailPage() {
           style={{
             position:
               'fixed',
-
             left:
               '-10000px',
-
             top: 0,
-
             width: 1000,
-
-            height: 1414,
-
+            minHeight: 1414,
             background:
               '#ffffff',
-
             color:
               '#111827',
-
             padding:
               '18px',
-
             boxSizing:
               'border-box',
-
             fontFamily:
               'Arial, Tahoma, sans-serif',
           }}
@@ -1403,26 +1921,19 @@ export function MonthlyDetailPage() {
             style={{
               display:
                 'grid',
-
               gridTemplateColumns:
                 '220px 1fr 245px',
-
               alignItems:
                 'center',
-
               gap: 18,
-
               marginBottom:
                 14,
             }}
           >
-            {/* الشعار */}
-
             <div
               style={{
                 textAlign:
                   'center',
-
                 color:
                   '#0b3b82',
               }}
@@ -1430,29 +1941,20 @@ export function MonthlyDetailPage() {
               <div
                 style={{
                   width: 90,
-
                   height: 90,
-
                   margin:
                     '0 auto 5px',
-
                   borderRadius:
                     '50%',
-
                   border:
                     '8px solid #0b3b82',
-
                   display:
                     'flex',
-
                   alignItems:
                     'center',
-
                   justifyContent:
                     'center',
-
                   fontSize: 42,
-
                   fontWeight:
                     900,
                 }}
@@ -1464,7 +1966,6 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     24,
-
                   fontWeight:
                     900,
                 }}
@@ -1476,10 +1977,8 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     12,
-
                   color:
                     '#334155',
-
                   marginTop:
                     3,
                 }}
@@ -1487,8 +1986,6 @@ export function MonthlyDetailPage() {
                 إدارة معدات النقل والمشاريع
               </div>
             </div>
-
-            {/* العنوان */}
 
             <div
               style={{
@@ -1500,13 +1997,10 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     40,
-
                   fontWeight:
                     900,
-
                   color:
                     '#0b3b82',
-
                   letterSpacing:
                     1,
                 }}
@@ -1518,13 +2012,10 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     37,
-
                   fontWeight:
                     900,
-
                   color:
                     '#102f61',
-
                   marginTop:
                     6,
                 }}
@@ -1536,12 +2027,9 @@ export function MonthlyDetailPage() {
                 style={{
                   width:
                     '72%',
-
                   height: 3,
-
                   background:
                     '#0b3b82',
-
                   margin:
                     '10px auto',
                 }}
@@ -1551,7 +2039,6 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     15,
-
                   color:
                     '#334155',
                 }}
@@ -1560,21 +2047,15 @@ export function MonthlyDetailPage() {
               </div>
             </div>
 
-            {/* بيانات الكشف */}
-
             <div
               style={{
                 border:
                   '1px solid #cbd5e1',
-
                 borderRadius:
                   10,
-
                 padding: 12,
-
                 fontSize:
                   13,
-
                 lineHeight:
                   2.1,
               }}
@@ -1612,7 +2093,6 @@ export function MonthlyDetailPage() {
                   {
                     hour:
                       '2-digit',
-
                     minute:
                       '2-digit',
                   }
@@ -1628,25 +2108,20 @@ export function MonthlyDetailPage() {
             </div>
           </div>
 
-          {/* المعدة والشهر والسنة */}
+          {/* بيانات المعدة */}
 
           <div
             style={{
               display:
                 'grid',
-
               gridTemplateColumns:
                 '1.4fr 1fr 1fr',
-
               border:
                 '1px solid #cbd5e1',
-
               borderRadius:
                 10,
-
               marginBottom:
                 12,
-
               overflow:
                 'hidden',
             }}
@@ -1655,10 +2130,8 @@ export function MonthlyDetailPage() {
               style={{
                 padding:
                   12,
-
                 textAlign:
                   'center',
-
                 borderLeft:
                   '1px solid #e2e8f0',
               }}
@@ -1667,10 +2140,8 @@ export function MonthlyDetailPage() {
                 style={{
                   color:
                     '#0b3b82',
-
                   fontWeight:
                     800,
-
                   fontSize:
                     14,
                 }}
@@ -1683,19 +2154,14 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     19,
-
                   fontWeight:
                     900,
-
                   marginTop:
                     4,
-
                   direction:
                     'rtl',
-
                   unicodeBidi:
                     'plaintext',
-
                   whiteSpace:
                     'nowrap',
                 }}
@@ -1710,10 +2176,8 @@ export function MonthlyDetailPage() {
               style={{
                 padding:
                   12,
-
                 textAlign:
                   'center',
-
                 borderLeft:
                   '1px solid #e2e8f0',
               }}
@@ -1722,10 +2186,8 @@ export function MonthlyDetailPage() {
                 style={{
                   color:
                     '#0b3b82',
-
                   fontWeight:
                     800,
-
                   fontSize:
                     14,
                 }}
@@ -1737,10 +2199,8 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     19,
-
                   fontWeight:
                     900,
-
                   marginTop:
                     4,
                 }}
@@ -1757,7 +2217,6 @@ export function MonthlyDetailPage() {
               style={{
                 padding:
                   12,
-
                 textAlign:
                   'center',
               }}
@@ -1766,10 +2225,8 @@ export function MonthlyDetailPage() {
                 style={{
                   color:
                     '#0b3b82',
-
                   fontWeight:
                     800,
-
                   fontSize:
                     14,
                 }}
@@ -1781,10 +2238,8 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     19,
-
                   fontWeight:
                     900,
-
                   marginTop:
                     4,
                 }}
@@ -1794,22 +2249,18 @@ export function MonthlyDetailPage() {
             </div>
           </div>
 
-          {/* جدول الأيام */}
+          {/* جدول PDF */}
 
           <table
             style={{
               width:
                 '100%',
-
               borderCollapse:
                 'collapse',
-
               tableLayout:
                 'fixed',
-
               fontSize:
-                11,
-
+                10,
               textAlign:
                 'center',
             }}
@@ -1819,7 +2270,6 @@ export function MonthlyDetailPage() {
                 style={{
                   background:
                     '#073b7a',
-
                   color:
                     '#ffffff',
                 }}
@@ -1828,10 +2278,8 @@ export function MonthlyDetailPage() {
                   style={{
                     width:
                       '6%',
-
                     padding:
-                      '8px 3px',
-
+                      '7px 3px',
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -1842,11 +2290,9 @@ export function MonthlyDetailPage() {
                 <th
                   style={{
                     width:
-                      '17%',
-
+                      '15%',
                     padding:
-                      '8px 3px',
-
+                      '7px 3px',
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -1857,11 +2303,9 @@ export function MonthlyDetailPage() {
                 <th
                   style={{
                     width:
-                      '18%',
-
+                      '16%',
                     padding:
-                      '8px 3px',
-
+                      '7px 3px',
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -1872,11 +2316,9 @@ export function MonthlyDetailPage() {
                 <th
                   style={{
                     width:
-                      '14%',
-
+                      '13%',
                     padding:
-                      '8px 3px',
-
+                      '7px 3px',
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -1887,11 +2329,9 @@ export function MonthlyDetailPage() {
                 <th
                   style={{
                     width:
-                      '14%',
-
+                      '18%',
                     padding:
-                      '8px 3px',
-
+                      '7px 3px',
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -1903,10 +2343,8 @@ export function MonthlyDetailPage() {
                   style={{
                     width:
                       '12%',
-
                     padding:
-                      '8px 3px',
-
+                      '7px 3px',
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -1917,11 +2355,9 @@ export function MonthlyDetailPage() {
                 <th
                   style={{
                     width:
-                      '19%',
-
+                      '20%',
                     padding:
-                      '8px 3px',
-
+                      '7px 3px',
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -1952,25 +2388,60 @@ export function MonthlyDetailPage() {
                         day
                     ) || {
                       day,
-
                       workType:
                         '',
-
                       tripType:
                         '',
-
                       tripPrice:
                         0,
-
                       expenseType:
                         '',
-
                       expenseAmount:
                         0,
-
                       notes:
                         '',
                     };
+
+                  const linkedTotal =
+                    getDayExternalTotal(
+                      day
+                    );
+
+                  const linkedCategories =
+                    getDayExternalCategories(
+                      day
+                    );
+
+                  const linkedNotes =
+                    getDayExternalNotes(
+                      day
+                    );
+
+                  const combinedExpense =
+                    (Number(
+                      row.expenseAmount
+                    ) || 0) +
+                    linkedTotal;
+
+                  const expenseDescription =
+                    [
+                      row.expenseType,
+                      linkedCategories,
+                    ]
+                      .filter(
+                        Boolean
+                      )
+                      .join(' + ');
+
+                  const combinedNotes =
+                    [
+                      row.notes,
+                      linkedNotes,
+                    ]
+                      .filter(
+                        Boolean
+                      )
+                      .join(' | ');
 
                   return (
                     <tr
@@ -1980,18 +2451,14 @@ export function MonthlyDetailPage() {
                     >
                       <td
                         style={{
-                          height:
+                          minHeight:
                             25,
-
                           padding:
                             '2px 3px',
-
                           border:
                             '1px solid #d1d5db',
-
                           fontWeight:
                             900,
-
                           fontSize:
                             12,
                         }}
@@ -2003,7 +2470,6 @@ export function MonthlyDetailPage() {
                         style={{
                           padding:
                             '2px 4px',
-
                           border:
                             '1px solid #d1d5db',
                         }}
@@ -2016,7 +2482,6 @@ export function MonthlyDetailPage() {
                         style={{
                           padding:
                             '2px 4px',
-
                           border:
                             '1px solid #d1d5db',
                         }}
@@ -2029,10 +2494,8 @@ export function MonthlyDetailPage() {
                         style={{
                           padding:
                             '2px 4px',
-
                           border:
                             '1px solid #d1d5db',
-
                           fontWeight:
                             row.tripPrice
                               ? 700
@@ -2051,27 +2514,46 @@ export function MonthlyDetailPage() {
                         style={{
                           padding:
                             '2px 4px',
-
                           border:
                             '1px solid #d1d5db',
+                          color:
+                            linkedTotal >
+                            0
+                              ? '#b91c1c'
+                              : '#111827',
+                          fontWeight:
+                            linkedTotal >
+                            0
+                              ? 700
+                              : 400,
                         }}
                       >
-                        {row.expenseType ||
-                          ''}
+                        {
+                          expenseDescription
+                        }
                       </td>
 
                       <td
                         style={{
                           padding:
                             '2px 4px',
-
                           border:
                             '1px solid #d1d5db',
+                          color:
+                            combinedExpense >
+                            0
+                              ? '#b91c1c'
+                              : '#111827',
+                          fontWeight:
+                            combinedExpense >
+                            0
+                              ? 700
+                              : 400,
                         }}
                       >
-                        {row.expenseAmount >
+                        {combinedExpense >
                         0
-                          ? `${row.expenseAmount.toLocaleString(
+                          ? `${combinedExpense.toLocaleString(
                               'en-US'
                             )} ر.س`
                           : ''}
@@ -2081,13 +2563,15 @@ export function MonthlyDetailPage() {
                         style={{
                           padding:
                             '2px 4px',
-
                           border:
                             '1px solid #d1d5db',
+                          fontSize:
+                            9,
                         }}
                       >
-                        {row.notes ||
-                          ''}
+                        {
+                          combinedNotes
+                        }
                       </td>
                     </tr>
                   );
@@ -2102,12 +2586,9 @@ export function MonthlyDetailPage() {
             style={{
               display:
                 'grid',
-
               gridTemplateColumns:
                 'repeat(5, 1fr)',
-
               gap: 8,
-
               marginTop:
                 12,
             }}
@@ -2116,12 +2597,9 @@ export function MonthlyDetailPage() {
               style={{
                 border:
                   '1.5px solid #16a34a',
-
                 borderRadius:
                   9,
-
                 padding: 9,
-
                 textAlign:
                   'center',
               }}
@@ -2130,7 +2608,6 @@ export function MonthlyDetailPage() {
                 style={{
                   color:
                     '#15803d',
-
                   fontWeight:
                     800,
                 }}
@@ -2142,13 +2619,10 @@ export function MonthlyDetailPage() {
                 style={{
                   fontSize:
                     21,
-
                   fontWeight:
                     900,
-
                   color:
                     '#15803d',
-
                   marginTop:
                     5,
                 }}
@@ -2158,416 +2632,4 @@ export function MonthlyDetailPage() {
                 )}
               </div>
 
-              <small>
-                ر.س
-              </small>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1.5px solid #ef4444',
-
-                borderRadius:
-                  9,
-
-                padding: 9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div
-                style={{
-                  color:
-                    '#dc2626',
-
-                  fontWeight:
-                    800,
-                }}
-              >
-                إجمالي المصروفات
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    21,
-
-                  fontWeight:
-                    900,
-
-                  color:
-                    '#dc2626',
-
-                  marginTop:
-                    5,
-                }}
-              >
-                {totals.expense.toLocaleString(
-                  'en-US'
-                )}
-              </div>
-
-              <small>
-                ر.س
-              </small>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1.5px solid #2563eb',
-
-                borderRadius:
-                  9,
-
-                padding: 9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div
-                style={{
-                  color:
-                    '#1d4ed8',
-
-                  fontWeight:
-                    800,
-                }}
-              >
-                صافي الشهر
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    21,
-
-                  fontWeight:
-                    900,
-
-                  color:
-                    net >= 0
-                      ? '#1d4ed8'
-                      : '#dc2626',
-
-                  marginTop:
-                    5,
-                }}
-              >
-                {net.toLocaleString(
-                  'en-US'
-                )}
-              </div>
-
-              <small>
-                ر.س
-              </small>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1.5px solid #f59e0b',
-
-                borderRadius:
-                  9,
-
-                padding: 9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div
-                style={{
-                  color:
-                    '#b45309',
-
-                  fontWeight:
-                    800,
-                }}
-              >
-                أيام مسجلة
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    21,
-
-                  fontWeight:
-                    900,
-
-                  color:
-                    '#b45309',
-
-                  marginTop:
-                    5,
-                }}
-              >
-                {
-                  totals.registeredDays
-                }
-              </div>
-
-              <small>
-                يوم
-              </small>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1.5px solid #7c3aed',
-
-                borderRadius:
-                  9,
-
-                padding: 9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div
-                style={{
-                  color:
-                    '#6d28d9',
-
-                  fontWeight:
-                    800,
-                }}
-              >
-                إجمالي المشاوير
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    21,
-
-                  fontWeight:
-                    900,
-
-                  color:
-                    '#6d28d9',
-
-                  marginTop:
-                    5,
-                }}
-              >
-                {totals.trips}
-              </div>
-
-              <small>
-                مشاوير
-              </small>
-            </div>
-          </div>
-
-          {/* الملاحظات والاعتماد */}
-
-          <div
-            style={{
-              display:
-                'grid',
-
-              gridTemplateColumns:
-                '1fr 180px 1fr',
-
-              gap: 10,
-
-              marginTop:
-                12,
-            }}
-          >
-            <div
-              style={{
-                border:
-                  '1px solid #cbd5e1',
-
-                borderRadius:
-                  9,
-
-                padding: 10,
-
-                minHeight:
-                  80,
-              }}
-            >
-              <div
-                style={{
-                  fontWeight:
-                    900,
-
-                  textAlign:
-                    'center',
-
-                  marginBottom:
-                    8,
-
-                  color:
-                    '#102f61',
-                }}
-              >
-                ملاحظات عامة
-              </div>
-
-              <div
-                style={{
-                  borderBottom:
-                    '1px dotted #94a3b8',
-
-                  height:
-                    20,
-                }}
-              />
-
-              <div
-                style={{
-                  borderBottom:
-                    '1px dotted #94a3b8',
-
-                  height:
-                    20,
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1px solid #cbd5e1',
-
-                borderRadius:
-                  9,
-
-                display:
-                  'flex',
-
-                flexDirection:
-                  'column',
-
-                alignItems:
-                  'center',
-
-                justifyContent:
-                  'center',
-
-                color:
-                  '#0b3b82',
-              }}
-            >
-              <div
-                style={{
-                  fontSize:
-                    30,
-                }}
-              >
-                ▦
-              </div>
-
-              <strong>
-                BAKR PRO
-              </strong>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1px solid #cbd5e1',
-
-                borderRadius:
-                  9,
-
-                padding: 10,
-
-                minHeight:
-                  80,
-              }}
-            >
-              <div
-                style={{
-                  fontWeight:
-                    900,
-
-                  textAlign:
-                    'center',
-
-                  marginBottom:
-                    10,
-
-                  color:
-                    '#102f61',
-                }}
-              >
-                اعتماد
-              </div>
-
-              <div
-                style={{
-                  marginBottom:
-                    14,
-                }}
-              >
-                الاسم:
-                ______________________
-              </div>
-
-              <div>
-                التوقيع:
-                ____________________
-              </div>
-            </div>
-          </div>
-
-          {/* التذييل */}
-
-          <div
-            style={{
-              position:
-                'absolute',
-
-              bottom: 8,
-
-              right: 18,
-
-              left: 18,
-
-              height: 28,
-
-              background:
-                '#073b7a',
-
-              color:
-                '#ffffff',
-
-              display:
-                'flex',
-
-              alignItems:
-                'center',
-
-              justifyContent:
-                'center',
-
-              fontSize:
-                12,
-
-              fontWeight:
-                700,
-
-              borderRadius:
-                '3px 3px 0 0',
-            }}
-          >
-            ◆　تم إعداد هذا الكشف بواسطة BAKR PRO　◆
-          </div>
-        </div>
-      </div>
-    </AppLayout>
-  );
-                         }
+              <small
