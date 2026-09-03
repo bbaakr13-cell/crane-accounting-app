@@ -30,10 +30,6 @@ import {
   type Equipment,
 } from '@/lib/equipment';
 
-/* =========================
-   الحساب الشهري الأساسي
-========================= */
-
 type DayRow = {
   day: number;
   workType: string;
@@ -44,28 +40,18 @@ type DayRow = {
   notes: string;
 };
 
-/* =========================
-   مصاريف السواقين والمعدات
-========================= */
-
 type ExternalExpenseRecord = {
   id: number;
   date: string;
-
   driverId: string;
   driverName: string;
-
   equipmentId: string;
   equipmentName: string;
-
   category: string;
   amount: number;
-
   location: string;
   notes: string;
-
   affectsDriverBalance: boolean;
-
   createdAt: string;
   updatedAt: string;
 };
@@ -100,10 +86,6 @@ function normalizeArabicNumbers(value: string) {
     .replace(/,/g, '');
 }
 
-/* =========================
-   ترتيب اسم المعدة
-========================= */
-
 function formatEquipmentName(value: string) {
   return value
     .trim()
@@ -114,10 +96,6 @@ function formatEquipmentName(value: string) {
     .trim();
 }
 
-/* =========================
-   قراءة التاريخ بأمان
-========================= */
-
 function getDateParts(dateValue: string) {
   const parts =
     String(dateValue || '').split('-');
@@ -126,14 +104,9 @@ function getDateParts(dateValue: string) {
     return null;
   }
 
-  const year =
-    Number(parts[0]);
-
-  const month =
-    Number(parts[1]);
-
-  const day =
-    Number(parts[2]);
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
 
   if (
     !Number.isFinite(year) ||
@@ -188,16 +161,14 @@ export function MonthlyDetailPage() {
   const [
     externalExpenses,
     setExternalExpenses,
-  ] = useState<ExternalExpenseRecord[]>([]);
+  ] = useState<
+    ExternalExpenseRecord[]
+  >([]);
 
   const [
     rowsLoaded,
     setRowsLoaded,
   ] = useState(false);
-
-  /* =========================
-     تحميل المعدات
-  ========================= */
 
   useEffect(() => {
     let cancelled = false;
@@ -259,10 +230,6 @@ export function MonthlyDetailPage() {
     };
   }, [id]);
 
-  /* =========================
-     المعدة المختارة
-  ========================= */
-
   const selectedEquipment =
     useMemo(() => {
       return (
@@ -286,10 +253,6 @@ export function MonthlyDetailPage() {
       equipmentName
     );
 
-  /* =========================
-     عدد أيام الشهر
-  ========================= */
-
   const daysInMonth =
     useMemo(() => {
       return new Date(
@@ -298,10 +261,6 @@ export function MonthlyDetailPage() {
         0
       ).getDate();
     }, [year, month]);
-
-  /* =========================
-     مفتاح الحساب الشهري
-  ========================= */
 
   const storageKey =
     equipmentId
@@ -329,10 +288,6 @@ export function MonthlyDetailPage() {
     useState<DayRow[]>(
       createEmptyRows()
     );
-
-  /* =========================
-     تحميل الحساب الشهري
-  ========================= */
 
   useEffect(() => {
     setRowsLoaded(false);
@@ -410,10 +365,6 @@ export function MonthlyDetailPage() {
     storageKey,
   ]);
 
-  /* =========================
-     حفظ الحساب الشهري
-  ========================= */
-
   useEffect(() => {
     if (
       !equipmentId ||
@@ -439,11 +390,6 @@ export function MonthlyDetailPage() {
     equipmentId,
     rowsLoaded,
   ]);
-
-  /* =========================
-     تحميل مصاريف
-     السواقين والمعدات
-  ========================= */
 
   function loadExternalExpenses() {
     try {
@@ -536,10 +482,6 @@ export function MonthlyDetailPage() {
     };
   }, []);
 
-  /* =========================
-     مصاريف المعدة للشهر الحالي
-  ========================= */
-
   const monthlyExternalExpenses =
     useMemo(() => {
       if (!equipmentId) {
@@ -580,10 +522,6 @@ export function MonthlyDetailPage() {
       year,
       month,
     ]);
-
-  /* =========================
-     تجميع المصاريف حسب اليوم
-  ========================= */
 
   const externalExpensesByDay =
     useMemo(() => {
@@ -693,10 +631,6 @@ export function MonthlyDetailPage() {
       .join(' | ');
   }
 
-  /* =========================
-     تعديل الصفوف اليدوية
-  ========================= */
-
   function updateTextRow(
     day: number,
     field:
@@ -740,7 +674,6 @@ export function MonthlyDetailPage() {
         row.day === day
           ? {
               ...row,
-
               [field]:
                 Number.isFinite(
                   numberValue
@@ -752,10 +685,6 @@ export function MonthlyDetailPage() {
       )
     );
   }
-
-  /* =========================
-     الإجماليات
-  ========================= */
 
   const totals =
     useMemo(() => {
@@ -837,10 +766,6 @@ export function MonthlyDetailPage() {
     totals.income -
     totalExpense;
 
-  /* =========================
-     الأنماط
-  ========================= */
-
   const inputStyle:
     React.CSSProperties = {
     width: '100%',
@@ -888,10 +813,6 @@ export function MonthlyDetailPage() {
     gap: 6,
     color: '#ffffff',
   };
-
-  /* =========================
-     PDF
-  ========================= */
 
   function getFileName() {
     const cleanEquipment =
@@ -1048,17 +969,14 @@ export function MonthlyDetailPage() {
       );
 
     const result =
-      await Filesystem.writeFile(
-        {
-          path:
-            getFileName(),
-
-          data: base64,
-
-          directory:
-            Directory.Cache,
-        }
-      );
+      await Filesystem.writeFile({
+        path:
+          getFileName(),
+        data:
+          base64,
+        directory:
+          Directory.Cache,
+      });
 
     return result.uri;
   }
@@ -1073,9 +991,7 @@ export function MonthlyDetailPage() {
     }
 
     try {
-      setCreatingPdf(
-        true
-      );
+      setCreatingPdf(true);
 
       const fileUri =
         await createPdfFile();
@@ -1087,7 +1003,8 @@ export function MonthlyDetailPage() {
         text:
           `${displayEquipmentName} - ${monthNames[month]} ${year}`,
 
-        url: fileUri,
+        url:
+          fileUri,
 
         dialogTitle:
           'حفظ أو مشاركة كشف الحساب',
@@ -1102,9 +1019,7 @@ export function MonthlyDetailPage() {
         'تعذر إنشاء ملف PDF'
       );
     } finally {
-      setCreatingPdf(
-        false
-      );
+      setCreatingPdf(false);
     }
   }
 
@@ -1118,9 +1033,7 @@ export function MonthlyDetailPage() {
     }
 
     try {
-      setCreatingPdf(
-        true
-      );
+      setCreatingPdf(true);
 
       const fileUri =
         await createPdfFile();
@@ -1137,7 +1050,8 @@ export function MonthlyDetailPage() {
           `مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString('en-US')} ر.س\n` +
           `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
 
-        url: fileUri,
+        url:
+          fileUri,
 
         dialogTitle:
           'مشاركة كشف الحساب',
@@ -1152,9 +1066,7 @@ export function MonthlyDetailPage() {
         'تعذر مشاركة كشف الحساب'
       );
     } finally {
-      setCreatingPdf(
-        false
-      );
+      setCreatingPdf(false);
     }
   }
 
@@ -1193,12 +1105,10 @@ export function MonthlyDetailPage() {
         dir="rtl"
         style={{
           padding: 18,
-          paddingBottom:
-            110,
+          paddingBottom: 110,
           maxWidth: 1100,
           margin: 'auto',
-          color:
-            '#ffffff',
+          color: '#ffffff',
         }}
       >
         <h1
@@ -1213,8 +1123,7 @@ export function MonthlyDetailPage() {
 
         <p
           style={{
-            color:
-              '#94a3b8',
+            color: '#94a3b8',
             marginTop: 7,
           }}
         >
@@ -1222,12 +1131,9 @@ export function MonthlyDetailPage() {
           {displayEquipmentName}
         </p>
 
-        {/* اختيار المعدة والشهر */}
-
         <div
           style={{
-            background:
-              '#0b1527',
+            background: '#0b1527',
             border:
               '1px solid #1d2d47',
             borderRadius: 18,
@@ -1240,25 +1146,20 @@ export function MonthlyDetailPage() {
           <label>
             <small
               style={{
-                color:
-                  '#94a3b8',
+                color: '#94a3b8',
               }}
             >
               المعدة
             </small>
 
             <select
-              value={
-                equipmentId
-              }
+              value={equipmentId}
               onChange={(e) =>
                 setEquipmentId(
                   e.target.value
                 )
               }
-              style={
-                selectStyle
-              }
+              style={selectStyle}
               disabled={
                 equipmentLoading ||
                 equipmentList.length ===
@@ -1312,9 +1213,7 @@ export function MonthlyDetailPage() {
                   )
                 )
               }
-              style={
-                selectStyle
-              }
+              style={selectStyle}
             >
               {monthNames.map(
                 (
@@ -1322,12 +1221,8 @@ export function MonthlyDetailPage() {
                   index
                 ) => (
                   <option
-                    key={
-                      name
-                    }
-                    value={
-                      index
-                    }
+                    key={name}
+                    value={index}
                   >
                     {name}
                   </option>
@@ -1344,9 +1239,7 @@ export function MonthlyDetailPage() {
                   )
                 )
               }
-              style={
-                selectStyle
-              }
+              style={selectStyle}
             >
               {Array.from(
                 {
@@ -1363,12 +1256,8 @@ export function MonthlyDetailPage() {
 
                   return (
                     <option
-                      key={
-                        y
-                      }
-                      value={
-                        y
-                      }
+                      key={y}
+                      value={y}
                     >
                       {y}
                     </option>
@@ -1379,22 +1268,17 @@ export function MonthlyDetailPage() {
           </div>
         </div>
 
-        {/* ملخص الحساب */}
-
         <div
           style={{
             display: 'grid',
             gridTemplateColumns:
               'repeat(2, 1fr)',
             gap: 10,
-            marginBottom:
-              18,
+            marginBottom: 18,
           }}
         >
           <div
-            style={
-              summaryCard
-            }
+            style={summaryCard}
           >
             إجمالي المشاوير
 
@@ -1404,16 +1288,13 @@ export function MonthlyDetailPage() {
           </div>
 
           <div
-            style={
-              summaryCard
-            }
+            style={summaryCard}
           >
             إجمالي الدخل
 
             <h2
               style={{
-                color:
-                  '#22c55e',
+                color: '#22c55e',
               }}
             >
               {totals.income.toLocaleString(
@@ -1424,16 +1305,13 @@ export function MonthlyDetailPage() {
           </div>
 
           <div
-            style={
-              summaryCard
-            }
+            style={summaryCard}
           >
             إجمالي المصروفات
 
             <h2
               style={{
-                color:
-                  '#ef4444',
+                color: '#ef4444',
               }}
             >
               {totalExpense.toLocaleString(
@@ -1448,8 +1326,7 @@ export function MonthlyDetailPage() {
                 style={{
                   marginTop: 5,
                   fontSize: 10,
-                  color:
-                    '#fca5a5',
+                  color: '#fca5a5',
                 }}
               >
                 منها مصاريف السواقين والمعدات:{' '}
@@ -1462,9 +1339,7 @@ export function MonthlyDetailPage() {
           </div>
 
           <div
-            style={
-              summaryCard
-            }
+            style={summaryCard}
           >
             صافي الشهر
 
@@ -1484,12 +1359,9 @@ export function MonthlyDetailPage() {
           </div>
         </div>
 
-        {/* الجدول */}
-
         <div
           style={{
-            overflowX:
-              'auto',
+            overflowX: 'auto',
             border:
               '1px solid #1d2d47',
             borderRadius: 18,
@@ -1501,8 +1373,7 @@ export function MonthlyDetailPage() {
               minWidth: 1050,
               borderCollapse:
                 'collapse',
-              textAlign:
-                'center',
+              textAlign: 'center',
             }}
           >
             <thead>
@@ -1512,9 +1383,7 @@ export function MonthlyDetailPage() {
                     '#101b2e',
                 }}
               >
-                <th>
-                  اليوم
-                </th>
+                <th>اليوم</th>
 
                 <th>
                   نوع العمل
@@ -1553,9 +1422,7 @@ export function MonthlyDetailPage() {
 
                   return (
                     <tr
-                      key={
-                        row.day
-                      }
+                      key={row.day}
                       style={{
                         borderTop:
                           '1px solid #1d2d47',
@@ -1570,19 +1437,14 @@ export function MonthlyDetailPage() {
                           value={
                             row.workType
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updateTextRow(
                               row.day,
                               'workType',
-                              e.target
-                                .value
+                              e.target.value
                             )
                           }
-                          style={
-                            inputStyle
-                          }
+                          style={inputStyle}
                         />
                       </td>
 
@@ -1591,19 +1453,14 @@ export function MonthlyDetailPage() {
                           value={
                             row.tripType
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updateTextRow(
                               row.day,
                               'tripType',
-                              e.target
-                                .value
+                              e.target.value
                             )
                           }
-                          style={
-                            inputStyle
-                          }
+                          style={inputStyle}
                         />
                       </td>
 
@@ -1615,19 +1472,14 @@ export function MonthlyDetailPage() {
                             row.tripPrice ||
                             ''
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updateNumberRow(
                               row.day,
                               'tripPrice',
-                              e.target
-                                .value
+                              e.target.value
                             )
                           }
-                          style={
-                            inputStyle
-                          }
+                          style={inputStyle}
                         />
                       </td>
 
@@ -1661,9 +1513,7 @@ export function MonthlyDetailPage() {
                                 )
                               }
                               placeholder="مصروف يدوي"
-                              style={
-                                inputStyle
-                              }
+                              style={inputStyle}
                             />
 
                             <input
@@ -1796,19 +1646,14 @@ export function MonthlyDetailPage() {
                           value={
                             row.notes
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updateTextRow(
                               row.day,
                               'notes',
-                              e.target
-                                .value
+                              e.target.value
                             )
                           }
-                          style={
-                            inputStyle
-                          }
+                          style={inputStyle}
                         />
                       </td>
                     </tr>
@@ -1818,8 +1663,6 @@ export function MonthlyDetailPage() {
             </tbody>
           </table>
         </div>
-
-        {/* أزرار PDF والمشاركة */}
 
         <div
           style={{
@@ -1843,9 +1686,7 @@ export function MonthlyDetailPage() {
                 '#2563eb',
             }}
           >
-            <Download
-              size={18}
-            />
+            <Download size={18} />
 
             {creatingPdf
               ? 'جاري...'
@@ -1865,10 +1706,7 @@ export function MonthlyDetailPage() {
                 '#7c3aed',
             }}
           >
-            <Share2
-              size={18}
-            />
-
+            <Share2 size={18} />
             مشاركة
           </button>
 
@@ -1885,285 +1723,100 @@ export function MonthlyDetailPage() {
             <MessageCircle
               size={18}
             />
-
             واتساب
           </button>
         </div>
-
-        {/* تقرير PDF */}
 
         <div
           ref={reportRef}
           dir="rtl"
           style={{
-            position:
-              'fixed',
-            left:
-              '-10000px',
+            position: 'fixed',
+            left: '-10000px',
             top: 0,
             width: 1000,
             minHeight: 1414,
-            background:
-              '#ffffff',
-            color:
-              '#111827',
-            padding:
-              '18px',
+            background: '#ffffff',
+            color: '#111827',
+            padding: '18px',
             boxSizing:
               'border-box',
             fontFamily:
               'Arial, Tahoma, sans-serif',
           }}
         >
-          {/* رأس الكشف */}
-
           <div
             style={{
-              display:
-                'grid',
-              gridTemplateColumns:
-                '220px 1fr 245px',
-              alignItems:
-                'center',
-              gap: 18,
-              marginBottom:
-                14,
+              textAlign: 'center',
+              marginBottom: 14,
             }}
           >
             <div
               style={{
-                textAlign:
-                  'center',
-                color:
-                  '#0b3b82',
+                fontSize: 36,
+                fontWeight: 900,
+                color: '#0b3b82',
               }}
             >
-              <div
-                style={{
-                  width: 90,
-                  height: 90,
-                  margin:
-                    '0 auto 5px',
-                  borderRadius:
-                    '50%',
-                  border:
-                    '8px solid #0b3b82',
-                  display:
-                    'flex',
-                  alignItems:
-                    'center',
-                  justifyContent:
-                    'center',
-                  fontSize: 42,
-                  fontWeight:
-                    900,
-                }}
-              >
-                🏗️
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    24,
-                  fontWeight:
-                    900,
-                }}
-              >
-                BAKR PRO
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    12,
-                  color:
-                    '#334155',
-                  marginTop:
-                    3,
-                }}
-              >
-                إدارة معدات النقل والمشاريع
-              </div>
+              BAKR PRO
             </div>
 
             <div
               style={{
-                textAlign:
-                  'center',
+                fontSize: 29,
+                fontWeight: 900,
+                color: '#102f61',
+                marginTop: 5,
               }}
             >
-              <div
-                style={{
-                  fontSize:
-                    40,
-                  fontWeight:
-                    900,
-                  color:
-                    '#0b3b82',
-                  letterSpacing:
-                    1,
-                }}
-              >
-                BAKR PRO
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    37,
-                  fontWeight:
-                    900,
-                  color:
-                    '#102f61',
-                  marginTop:
-                    6,
-                }}
-              >
-                كشف الحساب الشهري
-              </div>
-
-              <div
-                style={{
-                  width:
-                    '72%',
-                  height: 3,
-                  background:
-                    '#0b3b82',
-                  margin:
-                    '10px auto',
-                }}
-              />
-
-              <div
-                style={{
-                  fontSize:
-                    15,
-                  color:
-                    '#334155',
-                }}
-              >
-                تقرير شامل للأعمال والمشاوير والمصاريف
-              </div>
+              كشف الحساب الشهري
             </div>
 
             <div
               style={{
-                border:
-                  '1px solid #cbd5e1',
-                borderRadius:
-                  10,
-                padding: 12,
-                fontSize:
-                  13,
-                lineHeight:
-                  2.1,
+                fontSize: 14,
+                color: '#475569',
+                marginTop: 6,
               }}
             >
-              <div>
-                <b>
-                  رقم الكشف:
-                </b>{' '}
-
-                {`${year}${String(
-                  month + 1
-                ).padStart(
-                  2,
-                  '0'
-                )}`}
-              </div>
-
-              <div>
-                <b>
-                  تاريخ الإصدار:
-                </b>{' '}
-
-                {new Date().toLocaleDateString(
-                  'en-GB'
-                )}
-              </div>
-
-              <div>
-                <b>
-                  وقت الإصدار:
-                </b>{' '}
-
-                {new Date().toLocaleTimeString(
-                  'ar-SA',
-                  {
-                    hour:
-                      '2-digit',
-                    minute:
-                      '2-digit',
-                  }
-                )}
-              </div>
-
-              <div>
-                <b>
-                  إصدار بواسطة:
-                </b>{' '}
-                BAKR PRO
-              </div>
+              تقرير شامل للأعمال والمشاوير والمصاريف
             </div>
           </div>
 
-          {/* بيانات المعدة */}
-
           <div
             style={{
-              display:
-                'grid',
+              display: 'grid',
               gridTemplateColumns:
                 '1.4fr 1fr 1fr',
               border:
                 '1px solid #cbd5e1',
-              borderRadius:
-                10,
-              marginBottom:
-                12,
-              overflow:
-                'hidden',
+              borderRadius: 10,
+              marginBottom: 12,
+              overflow: 'hidden',
             }}
           >
             <div
               style={{
-                padding:
-                  12,
-                textAlign:
-                  'center',
+                padding: 12,
+                textAlign: 'center',
                 borderLeft:
                   '1px solid #e2e8f0',
               }}
             >
               <div
                 style={{
-                  color:
-                    '#0b3b82',
-                  fontWeight:
-                    800,
-                  fontSize:
-                    14,
+                  color: '#0b3b82',
+                  fontWeight: 800,
                 }}
               >
                 المعدة
               </div>
 
               <div
-                dir="rtl"
                 style={{
-                  fontSize:
-                    19,
-                  fontWeight:
-                    900,
-                  marginTop:
-                    4,
-                  direction:
-                    'rtl',
-                  unicodeBidi:
-                    'plaintext',
-                  whiteSpace:
-                    'nowrap',
+                  fontSize: 18,
+                  fontWeight: 900,
+                  marginTop: 4,
                 }}
               >
                 {
@@ -2174,22 +1827,16 @@ export function MonthlyDetailPage() {
 
             <div
               style={{
-                padding:
-                  12,
-                textAlign:
-                  'center',
+                padding: 12,
+                textAlign: 'center',
                 borderLeft:
                   '1px solid #e2e8f0',
               }}
             >
               <div
                 style={{
-                  color:
-                    '#0b3b82',
-                  fontWeight:
-                    800,
-                  fontSize:
-                    14,
+                  color: '#0b3b82',
+                  fontWeight: 800,
                 }}
               >
                 الشهر
@@ -2197,38 +1844,25 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize:
-                    19,
-                  fontWeight:
-                    900,
-                  marginTop:
-                    4,
+                  fontSize: 18,
+                  fontWeight: 900,
+                  marginTop: 4,
                 }}
               >
-                {
-                  monthNames[
-                    month
-                  ]
-                }
+                {monthNames[month]}
               </div>
             </div>
 
             <div
               style={{
-                padding:
-                  12,
-                textAlign:
-                  'center',
+                padding: 12,
+                textAlign: 'center',
               }}
             >
               <div
                 style={{
-                  color:
-                    '#0b3b82',
-                  fontWeight:
-                    800,
-                  fontSize:
-                    14,
+                  color: '#0b3b82',
+                  fontWeight: 800,
                 }}
               >
                 السنة
@@ -2236,12 +1870,9 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize:
-                    19,
-                  fontWeight:
-                    900,
-                  marginTop:
-                    4,
+                  fontSize: 18,
+                  fontWeight: 900,
+                  marginTop: 4,
                 }}
               >
                 {year}
@@ -2249,20 +1880,14 @@ export function MonthlyDetailPage() {
             </div>
           </div>
 
-          {/* جدول PDF */}
-
           <table
             style={{
-              width:
-                '100%',
+              width: '100%',
               borderCollapse:
                 'collapse',
-              tableLayout:
-                'fixed',
-              fontSize:
-                10,
-              textAlign:
-                'center',
+              tableLayout: 'fixed',
+              fontSize: 10,
+              textAlign: 'center',
             }}
           >
             <thead>
@@ -2270,16 +1895,13 @@ export function MonthlyDetailPage() {
                 style={{
                   background:
                     '#073b7a',
-                  color:
-                    '#ffffff',
+                  color: '#ffffff',
                 }}
               >
                 <th
                   style={{
-                    width:
-                      '6%',
-                    padding:
-                      '7px 3px',
+                    width: '6%',
+                    padding: 7,
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -2289,10 +1911,8 @@ export function MonthlyDetailPage() {
 
                 <th
                   style={{
-                    width:
-                      '15%',
-                    padding:
-                      '7px 3px',
+                    width: '15%',
+                    padding: 7,
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -2302,10 +1922,8 @@ export function MonthlyDetailPage() {
 
                 <th
                   style={{
-                    width:
-                      '16%',
-                    padding:
-                      '7px 3px',
+                    width: '16%',
+                    padding: 7,
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -2315,10 +1933,8 @@ export function MonthlyDetailPage() {
 
                 <th
                   style={{
-                    width:
-                      '13%',
-                    padding:
-                      '7px 3px',
+                    width: '13%',
+                    padding: 7,
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -2328,10 +1944,8 @@ export function MonthlyDetailPage() {
 
                 <th
                   style={{
-                    width:
-                      '18%',
-                    padding:
-                      '7px 3px',
+                    width: '18%',
+                    padding: 7,
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -2341,10 +1955,8 @@ export function MonthlyDetailPage() {
 
                 <th
                   style={{
-                    width:
-                      '12%',
-                    padding:
-                      '7px 3px',
+                    width: '12%',
+                    padding: 7,
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -2354,10 +1966,8 @@ export function MonthlyDetailPage() {
 
                 <th
                   style={{
-                    width:
-                      '20%',
-                    padding:
-                      '7px 3px',
+                    width: '20%',
+                    padding: 7,
                     border:
                       '1px solid #d1d5db',
                   }}
@@ -2372,34 +1982,23 @@ export function MonthlyDetailPage() {
                 {
                   length: 31,
                 },
-                (
-                  _,
-                  index
-                ) => {
+                (_, index) => {
                   const day =
                     index + 1;
 
                   const row =
                     rows.find(
-                      (
-                        item
-                      ) =>
+                      (item) =>
                         item.day ===
                         day
                     ) || {
                       day,
-                      workType:
-                        '',
-                      tripType:
-                        '',
-                      tripPrice:
-                        0,
-                      expenseType:
-                        '',
-                      expenseAmount:
-                        0,
-                      notes:
-                        '',
+                      workType: '',
+                      tripType: '',
+                      tripPrice: 0,
+                      expenseType: '',
+                      expenseAmount: 0,
+                      notes: '',
                     };
 
                   const linkedTotal =
@@ -2428,9 +2027,7 @@ export function MonthlyDetailPage() {
                       row.expenseType,
                       linkedCategories,
                     ]
-                      .filter(
-                        Boolean
-                      )
+                      .filter(Boolean)
                       .join(' + ');
 
                   const combinedNotes =
@@ -2438,29 +2035,17 @@ export function MonthlyDetailPage() {
                       row.notes,
                       linkedNotes,
                     ]
-                      .filter(
-                        Boolean
-                      )
+                      .filter(Boolean)
                       .join(' | ');
 
                   return (
-                    <tr
-                      key={
-                        day
-                      }
-                    >
+                    <tr key={day}>
                       <td
                         style={{
-                          minHeight:
-                            25,
-                          padding:
-                            '2px 3px',
                           border:
                             '1px solid #d1d5db',
-                          fontWeight:
-                            900,
-                          fontSize:
-                            12,
+                          padding: 4,
+                          fontWeight: 900,
                         }}
                       >
                         {day}
@@ -2468,38 +2053,29 @@ export function MonthlyDetailPage() {
 
                       <td
                         style={{
-                          padding:
-                            '2px 4px',
                           border:
                             '1px solid #d1d5db',
+                          padding: 4,
                         }}
                       >
-                        {row.workType ||
-                          ''}
+                        {row.workType}
                       </td>
 
                       <td
                         style={{
-                          padding:
-                            '2px 4px',
                           border:
                             '1px solid #d1d5db',
+                          padding: 4,
                         }}
                       >
-                        {row.tripType ||
-                          ''}
+                        {row.tripType}
                       </td>
 
                       <td
                         style={{
-                          padding:
-                            '2px 4px',
                           border:
                             '1px solid #d1d5db',
-                          fontWeight:
-                            row.tripPrice
-                              ? 700
-                              : 400,
+                          padding: 4,
                         }}
                       >
                         {row.tripPrice >
@@ -2512,20 +2088,9 @@ export function MonthlyDetailPage() {
 
                       <td
                         style={{
-                          padding:
-                            '2px 4px',
                           border:
                             '1px solid #d1d5db',
-                          color:
-                            linkedTotal >
-                            0
-                              ? '#b91c1c'
-                              : '#111827',
-                          fontWeight:
-                            linkedTotal >
-                            0
-                              ? 700
-                              : 400,
+                          padding: 4,
                         }}
                       >
                         {
@@ -2535,19 +2100,18 @@ export function MonthlyDetailPage() {
 
                       <td
                         style={{
-                          padding:
-                            '2px 4px',
                           border:
                             '1px solid #d1d5db',
+                          padding: 4,
                           color:
                             combinedExpense >
                             0
-                              ? '#b91c1c'
+                              ? '#dc2626'
                               : '#111827',
                           fontWeight:
                             combinedExpense >
                             0
-                              ? 700
+                              ? 800
                               : 400,
                         }}
                       >
@@ -2561,17 +2125,13 @@ export function MonthlyDetailPage() {
 
                       <td
                         style={{
-                          padding:
-                            '2px 4px',
                           border:
                             '1px solid #d1d5db',
-                          fontSize:
-                            9,
+                          padding: 4,
+                          fontSize: 9,
                         }}
                       >
-                        {
-                          combinedNotes
-                        }
+                        {combinedNotes}
                       </td>
                     </tr>
                   );
@@ -2580,56 +2140,171 @@ export function MonthlyDetailPage() {
             </tbody>
           </table>
 
-          {/* الملخص */}
-
           <div
             style={{
-              display:
-                'grid',
+              display: 'grid',
               gridTemplateColumns:
                 'repeat(5, 1fr)',
               gap: 8,
-              marginTop:
-                12,
+              marginTop: 12,
             }}
           >
             <div
               style={{
                 border:
-                  '1.5px solid #16a34a',
-                borderRadius:
-                  9,
+                  '1px solid #16a34a',
+                borderRadius: 8,
                 padding: 9,
-                textAlign:
-                  'center',
+                textAlign: 'center',
               }}
             >
-              <div
-                style={{
-                  color:
-                    '#15803d',
-                  fontWeight:
-                    800,
-                }}
-              >
+              <div>
                 إجمالي الدخل
               </div>
 
-              <div
+              <strong
                 style={{
-                  fontSize:
-                    21,
-                  fontWeight:
-                    900,
-                  color:
-                    '#15803d',
-                  marginTop:
-                    5,
+                  color: '#15803d',
                 }}
               >
                 {totals.income.toLocaleString(
                   'en-US'
-                )}
+                )}{' '}
+                ر.س
+              </strong>
+            </div>
+
+            <div
+              style={{
+                border:
+                  '1px solid #ef4444',
+                borderRadius: 8,
+                padding: 9,
+                textAlign: 'center',
+              }}
+            >
+              <div>
+                إجمالي المصروفات
               </div>
 
-              <small
+              <strong
+                style={{
+                  color: '#dc2626',
+                }}
+              >
+                {totalExpense.toLocaleString(
+                  'en-US'
+                )}{' '}
+                ر.س
+              </strong>
+            </div>
+
+            <div
+              style={{
+                border:
+                  '1px solid #2563eb',
+                borderRadius: 8,
+                padding: 9,
+                textAlign: 'center',
+              }}
+            >
+              <div>
+                صافي الشهر
+              </div>
+
+              <strong
+                style={{
+                  color:
+                    net >= 0
+                      ? '#2563eb'
+                      : '#dc2626',
+                }}
+              >
+                {net.toLocaleString(
+                  'en-US'
+                )}{' '}
+                ر.س
+              </strong>
+            </div>
+
+            <div
+              style={{
+                border:
+                  '1px solid #f59e0b',
+                borderRadius: 8,
+                padding: 9,
+                textAlign: 'center',
+              }}
+            >
+              <div>
+                أيام مسجلة
+              </div>
+
+              <strong>
+                {
+                  totals.registeredDays
+                }
+              </strong>
+            </div>
+
+            <div
+              style={{
+                border:
+                  '1px solid #7c3aed',
+                borderRadius: 8,
+                padding: 9,
+                textAlign: 'center',
+              }}
+            >
+              <div>
+                المشاوير
+              </div>
+
+              <strong>
+                {totals.trips}
+              </strong>
+            </div>
+          </div>
+
+          {totals.linkedExpense >
+            0 && (
+            <div
+              style={{
+                marginTop: 10,
+                border:
+                  '1px solid #fecaca',
+                borderRadius: 8,
+                padding: 10,
+                textAlign: 'center',
+                background:
+                  '#fff7f7',
+                color: '#991b1b',
+                fontWeight: 800,
+              }}
+            >
+              مصاريف السواقين والمعدات:{' '}
+              {totals.linkedExpense.toLocaleString(
+                'en-US'
+              )}{' '}
+              ر.س
+            </div>
+          )}
+
+          <div
+            style={{
+              marginTop: 12,
+              background: '#073b7a',
+              color: '#ffffff',
+              borderRadius: 5,
+              padding: 8,
+              textAlign: 'center',
+              fontWeight: 700,
+            }}
+          >
+            تم إعداد هذا الكشف بواسطة BAKR PRO
+          </div>
+        </div>
+      </div>
+    </AppLayout>
+  );
+                  }
