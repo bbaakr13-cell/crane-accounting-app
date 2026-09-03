@@ -27,20 +27,29 @@ async function initializeGoogle() {
       webClientId:
         GOOGLE_WEB_CLIENT_ID,
 
-      mode: 'online',
+      mode:
+        'online',
     },
   });
 
   initialized = true;
 }
 
-export async function checkGoogleLogin(): Promise<boolean> {
+const GOOGLE_SCOPES = [
+  'email',
+  'profile',
+  GOOGLE_DRIVE_FILE_SCOPE,
+];
+
+export async function checkGoogleLogin():
+  Promise<boolean> {
   try {
     await initializeGoogle();
 
     const result =
       await SocialLogin.isLoggedIn({
-        provider: 'google',
+        provider:
+          'google',
       });
 
     return result.isLoggedIn;
@@ -54,25 +63,21 @@ export async function checkGoogleLogin(): Promise<boolean> {
   }
 }
 
-export async function loginWithGoogle(): Promise<GoogleUser> {
+export async function loginWithGoogle():
+  Promise<GoogleUser> {
   await initializeGoogle();
 
   const response =
     await SocialLogin.login({
-      provider: 'google',
+      provider:
+        'google',
 
       options: {
-        scopes: [
-          'email',
-          'profile',
-          GOOGLE_DRIVE_FILE_SCOPE,
-        ],
+        scopes:
+          GOOGLE_SCOPES,
 
         filterByAuthorizedAccounts:
           false,
-
-        autoSelectEnabled:
-          true,
       },
     });
 
@@ -113,48 +118,40 @@ export async function loginWithGoogle(): Promise<GoogleUser> {
   };
 }
 
-/* ==============================
-   الحصول على Access Token
-   لاستخدام Google Drive API
-============================== */
-
-export async function getGoogleAccessToken(): Promise<string> {
+export async function getGoogleAccessToken():
+  Promise<string> {
   await initializeGoogle();
 
   try {
-    const auth =
+    const authorization =
       await SocialLogin.getAuthorizationCode({
-        provider: 'google',
+        provider:
+          'google',
       });
 
     if (
-      auth?.accessToken
+      authorization?.accessToken
     ) {
-      return auth.accessToken;
+      return authorization.accessToken;
     }
   } catch (error) {
     console.warn(
-      'Google token unavailable, trying login again:',
+      'تعذر قراءة Google access token الحالي:',
       error
     );
   }
 
   const response =
     await SocialLogin.login({
-      provider: 'google',
+      provider:
+        'google',
 
       options: {
-        scopes: [
-          'email',
-          'profile',
-          GOOGLE_DRIVE_FILE_SCOPE,
-        ],
+        scopes:
+          GOOGLE_SCOPES,
 
         filterByAuthorizedAccounts:
-          true,
-
-        autoSelectEnabled:
-          true,
+          false,
       },
     });
 
@@ -163,15 +160,26 @@ export async function getGoogleAccessToken(): Promise<string> {
 
   if (
     result?.responseType !==
-      'online' ||
-    !result?.accessToken
+      'online'
   ) {
     throw new Error(
       'تعذر الحصول على صلاحية Google Drive'
     );
   }
 
-  return result.accessToken;
+  const accessToken =
+    typeof result?.accessToken ===
+      'string'
+      ? result.accessToken
+      : result?.accessToken?.token;
+
+  if (!accessToken) {
+    throw new Error(
+      'لم يتم استلام Access Token من Google'
+    );
+  }
+
+  return accessToken;
 }
 
 export async function logoutGoogle() {
@@ -179,7 +187,8 @@ export async function logoutGoogle() {
     await initializeGoogle();
 
     await SocialLogin.logout({
-      provider: 'google',
+      provider:
+        'google',
     });
   } catch (error) {
     console.error(
