@@ -4,12 +4,23 @@ import {
   Filesystem,
 } from '@capacitor/filesystem';
 
-const BACKUP_FOLDER = 'BAAKR_PRO_BACKUPS';
+import {
+  uploadBackupObjectToDrive,
+} from '@/lib/googleDrive';
+
+const BACKUP_FOLDER =
+  'BAAKR_PRO_BACKUPS';
 
 const APP_STORAGE_PREFIXES = [
   'crane_accounting_',
   'monthly-ledger-',
 ];
+
+const DAILY_DRIVE_MARKER =
+  'bakr_drive_daily_uploaded';
+
+const WEEKLY_DRIVE_MARKER =
+  'bakr_drive_weekly_uploaded';
 
 export type BackupType =
   | 'daily'
@@ -18,15 +29,23 @@ export type BackupType =
   | 'before_restore';
 
 export type BackupFile = {
-  app: 'BAKR PRO' | 'BAAKR PRO';
+  app:
+    | 'BAKR PRO'
+    | 'BAAKR PRO';
+
   version: 2;
+
   createdAt: string;
+
   type: BackupType;
-  data: Record<string, string>;
+
+  data:
+    Record<string, string>;
 };
 
 export type SavedBackup = {
   fileName: string;
+
   backup: BackupFile;
 };
 
@@ -67,7 +86,9 @@ function getAppData():
     const key =
       localStorage.key(i);
 
-    if (!key) continue;
+    if (!key) {
+      continue;
+    }
 
     if (!isAppDataKey(key)) {
       continue;
@@ -92,12 +113,19 @@ function makeBackup(
   type: BackupType
 ): BackupFile {
   return {
-    app: 'BAKR PRO',
-    version: 2,
+    app:
+      'BAKR PRO',
+
+    version:
+      2,
+
     createdAt:
       new Date().toISOString(),
+
     type,
-    data: getAppData(),
+
+    data:
+      getAppData(),
   };
 }
 
@@ -108,13 +136,17 @@ function makeBackup(
 async function ensureBackupFolder() {
   try {
     await Filesystem.mkdir({
-      path: BACKUP_FOLDER,
+      path:
+        BACKUP_FOLDER,
+
       directory:
         Directory.Data,
-      recursive: true,
+
+      recursive:
+        true,
     });
   } catch {
-    // المجلد موجود
+    // المجلد موجود مسبقًا
   }
 }
 
@@ -145,7 +177,8 @@ async function writeBackupFile(
     encoding:
       Encoding.UTF8,
 
-    recursive: true,
+    recursive:
+      true,
   });
 }
 
@@ -169,7 +202,8 @@ async function readBackupFile(
     });
 
   const text =
-    typeof result.data === 'string'
+    typeof result.data ===
+      'string'
       ? result.data
       : '';
 
@@ -178,7 +212,9 @@ async function readBackupFile(
       text
     ) as BackupFile;
 
-  validateBackup(backup);
+  validateBackup(
+    backup
+  );
 
   return backup;
 }
@@ -191,14 +227,17 @@ function validateBackup(
   backup: BackupFile
 ): void {
   const validApp =
-    backup?.app === 'BAKR PRO' ||
-    backup?.app === 'BAAKR PRO';
+    backup?.app ===
+      'BAKR PRO' ||
+    backup?.app ===
+      'BAAKR PRO';
 
   if (
     !backup ||
     !validApp ||
     !backup.data ||
-    typeof backup.data !== 'object'
+    typeof backup.data !==
+      'object'
   ) {
     throw new Error(
       'ملف النسخة الاحتياطية غير صالح'
@@ -233,7 +272,9 @@ function dateId() {
       '0'
     );
 
-  return `${year}-${month}-${day}`;
+  return (
+    `${year}-${month}-${day}`
+  );
 }
 
 function dateTimeId() {
@@ -365,6 +406,20 @@ function beforeRestoreFileName() {
   );
 }
 
+function dailyDriveFileName() {
+  return (
+    `BAKR-PRO-DAILY-` +
+    `${dateId()}.json`
+  );
+}
+
+function weeklyDriveFileName() {
+  return (
+    `BAKR-PRO-WEEKLY-` +
+    `${weekId()}.json`
+  );
+}
+
 /* ==============================
    هل الملف موجود؟
 ============================== */
@@ -467,7 +522,7 @@ async function keepLatest(
 }
 
 /* ==============================
-   نسخة يومية
+   نسخة يومية محلية
 ============================== */
 
 export async function createDailyBackup() {
@@ -479,11 +534,14 @@ export async function createDailyBackup() {
       fileName
     ))
   ) {
-    await writeBackupFile(
-      fileName,
+    const backup =
       makeBackup(
         'daily'
-      )
+      );
+
+    await writeBackupFile(
+      fileName,
+      backup
     );
   }
 
@@ -496,7 +554,7 @@ export async function createDailyBackup() {
 }
 
 /* ==============================
-   نسخة أسبوعية
+   نسخة أسبوعية محلية
 ============================== */
 
 export async function createWeeklyBackup() {
@@ -508,11 +566,14 @@ export async function createWeeklyBackup() {
       fileName
     ))
   ) {
-    await writeBackupFile(
-      fileName,
+    const backup =
       makeBackup(
         'weekly'
-      )
+      );
+
+    await writeBackupFile(
+      fileName,
+      backup
     );
   }
 
@@ -525,13 +586,130 @@ export async function createWeeklyBackup() {
 }
 
 /* ==============================
+   رفع النسخة اليومية إلى Drive
+============================== */
+
+async function uploadDailyBackupToDrive() {
+  const today =
+    dateId();
+
+  const alreadyUploaded =
+    localStorage.getItem(
+      DAILY_DRIVE_MARKER
+    );
+
+  if (
+    alreadyUploaded ===
+    today
+  ) {
+    return true;
+  }
+
+  const fileName =
+    dailyFileName();
+
+  const backup =
+    await readBackupFile(
+      fileName
+    );
+
+  await uploadBackupObjectToDrive(
+    dailyDriveFileName(),
+    backup
+  );
+
+  localStorage.setItem(
+    DAILY_DRIVE_MARKER,
+    today
+  );
+
+  return true;
+}
+
+/* ==============================
+   رفع النسخة الأسبوعية إلى Drive
+============================== */
+
+async function uploadWeeklyBackupToDrive() {
+  const currentWeek =
+    weekId();
+
+  const alreadyUploaded =
+    localStorage.getItem(
+      WEEKLY_DRIVE_MARKER
+    );
+
+  if (
+    alreadyUploaded ===
+    currentWeek
+  ) {
+    return true;
+  }
+
+  const fileName =
+    weeklyFileName();
+
+  const backup =
+    await readBackupFile(
+      fileName
+    );
+
+  await uploadBackupObjectToDrive(
+    weeklyDriveFileName(),
+    backup
+  );
+
+  localStorage.setItem(
+    WEEKLY_DRIVE_MARKER,
+    currentWeek
+  );
+
+  return true;
+}
+
+/* ==============================
    النسخ التلقائي
 ============================== */
 
 export async function runAutomaticBackup() {
   try {
+    /*
+      أولًا نحفظ النسخة
+      محليًا على الجهاز
+    */
+
     await createDailyBackup();
+
     await createWeeklyBackup();
+
+    /*
+      ثم نحاول رفعها
+      إلى Google Drive
+    */
+
+    try {
+      await uploadDailyBackupToDrive();
+    } catch (error) {
+      console.error(
+        'خطأ رفع النسخة اليومية إلى Google Drive:',
+        error
+      );
+    }
+
+    try {
+      await uploadWeeklyBackupToDrive();
+    } catch (error) {
+      console.error(
+        'خطأ رفع النسخة الأسبوعية إلى Google Drive:',
+        error
+      );
+    }
+
+    /*
+      نجاح النسخة المحلية
+      يعتبر نجاحًا حتى لو
+      تعذر الإنترنت مؤقتًا
+    */
 
     return true;
   } catch (error) {
@@ -604,7 +782,9 @@ async function createBeforeRestoreBackup() {
 export async function restoreBackup(
   backup: BackupFile
 ) {
-  validateBackup(backup);
+  validateBackup(
+    backup
+  );
 
   await createBeforeRestoreBackup();
 
@@ -621,7 +801,9 @@ export async function restoreBackup(
 
     if (
       key &&
-      isAppDataKey(key)
+      isAppDataKey(
+        key
+      )
     ) {
       keysToDelete.push(
         key
@@ -678,7 +860,7 @@ export async function getSavedBackups():
         backup,
       });
     } catch {
-      // تجاهل التالف
+      // تجاهل الملف التالف
     }
   }
 
@@ -745,7 +927,9 @@ export function parseBackupFile(
       text
     ) as BackupFile;
 
-  validateBackup(backup);
+  validateBackup(
+    backup
+  );
 
   return backup;
 }
@@ -776,7 +960,9 @@ export async function getBackupFileUri(
 export async function saveBackupForExport(
   backup: BackupFile
 ) {
-  validateBackup(backup);
+  validateBackup(
+    backup
+  );
 
   const fileName =
     `BAKR-PRO-BACKUP-` +
@@ -795,4 +981,4 @@ export async function saveBackupForExport(
         fileName
       ),
   };
-}
+      }
