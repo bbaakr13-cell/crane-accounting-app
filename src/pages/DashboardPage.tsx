@@ -706,6 +706,13 @@ export function DashboardPage() {
     },
 
     {
+      label: 'مصاريف السواقين والمعدات',
+      icon: Receipt,
+      path: '/operating-expenses',
+      tone: 'red',
+    },
+
+    {
       label: 'التقارير',
       icon: FileBarChart,
       path: '/reports',
@@ -1534,4 +1541,4 @@ function MoneyCard({
       </p>
     </button>
   );
-      }
+     }
