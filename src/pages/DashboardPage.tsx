@@ -3,8 +3,6 @@ import {
   TrendingDown,
   Wallet,
   Clock,
-  ArrowDownLeft,
-  ArrowUpLeft,
   Users,
   Truck,
   CalendarClock,
@@ -60,7 +58,7 @@ type ActionTone =
 
 type ActionItem = {
   label: string;
-  icon: any;
+  image: string;
   path: string;
   tone: ActionTone;
 };
@@ -437,29 +435,26 @@ export function DashboardPage() {
     setLocalSearchItems,
   ] = useState<SearchResult[]>([]);
 
-  const load = useCallback(
-    async () => {
-      try {
-        const [t, txs] =
-          await Promise.all([
-            fetchDashboardTotals(),
-            fetchAllTransactions(),
-          ]);
+  const load = useCallback(async () => {
+    try {
+      const [t, txs] =
+        await Promise.all([
+          fetchDashboardTotals(),
+          fetchAllTransactions(),
+        ]);
 
-        setTotals(t);
-        setAllTxs(txs);
-        setRecentTxs(txs.slice(0, 5));
-      } catch (error) {
-        console.error(
-          'Dashboard load error:',
-          error
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+      setTotals(t);
+      setAllTxs(txs);
+      setRecentTxs(txs.slice(0, 5));
+    } catch (error) {
+      console.error(
+        'Dashboard load error:',
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const refreshSearchData =
     useCallback(() => {
@@ -559,10 +554,7 @@ export function DashboardPage() {
       ];
 
       const unique =
-        new Map<
-          string,
-          SearchResult
-        >();
+        new Map<string, SearchResult>();
 
       allItems.forEach((item) => {
         if (!unique.has(item.id)) {
@@ -641,126 +633,135 @@ export function DashboardPage() {
   const actions: ActionItem[] = [
     {
       label: 'BAKR AI',
-      icon: Bot,
+      image: '/icons/bakr-ai.png',
       path: '/ai',
       tone: 'purple',
     },
 
     {
       label: 'إضافة دخل',
-      icon: ArrowDownLeft,
+      image:
+        '/icons/monthly-account.png',
       path: '/add',
       tone: 'green',
     },
 
     {
       label: 'إضافة مصروف',
-      icon: ArrowUpLeft,
+      image:
+        '/icons/operating-expenses.png',
       path: '/add',
       tone: 'red',
     },
 
     {
       label: 'العملاء',
-      icon: Users,
+      image: '/icons/customers.png',
       path: '/customers',
       tone: 'blue',
     },
 
     {
       label: 'المعدات',
-      icon: Truck,
+      image: '/icons/equipment.png',
       path: '/equipment',
       tone: 'gold',
     },
 
     {
       label: 'مشاوير يومية',
-      icon: Truck,
+      image: '/icons/daily-trips.png',
       path: '/daily-trips',
       tone: 'green',
     },
 
     {
       label: 'الحساب الشهري',
-      icon: CalendarClock,
+      image:
+        '/icons/monthly-account.png',
       path: '/monthly',
       tone: 'orange',
     },
 
     {
       label: 'التأجير الشهري',
-      icon: CalendarClock,
+      image:
+        '/icons/monthly-rental.png',
       path: '/monthly-rental',
       tone: 'purple',
     },
 
     {
       label: 'السواقين والمشغلين',
-      icon: Users,
+      image:
+        '/icons/drivers-operators.png',
       path: '/drivers',
       tone: 'gold',
     },
 
     {
-      label: 'مصاريف السواقين والمعدات',
-      icon: Receipt,
+      label:
+        'مصاريف السواقين والمعدات',
+      image:
+        '/icons/operating-expenses.png',
       path: '/operating-expenses',
       tone: 'red',
     },
 
     {
       label: 'التقارير',
-      icon: FileBarChart,
+      image: '/icons/reports.png',
       path: '/reports',
       tone: 'blue',
     },
 
     {
       label: 'الفواتير',
-      icon: FileText,
+      image: '/icons/invoices.png',
       path: '/invoices',
       tone: 'purple',
     },
 
     {
       label: 'فاتورة عمل',
-      icon: Receipt,
+      image:
+        '/icons/work-invoice.png',
       path: '/work-invoice',
       tone: 'blue',
     },
 
     {
       label: 'عرض سعر',
-      icon: FileText,
+      image: '/icons/quotation.png',
       path: '/quotation',
       tone: 'green',
     },
 
     {
       label: 'حساب اليوم',
-      icon: Calculator,
+      image:
+        '/icons/daily-calculator.png',
       path: '/daily-calculator',
       tone: 'gold',
     },
 
     {
       label: 'الحاسبة',
-      icon: Calculator,
+      image: '/icons/calculator.png',
       path: '/calculator',
       tone: 'purple',
     },
 
     {
       label: 'الإعدادات',
-      icon: Settings,
+      image: '/icons/settings.png',
       path: '/settings',
       tone: 'red',
     },
 
     {
       label: 'النسخ الاحتياطي',
-      icon: ShieldCheck,
+      image: '/icons/backup.png',
       path: '/backup',
       tone: 'blue',
     },
@@ -772,6 +773,7 @@ export function DashboardPage() {
         dir="rtl"
         className="w-full"
       >
+        {/* صورة الواجهة */}
         <section className="mb-4">
           <div
             className="relative overflow-hidden rounded-[25px] w-full"
@@ -857,6 +859,7 @@ export function DashboardPage() {
           </div>
         </section>
 
+        {/* البحث */}
         <section className="mb-5">
           <button
             type="button"
@@ -889,6 +892,7 @@ export function DashboardPage() {
           </button>
         </section>
 
+        {/* BAKR AI */}
         <section className="mb-5">
           <button
             type="button"
@@ -952,6 +956,7 @@ export function DashboardPage() {
           </button>
         </section>
 
+        {/* نظرة عامة */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[16px] font-black text-white">
@@ -1108,13 +1113,8 @@ export function DashboardPage() {
                     '/add'
                 )
                 .map((item) => {
-                  const Icon =
-                    item.icon;
-
                   const tone =
-                    tones[
-                      item.tone
-                    ];
+                    tones[item.tone];
 
                   return (
                     <button
@@ -1125,13 +1125,13 @@ export function DashboardPage() {
                           item.path
                         )
                       }
-                      className="min-h-[110px] rounded-[20px] flex flex-col items-center justify-center gap-2.5 px-1 active:scale-[0.95] transition-transform"
+                      className="min-h-[120px] rounded-[20px] flex flex-col items-center justify-center gap-2.5 px-1 active:scale-[0.95] transition-transform overflow-hidden"
                       style={{
                         background:
                           item.path ===
                           '/ai'
-                            ? 'linear-gradient(145deg,rgba(88,28,135,0.24),rgba(255,255,255,0.028))'
-                            : 'linear-gradient(145deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))',
+                            ? 'linear-gradient(145deg,rgba(88,28,135,0.22),rgba(255,255,255,0.025))'
+                            : 'linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))',
                         border:
                           item.path ===
                           '/ai'
@@ -1141,73 +1141,25 @@ export function DashboardPage() {
                           'inset 0 1px 0 rgba(255,255,255,0.035), 0 7px 16px rgba(0,0,0,0.16)',
                       }}
                     >
-                      {/* أيقونة 3D */}
+                      {/* صورة 3D الحقيقية */}
                       <div
-                        className="relative w-[58px] h-[58px] rounded-[19px] flex items-center justify-center overflow-hidden"
+                        className="relative w-[72px] h-[72px] rounded-[20px] overflow-hidden shrink-0"
                         style={{
-                          background: `
-                            linear-gradient(
-                              145deg,
-                              rgba(255,255,255,0.16) 0%,
-                              ${tone.background} 42%,
-                              rgba(0,0,0,0.30) 100%
-                            )
-                          `,
-                          border: `1px solid ${tone.color}45`,
+                          background:
+                            tone.background,
+                          border:
+                            `1px solid ${tone.color}35`,
                           boxShadow: `
-                            0 10px 18px rgba(0,0,0,0.38),
-                            inset 0 2px 2px rgba(255,255,255,0.18),
-                            inset 0 -4px 8px rgba(0,0,0,0.30),
+                            0 10px 22px rgba(0,0,0,0.42),
                             0 0 16px ${tone.color}18
                           `,
                         }}
                       >
-                        {/* اللمعة العلوية */}
-                        <div
-                          className="absolute top-[5px] left-[8px] right-[8px] h-[16px] rounded-full pointer-events-none"
-                          style={{
-                            background:
-                              'linear-gradient(180deg,rgba(255,255,255,0.18),transparent)',
-                            filter:
-                              'blur(1px)',
-                          }}
-                        />
-
-                        {/* إضاءة خلفية */}
-                        <div
-                          className="absolute w-[36px] h-[36px] rounded-[13px]"
-                          style={{
-                            background:
-                              `${tone.color}18`,
-                            boxShadow:
-                              `0 0 18px ${tone.color}25`,
-                          }}
-                        />
-
-                        <Icon
-                          className="relative z-10 w-[30px] h-[30px]"
-                          style={{
-                            color:
-                              tone.color,
-                            filter:
-                              'drop-shadow(0 3px 2px rgba(0,0,0,0.45)) drop-shadow(0 0 5px currentColor)',
-                          }}
-                          strokeWidth={
-                            2.3
-                          }
-                        />
-
-                        {/* حافة العمق السفلية */}
-                        <div
-                          className="absolute bottom-0 left-[8px] right-[8px] h-[3px] rounded-full"
-                          style={{
-                            background:
-                              tone.color,
-                            opacity:
-                              0.75,
-                            boxShadow:
-                              `0 0 8px ${tone.color}`,
-                          }}
+                        <img
+                          src={item.image}
+                          alt={item.label}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          draggable={false}
                         />
                       </div>
 
@@ -1221,6 +1173,7 @@ export function DashboardPage() {
           </div>
         </section>
 
+        {/* أحدث الحركات */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[16px] font-black text-white">
@@ -1310,6 +1263,7 @@ export function DashboardPage() {
 
         <div className="h-4" />
 
+        {/* نافذة البحث */}
         {searchOpen && (
           <div
             className="fixed inset-0 z-[99999] flex justify-center"
@@ -1605,4 +1559,4 @@ function MoneyCard({
       </p>
     </button>
   );
-      }
+              }
