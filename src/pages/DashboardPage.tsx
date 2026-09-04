@@ -448,10 +448,7 @@ export function DashboardPage() {
 
         setTotals(t);
         setAllTxs(txs);
-
-        setRecentTxs(
-          txs.slice(0, 5)
-        );
+        setRecentTxs(txs.slice(0, 5));
       } catch (error) {
         console.error(
           'Dashboard load error:',
@@ -1082,6 +1079,7 @@ export function DashboardPage() {
           </div>
         </section>
 
+        {/* الاختصارات السريعة */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[16px] font-black text-white">
@@ -1127,34 +1125,89 @@ export function DashboardPage() {
                           item.path
                         )
                       }
-                      className="min-h-[96px] rounded-[18px] flex flex-col items-center justify-center gap-2 px-1 active:scale-[0.96] transition-transform"
+                      className="min-h-[110px] rounded-[20px] flex flex-col items-center justify-center gap-2.5 px-1 active:scale-[0.95] transition-transform"
                       style={{
                         background:
                           item.path ===
                           '/ai'
-                            ? 'linear-gradient(145deg,rgba(88,28,135,0.22),rgba(255,255,255,0.025))'
-                            : 'rgba(255,255,255,0.025)',
+                            ? 'linear-gradient(145deg,rgba(88,28,135,0.24),rgba(255,255,255,0.028))'
+                            : 'linear-gradient(145deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))',
                         border:
                           item.path ===
                           '/ai'
-                            ? '1px solid rgba(192,132,252,0.16)'
-                            : '1px solid rgba(255,255,255,0.045)',
+                            ? '1px solid rgba(192,132,252,0.18)'
+                            : '1px solid rgba(255,255,255,0.055)',
+                        boxShadow:
+                          'inset 0 1px 0 rgba(255,255,255,0.035), 0 7px 16px rgba(0,0,0,0.16)',
                       }}
                     >
+                      {/* أيقونة 3D */}
                       <div
-                        className="w-11 h-11 rounded-[15px] flex items-center justify-center"
+                        className="relative w-[58px] h-[58px] rounded-[19px] flex items-center justify-center overflow-hidden"
                         style={{
-                          background:
-                            tone.background,
+                          background: `
+                            linear-gradient(
+                              145deg,
+                              rgba(255,255,255,0.16) 0%,
+                              ${tone.background} 42%,
+                              rgba(0,0,0,0.30) 100%
+                            )
+                          `,
+                          border: `1px solid ${tone.color}45`,
+                          boxShadow: `
+                            0 10px 18px rgba(0,0,0,0.38),
+                            inset 0 2px 2px rgba(255,255,255,0.18),
+                            inset 0 -4px 8px rgba(0,0,0,0.30),
+                            0 0 16px ${tone.color}18
+                          `,
                         }}
                       >
+                        {/* اللمعة العلوية */}
+                        <div
+                          className="absolute top-[5px] left-[8px] right-[8px] h-[16px] rounded-full pointer-events-none"
+                          style={{
+                            background:
+                              'linear-gradient(180deg,rgba(255,255,255,0.18),transparent)',
+                            filter:
+                              'blur(1px)',
+                          }}
+                        />
+
+                        {/* إضاءة خلفية */}
+                        <div
+                          className="absolute w-[36px] h-[36px] rounded-[13px]"
+                          style={{
+                            background:
+                              `${tone.color}18`,
+                            boxShadow:
+                              `0 0 18px ${tone.color}25`,
+                          }}
+                        />
+
                         <Icon
-                          className="w-5 h-5"
+                          className="relative z-10 w-[30px] h-[30px]"
                           style={{
                             color:
                               tone.color,
+                            filter:
+                              'drop-shadow(0 3px 2px rgba(0,0,0,0.45)) drop-shadow(0 0 5px currentColor)',
                           }}
-                          strokeWidth={2}
+                          strokeWidth={
+                            2.3
+                          }
+                        />
+
+                        {/* حافة العمق السفلية */}
+                        <div
+                          className="absolute bottom-0 left-[8px] right-[8px] h-[3px] rounded-full"
+                          style={{
+                            background:
+                              tone.color,
+                            opacity:
+                              0.75,
+                            boxShadow:
+                              `0 0 8px ${tone.color}`,
+                          }}
                         />
                       </div>
 
@@ -1552,4 +1605,4 @@ function MoneyCard({
       </p>
     </button>
   );
-            }
+      }
