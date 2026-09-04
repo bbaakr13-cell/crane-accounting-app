@@ -1033,14 +1033,17 @@ export function DashboardPage() {
           </div>
         </section>
 
+        {/* الزران الرئيسيان */}
         <section className="mt-5">
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() =>
-                navigate('/add')
+                navigate(
+                  '/daily-trips'
+                )
               }
-              className="h-[57px] rounded-[18px] flex items-center justify-center gap-2 font-bold text-[13px] active:scale-[0.97] transition-transform"
+              className="h-[57px] rounded-[18px] flex items-center justify-center gap-2 px-2 font-bold text-[13px] active:scale-[0.97] transition-transform"
               style={{
                 background:
                   'linear-gradient(135deg,#15803d,#22c55e)',
@@ -1048,16 +1051,21 @@ export function DashboardPage() {
                   '0 8px 20px rgba(34,197,94,0.14)',
               }}
             >
-              <ArrowDownLeft className="w-5 h-5" />
-              إضافة دخل
+              <Truck className="w-5 h-5 shrink-0" />
+
+              <span>
+                مشاوير يومية
+              </span>
             </button>
 
             <button
               type="button"
               onClick={() =>
-                navigate('/add')
+                navigate(
+                  '/operating-expenses'
+                )
               }
-              className="h-[57px] rounded-[18px] flex items-center justify-center gap-2 font-bold text-[13px] active:scale-[0.97] transition-transform"
+              className="min-h-[57px] rounded-[18px] flex items-center justify-center gap-2 px-2 font-bold text-[11px] active:scale-[0.97] transition-transform"
               style={{
                 background:
                   'linear-gradient(135deg,#be123c,#ef4444)',
@@ -1065,8 +1073,11 @@ export function DashboardPage() {
                   '0 8px 20px rgba(239,68,68,0.14)',
               }}
             >
-              <ArrowUpLeft className="w-5 h-5" />
-              إضافة مصروف
+              <Receipt className="w-5 h-5 shrink-0" />
+
+              <span className="leading-[16px] text-center">
+                مصاريف السواقين والمعدات
+              </span>
             </button>
           </div>
         </section>
@@ -1541,4 +1552,4 @@ function MoneyCard({
       </p>
     </button>
   );
-     }
+            }
