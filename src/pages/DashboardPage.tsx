@@ -363,25 +363,21 @@ function buildTransactionSearchItems(
           'type',
         ]) || `حركة مالية ${index + 1}`;
 
-      const amount =
-        firstValue(data, [
-          'amount',
-          'total',
-          'value',
-          'price',
-        ]);
+      const amount = firstValue(data, [
+        'amount',
+        'total',
+        'value',
+        'price',
+      ]);
 
-      const date =
-        firstValue(data, [
-          'date',
-          'createdAt',
-          'created_at',
-        ]);
+      const date = firstValue(data, [
+        'date',
+        'createdAt',
+        'created_at',
+      ]);
 
       const subtitle = [
-        amount
-          ? `${amount} ر.س`
-          : '',
+        amount ? `${amount} ر.س` : '',
         date,
       ]
         .filter(Boolean)
@@ -437,11 +433,10 @@ export function DashboardPage() {
 
   const load = useCallback(async () => {
     try {
-      const [t, txs] =
-        await Promise.all([
-          fetchDashboardTotals(),
-          fetchAllTransactions(),
-        ]);
+      const [t, txs] = await Promise.all([
+        fetchDashboardTotals(),
+        fetchAllTransactions(),
+      ]);
 
       setTotals(t);
       setAllTxs(txs);
@@ -534,54 +529,44 @@ export function DashboardPage() {
       [allTxs]
     );
 
-  const searchResults =
-    useMemo(() => {
-      const query =
-        normalizeSearch(searchQuery);
+  const searchResults = useMemo(() => {
+    const query =
+      normalizeSearch(searchQuery);
 
-      if (query.length < 1) {
-        return [];
+    if (query.length < 1) {
+      return [];
+    }
+
+    const words = query
+      .split(' ')
+      .filter(Boolean);
+
+    const allItems = [
+      ...transactionSearchItems,
+      ...localSearchItems,
+    ];
+
+    const unique =
+      new Map<string, SearchResult>();
+
+    allItems.forEach((item) => {
+      if (!unique.has(item.id)) {
+        unique.set(item.id, item);
       }
+    });
 
-      const words =
-        query
-          .split(' ')
-          .filter(Boolean);
-
-      const allItems = [
-        ...transactionSearchItems,
-        ...localSearchItems,
-      ];
-
-      const unique =
-        new Map<string, SearchResult>();
-
-      allItems.forEach((item) => {
-        if (!unique.has(item.id)) {
-          unique.set(
-            item.id,
-            item
-          );
-        }
-      });
-
-      return Array.from(
-        unique.values()
-      )
-        .filter((item) => {
-          return words.every(
-            (word) =>
-              item.searchText.includes(
-                word
-              )
-          );
-        })
-        .slice(0, 50);
-    }, [
-      searchQuery,
-      localSearchItems,
-      transactionSearchItems,
-    ]);
+    return Array.from(unique.values())
+      .filter((item) => {
+        return words.every((word) =>
+          item.searchText.includes(word)
+        );
+      })
+      .slice(0, 50);
+  }, [
+    searchQuery,
+    localSearchItems,
+    transactionSearchItems,
+  ]);
 
   const groupedSearchResults =
     useMemo(() => {
@@ -590,20 +575,13 @@ export function DashboardPage() {
         SearchResult[]
       > = {};
 
-      searchResults.forEach(
-        (item) => {
-          if (
-            !groups[item.category]
-          ) {
-            groups[item.category] =
-              [];
-          }
-
-          groups[item.category].push(
-            item
-          );
+      searchResults.forEach((item) => {
+        if (!groups[item.category]) {
+          groups[item.category] = [];
         }
-      );
+
+        groups[item.category].push(item);
+      });
 
       return groups;
     }, [searchResults]);
@@ -637,60 +615,48 @@ export function DashboardPage() {
       path: '/ai',
       tone: 'purple',
     },
-
     {
       label: 'إضافة دخل',
-      image:
-        '/icons/monthly-account.png',
+      image: '/icons/monthly-account.png',
       path: '/add',
       tone: 'green',
     },
-
     {
       label: 'إضافة مصروف',
-      image:
-        '/icons/operating-expenses.png',
+      image: '/icons/operating-expenses.png',
       path: '/add',
       tone: 'red',
     },
-
     {
       label: 'العملاء',
       image: '/icons/customers.png',
       path: '/customers',
       tone: 'blue',
     },
-
     {
       label: 'المعدات',
       image: '/icons/equipment.png',
       path: '/equipment',
       tone: 'gold',
     },
-
     {
       label: 'مشاوير يومية',
       image: '/icons/daily-trips.png',
       path: '/daily-trips',
       tone: 'green',
     },
-
     {
       label: 'الحساب الشهري',
-      image:
-        '/icons/monthly-account.png',
+      image: '/icons/monthly-account.png',
       path: '/monthly',
       tone: 'orange',
     },
-
     {
       label: 'التأجير الشهري',
-      image:
-        '/icons/monthly-rental.png',
+      image: '/icons/monthly-rental.png',
       path: '/monthly-rental',
       tone: 'purple',
     },
-
     {
       label: 'السواقين والمشغلين',
       image:
@@ -698,7 +664,6 @@ export function DashboardPage() {
       path: '/drivers',
       tone: 'gold',
     },
-
     {
       label:
         'مصاريف السواقين والمعدات',
@@ -707,36 +672,30 @@ export function DashboardPage() {
       path: '/operating-expenses',
       tone: 'red',
     },
-
     {
       label: 'التقارير',
       image: '/icons/reports.png',
       path: '/reports',
       tone: 'blue',
     },
-
     {
       label: 'الفواتير',
       image: '/icons/invoices.png',
       path: '/invoices',
       tone: 'purple',
     },
-
     {
       label: 'فاتورة عمل',
-      image:
-        '/icons/work-invoice.png',
+      image: '/icons/work-invoice.png',
       path: '/work-invoice',
       tone: 'blue',
     },
-
     {
       label: 'عرض سعر',
       image: '/icons/quotation.png',
       path: '/quotation',
       tone: 'green',
     },
-
     {
       label: 'حساب اليوم',
       image:
@@ -744,21 +703,18 @@ export function DashboardPage() {
       path: '/daily-calculator',
       tone: 'gold',
     },
-
     {
       label: 'الحاسبة',
       image: '/icons/calculator.png',
       path: '/calculator',
       tone: 'purple',
     },
-
     {
       label: 'الإعدادات',
       image: '/icons/settings.png',
       path: '/settings',
       tone: 'red',
     },
-
     {
       label: 'النسخ الاحتياطي',
       image: '/icons/backup.png',
@@ -769,10 +725,7 @@ export function DashboardPage() {
 
   return (
     <AppLayout>
-      <div
-        dir="rtl"
-        className="w-full"
-      >
+      <div dir="rtl" className="w-full">
         {/* صورة الواجهة */}
         <section className="mb-4">
           <div
@@ -845,9 +798,7 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    navigate(
-                      '/settings'
-                    )
+                    navigate('/settings')
                   }
                   className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center active:scale-95"
                   aria-label="تغيير صورة الواجهة"
@@ -896,9 +847,7 @@ export function DashboardPage() {
         <section className="mb-5">
           <button
             type="button"
-            onClick={() =>
-              navigate('/ai')
-            }
+            onClick={() => navigate('/ai')}
             className="relative w-full overflow-hidden rounded-[22px] p-4 text-right active:scale-[0.98] transition-transform"
             style={{
               background:
@@ -979,9 +928,7 @@ export function DashboardPage() {
               bg="rgba(34,197,94,0.10)"
               border="rgba(34,197,94,0.17)"
               onClick={() =>
-                navigate(
-                  '/transactions'
-                )
+                navigate('/transactions')
               }
             />
 
@@ -995,9 +942,7 @@ export function DashboardPage() {
               bg="rgba(239,68,68,0.10)"
               border="rgba(239,68,68,0.17)"
               onClick={() =>
-                navigate(
-                  '/transactions'
-                )
+                navigate('/transactions')
               }
             />
 
@@ -1011,9 +956,7 @@ export function DashboardPage() {
               bg="rgba(59,130,246,0.10)"
               border="rgba(59,130,246,0.17)"
               onClick={() =>
-                navigate(
-                  '/reports'
-                )
+                navigate('/reports')
               }
             />
 
@@ -1027,39 +970,49 @@ export function DashboardPage() {
               bg="rgba(249,115,22,0.10)"
               border="rgba(249,115,22,0.17)"
               onClick={() =>
-                navigate(
-                  '/customers'
-                )
+                navigate('/customers')
               }
             />
           </div>
         </section>
 
-        {/* الزران الرئيسيان */}
+        {/* الزران الرئيسيان 3D */}
         <section className="mt-5">
           <div className="grid grid-cols-2 gap-3">
+
+            {/* مشاوير يومية */}
             <button
               type="button"
               onClick={() =>
-                navigate(
-                  '/daily-trips'
-                )
+                navigate('/daily-trips')
               }
-              className="h-[57px] rounded-[18px] flex items-center justify-center gap-2 px-2 font-bold text-[13px] active:scale-[0.97] transition-transform"
+              className="relative w-full overflow-hidden rounded-[20px] active:scale-[0.97] transition-transform"
               style={{
-                background:
-                  'linear-gradient(135deg,#15803d,#22c55e)',
+                aspectRatio: '2.25 / 1',
+                border:
+                  '1px solid rgba(34,197,94,0.30)',
                 boxShadow:
-                  '0 8px 20px rgba(34,197,94,0.14)',
+                  '0 10px 25px rgba(0,0,0,0.38), 0 0 18px rgba(34,197,94,0.14)',
+                background: '#07131f',
               }}
             >
-              <Truck className="w-5 h-5 shrink-0" />
+              <img
+                src="/icons/daily-trips-3d.png"
+                alt="مشاوير يومية"
+                className="absolute inset-0 w-full h-full object-cover"
+                draggable={false}
+              />
 
-              <span>
-                مشاوير يومية
-              </span>
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255,255,255,0.16)',
+                }}
+              />
             </button>
 
+            {/* مصاريف السواقين والمعدات */}
             <button
               type="button"
               onClick={() =>
@@ -1067,20 +1020,32 @@ export function DashboardPage() {
                   '/operating-expenses'
                 )
               }
-              className="min-h-[57px] rounded-[18px] flex items-center justify-center gap-2 px-2 font-bold text-[11px] active:scale-[0.97] transition-transform"
+              className="relative w-full overflow-hidden rounded-[20px] active:scale-[0.97] transition-transform"
               style={{
-                background:
-                  'linear-gradient(135deg,#be123c,#ef4444)',
+                aspectRatio: '2.25 / 1',
+                border:
+                  '1px solid rgba(239,68,68,0.32)',
                 boxShadow:
-                  '0 8px 20px rgba(239,68,68,0.14)',
+                  '0 10px 25px rgba(0,0,0,0.38), 0 0 18px rgba(239,68,68,0.14)',
+                background: '#07131f',
               }}
             >
-              <Receipt className="w-5 h-5 shrink-0" />
+              <img
+                src="/icons/operating-expenses-3d.png"
+                alt="مصاريف السواقين والمعدات"
+                className="absolute inset-0 w-full h-full object-cover"
+                draggable={false}
+              />
 
-              <span className="leading-[16px] text-center">
-                مصاريف السواقين والمعدات
-              </span>
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255,255,255,0.16)',
+                }}
+              />
             </button>
+
           </div>
         </section>
 
@@ -1109,8 +1074,7 @@ export function DashboardPage() {
               {actions
                 .filter(
                   (item) =>
-                    item.path !==
-                    '/add'
+                    item.path !== '/add'
                 )
                 .map((item) => {
                   const tone =
@@ -1121,27 +1085,22 @@ export function DashboardPage() {
                       key={`${item.path}-${item.label}`}
                       type="button"
                       onClick={() =>
-                        navigate(
-                          item.path
-                        )
+                        navigate(item.path)
                       }
                       className="min-h-[120px] rounded-[20px] flex flex-col items-center justify-center gap-2.5 px-1 active:scale-[0.95] transition-transform overflow-hidden"
                       style={{
                         background:
-                          item.path ===
-                          '/ai'
+                          item.path === '/ai'
                             ? 'linear-gradient(145deg,rgba(88,28,135,0.22),rgba(255,255,255,0.025))'
                             : 'linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))',
                         border:
-                          item.path ===
-                          '/ai'
+                          item.path === '/ai'
                             ? '1px solid rgba(192,132,252,0.18)'
                             : '1px solid rgba(255,255,255,0.055)',
                         boxShadow:
                           'inset 0 1px 0 rgba(255,255,255,0.035), 0 7px 16px rgba(0,0,0,0.16)',
                       }}
                     >
-                      {/* صورة 3D الحقيقية */}
                       <div
                         className="relative w-[72px] h-[72px] rounded-[20px] overflow-hidden shrink-0"
                         style={{
@@ -1183,14 +1142,11 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={() =>
-                navigate(
-                  '/transactions'
-                )
+                navigate('/transactions')
               }
               className="flex items-center gap-1 text-[11px] font-bold text-amber-400"
             >
               عرض الكل
-
               <ChevronLeft className="w-4 h-4" />
             </button>
           </div>
@@ -1211,8 +1167,7 @@ export function DashboardPage() {
                 جاري التحميل...
               </p>
             </div>
-          ) : recentTxs.length ===
-            0 ? (
+          ) : recentTxs.length === 0 ? (
             <div
               className="rounded-[24px] p-7 text-center"
               style={{
@@ -1242,21 +1197,18 @@ export function DashboardPage() {
                 className="mt-4 px-5 py-2.5 rounded-xl font-bold text-[12px] text-slate-950 bg-gradient-to-br from-amber-400 to-orange-500 inline-flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-
                 إضافة حركة
               </button>
             </div>
           ) : (
             <div className="space-y-2.5">
-              {recentTxs.map(
-                (tx, i) => (
-                  <TransactionItem
-                    key={tx.data.id}
-                    tx={tx}
-                    delay={i * 50}
-                  />
-                )
-              )}
+              {recentTxs.map((tx, i) => (
+                <TransactionItem
+                  key={tx.data.id}
+                  tx={tx}
+                  delay={i * 50}
+                />
+              ))}
             </div>
           )}
         </section>
@@ -1380,8 +1332,7 @@ export function DashboardPage() {
               )}
 
               {searchQuery &&
-                searchResults.length ===
-                  0 && (
+                searchResults.length === 0 && (
                   <div className="mt-16 text-center">
                     <div className="w-16 h-16 rounded-[20px] bg-amber-500/8 flex items-center justify-center mx-auto">
                       <Search className="w-7 h-7 text-amber-400/50" />
@@ -1398,8 +1349,7 @@ export function DashboardPage() {
                 )}
 
               {searchQuery &&
-                searchResults.length >
-                  0 && (
+                searchResults.length > 0 && (
                   <div className="mt-5 space-y-5">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-slate-500">
@@ -1407,9 +1357,7 @@ export function DashboardPage() {
                       </span>
 
                       <span className="text-[10px] text-amber-400">
-                        {
-                          searchResults.length
-                        }{' '}
+                        {searchResults.length}{' '}
                         نتيجة
                       </span>
                     </div>
@@ -1417,30 +1365,17 @@ export function DashboardPage() {
                     {Object.entries(
                       groupedSearchResults
                     ).map(
-                      ([
-                        category,
-                        items,
-                      ]) => (
-                        <section
-                          key={
-                            category
-                          }
-                        >
+                      ([category, items]) => (
+                        <section key={category}>
                           <h3 className="text-[12px] font-black text-slate-300 mb-2">
-                            {
-                              category
-                            }
+                            {category}
                           </h3>
 
                           <div className="space-y-2">
                             {items.map(
-                              (
-                                item
-                              ) => (
+                              (item) => (
                                 <button
-                                  key={
-                                    item.id
-                                  }
+                                  key={item.id}
                                   type="button"
                                   onClick={() =>
                                     openSearchResult(
@@ -1461,9 +1396,7 @@ export function DashboardPage() {
 
                                   <div className="flex-1 min-w-0">
                                     <p className="text-[12px] font-bold text-white truncate">
-                                      {
-                                        item.title
-                                      }
+                                      {item.title}
                                     </p>
 
                                     {item.subtitle && (
