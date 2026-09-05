@@ -249,11 +249,9 @@ function numberToArabicWords(value: number): string {
         thousands >= 3 &&
         thousands <= 10
       ) {
-        thousandText =
-          `${under1000(thousands)} آلاف`;
+        thousandText = `${under1000(thousands)} آلاف`;
       } else {
-        thousandText =
-          `${under1000(thousands)} ألف`;
+        thousandText = `${under1000(thousands)} ألف`;
       }
 
       if (rest === 0) {
@@ -282,11 +280,6 @@ export function WorkInvoicePage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    /*
-      تحميل الخط العربي من public.
-      هذا هو التغيير المهم:
-      لا نعتمد على Tahoma أو خط الهاتف.
-    */
     const styleId = 'invoice-arabic-font-style';
 
     if (!document.getElementById(styleId)) {
@@ -996,11 +989,11 @@ function InvoicePreview({
             {formatDate(data.date)}
           </SvgEnglishText>
 
-          {/* المطلوب من السيد / شركة المياه */}
+          {/* اسم الشركة - أكبر وأوضح */}
           <SvgArabicText
             x={410}
             y={493}
-            size={28}
+            size={36}
             weight={900}
             fill="#000000"
           >
@@ -1060,22 +1053,22 @@ function InvoicePreview({
             )
           )}
 
-          {/* المبلغ كتابةً */}
+          {/* المبلغ كتابةً - مرتب داخل خانة المجموع */}
           <SvgArabicText
-            x={355}
-            y={1250}
-            size={28}
+            x={330}
+            y={1262}
+            size={24}
             weight={900}
             fill="#000000"
           >
             {totalWords}
           </SvgArabicText>
 
-          {/* الإجمالي الرقمي */}
+          {/* المجموع الرقمي - في منتصف خانته */}
           <SvgEnglishText
             x={902}
-            y={1250}
-            size={42}
+            y={1262}
+            size={38}
             weight={900}
             fill="#000000"
           >
@@ -1136,11 +1129,6 @@ function SvgArabicText({
       direction="rtl"
       unicodeBidi="plaintext"
       style={{
-        /*
-          مهم:
-          نستخدم الخط المرفوع داخل public
-          وليس Tahoma من الجهاز.
-        */
         fontFamily: `'${ARABIC_FONT_NAME}'`,
         fontWeight: 900,
         fontStyle: 'normal',
@@ -1269,4 +1257,4 @@ function DateField({
       />
     </label>
   );
-}
+          }
