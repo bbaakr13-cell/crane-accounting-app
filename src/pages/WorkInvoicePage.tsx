@@ -270,6 +270,96 @@ function numberToArabicWords(value: number): string {
   return `${convert(n)} ريال لا غير`;
 }
 
+/* =========================================
+   تحويل Blob إلى Data URL كامل
+========================================= */
+
+function blobToDataUrl(
+  blob: Blob
+): Promise<string> {
+  return new Promise(
+    (resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        resolve(
+          String(reader.result || '')
+        );
+      };
+
+      reader.onerror = () => {
+        reject(reader.error);
+      };
+
+      reader.readAsDataURL(blob);
+    }
+  );
+}
+
+/* =========================================
+   تحميل الخط وتحويله Base64
+========================================= */
+
+let cachedArabicFontDataUrl = '';
+
+async function getArabicFontDataUrl() {
+  if (cachedArabicFontDataUrl) {
+    return cachedArabicFontDataUrl;
+  }
+
+  const response = await fetch(
+    ARABIC_FONT_URL,
+    {
+      cache: 'no-store',
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      'تعذر تحميل خط Hacen Egypt'
+    );
+  }
+
+  const blob = await response.blob();
+
+  cachedArabicFontDataUrl =
+    await blobToDataUrl(blob);
+
+  return cachedArabicFontDataUrl;
+}
+
+/* =========================================
+   تحويل صورة القالب إلى Data URL
+========================================= */
+
+let cachedTemplateDataUrl = '';
+
+async function getTemplateDataUrl() {
+  if (cachedTemplateDataUrl) {
+    return cachedTemplateDataUrl;
+  }
+
+  const response = await fetch(
+    '/work-invoice-template.png',
+    {
+      cache: 'no-store',
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      'تعذر تحميل قالب الفاتورة'
+    );
+  }
+
+  const blob = await response.blob();
+
+  cachedTemplateDataUrl =
+    await blobToDataUrl(blob);
+
+  return cachedTemplateDataUrl;
+}
+
 export function WorkInvoicePage() {
   const navigate = useNavigate();
 
@@ -451,37 +541,6 @@ export function WorkInvoicePage() {
     );
   }
 
-  async function waitForTemplate() {
-    const element =
-      invoiceRef.current;
-
-    if (!element) return;
-
-    const images = Array.from(
-      element.querySelectorAll('img')
-    );
-
-    await Promise.all(
-      images.map(
-        (image) =>
-          new Promise<void>(
-            (resolve) => {
-              if (image.complete) {
-                resolve();
-                return;
-              }
-
-              image.onload =
-                () => resolve();
-
-              image.onerror =
-                () => resolve();
-            }
-          )
-      )
-    );
-  }
-
   async function waitForArabicFont() {
     try {
       await document.fonts.load(
@@ -497,140 +556,335 @@ export function WorkInvoicePage() {
     }
   }
 
-  async function prepareFontForCapture() {
-    const styleId =
-      'invoice-arabic-font-capture-style';
+  /* =========================================
+     إنشاء نسخة مخفية ثابتة للفواتير
+     الخط + القالب داخلها Data URL
+  ========================================= */
 
-    const oldStyle =
-      document.getElementById(
-        styleId
-      );
-
-    if (oldStyle) {
-      oldStyle.remove();
-    }
-
-    try {
-      const response =
-        await fetch(
-          ARABIC_FONT_URL
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          'Unable to load Hacen Egypt font'
-        );
-      }
-
-      const blob =
-        await response.blob();
-
-      const dataUrl =
-        await new Promise<string>(
-          (resolve, reject) => {
-            const reader =
-              new FileReader();
-
-            reader.onloadend = () => {
-              resolve(
-                String(
-                  reader.result || ''
-                )
-              );
-            };
-
-            reader.onerror = () =>
-              reject(
-                reader.error
-              );
-
-            reader.readAsDataURL(
-              blob
-            );
-          }
-        );
-
-      const style =
-        document.createElement(
-          'style'
-        );
-
-      style.id = styleId;
-
-      style.textContent = `
-        @font-face {
-          font-family: '${ARABIC_FONT_NAME}';
-          src: url('${dataUrl}') format('truetype');
-          font-style: normal;
-          font-weight: 400;
-          font-display: block;
-        }
-      `;
-
-      document.head.appendChild(
-        style
-      );
-
-      await document.fonts.load(
-        `400 32px "${ARABIC_FONT_NAME}"`
-      );
-
-      await document.fonts.ready;
-    } catch (error) {
-      console.warn(
-        'Font capture preparation warning:',
-        error
-      );
-
-      await waitForArabicFont();
-    }
-  }
-
-  async function createCanvas() {
+  async function createCaptureElement() {
     if (!invoiceRef.current) {
       throw new Error(
         'Invoice preview not found'
       );
     }
 
-    await prepareFontForCapture();
-    await waitForTemplate();
+    const fontDataUrl =
+      await getArabicFontDataUrl();
+
+    const templateDataUrl =
+      await getTemplateDataUrl();
+
+    const original =
+      invoiceRef.current;
+
+    const clone =
+      original.cloneNode(
+        true
+      ) as HTMLDivElement;
+
+    clone.removeAttribute('ref');
+
+    clone.style.position = 'fixed';
+    clone.style.left = '-10000px';
+    clone.style.top = '0';
+    clone.style.width =
+      `${TEMPLATE_WIDTH}px`;
+    clone.style.height =
+      `${TEMPLATE_HEIGHT}px`;
+    clone.style.maxWidth = 'none';
+    clone.style.minWidth =
+      `${TEMPLATE_WIDTH}px`;
+    clone.style.minHeight =
+      `${TEMPLATE_HEIGHT}px`;
+    clone.style.aspectRatio = 'auto';
+    clone.style.background = '#ffffff';
+    clone.style.overflow = 'hidden';
+    clone.style.zIndex = '-999999';
+
+    /*
+     * نجعل صورة القالب نفسها Base64
+     * حتى لا يعتمد الالتقاط على ملف خارجي.
+     */
+    const images =
+      clone.querySelectorAll('img');
+
+    images.forEach((image) => {
+      image.src = templateDataUrl;
+    });
+
+    /*
+     * نزرع الخط نفسه داخل SVG.
+     * هذه أهم نقطة في الإصلاح.
+     */
+    const svg =
+      clone.querySelector('svg');
+
+    if (svg) {
+      svg.setAttribute(
+        'width',
+        String(TEMPLATE_WIDTH)
+      );
+
+      svg.setAttribute(
+        'height',
+        String(TEMPLATE_HEIGHT)
+      );
+
+      svg.setAttribute(
+        'viewBox',
+        `0 0 ${TEMPLATE_WIDTH} ${TEMPLATE_HEIGHT}`
+      );
+
+      svg.setAttribute(
+        'xmlns',
+        'http://www.w3.org/2000/svg'
+      );
+
+      const defs =
+        document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'defs'
+        );
+
+      const style =
+        document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'style'
+        );
+
+      style.textContent = `
+        @font-face {
+          font-family: '${ARABIC_FONT_NAME}';
+          src: url('${fontDataUrl}') format('truetype');
+          font-style: normal;
+          font-weight: 400;
+        }
+
+        .invoice-arabic-text {
+          font-family: '${ARABIC_FONT_NAME}' !important;
+          font-style: normal !important;
+          font-weight: 400 !important;
+        }
+      `;
+
+      defs.appendChild(style);
+
+      svg.insertBefore(
+        defs,
+        svg.firstChild
+      );
+
+      const textElements =
+        svg.querySelectorAll('text');
+
+      textElements.forEach(
+        (textElement) => {
+          const family =
+            textElement.style.fontFamily;
+
+          if (
+            family.includes(
+              ARABIC_FONT_NAME
+            )
+          ) {
+            textElement.classList.add(
+              'invoice-arabic-text'
+            );
+
+            textElement.style.fontFamily =
+              `'${ARABIC_FONT_NAME}'`;
+
+            textElement.style.fontWeight =
+              '400';
+          }
+        }
+      );
+    }
+
+    /*
+     * نضيف @font-face أيضاً داخل
+     * العنصر المخفي نفسه.
+     */
+    const embeddedStyle =
+      document.createElement('style');
+
+    embeddedStyle.textContent = `
+      @font-face {
+        font-family: '${ARABIC_FONT_NAME}';
+        src: url('${fontDataUrl}') format('truetype');
+        font-style: normal;
+        font-weight: 400;
+        font-display: block;
+      }
+
+      .invoice-capture-root text {
+        text-rendering: geometricPrecision;
+      }
+    `;
+
+    clone.classList.add(
+      'invoice-capture-root'
+    );
+
+    clone.prepend(
+      embeddedStyle
+    );
+
+    document.body.appendChild(
+      clone
+    );
+
+    /*
+     * ننتظر تحميل صورة القالب.
+     */
+    const clonedImages =
+      Array.from(
+        clone.querySelectorAll('img')
+      );
+
+    await Promise.all(
+      clonedImages.map(
+        (image) =>
+          new Promise<void>(
+            (resolve) => {
+              if (
+                image.complete &&
+                image.naturalWidth > 0
+              ) {
+                resolve();
+                return;
+              }
+
+              image.onload = () =>
+                resolve();
+
+              image.onerror = () =>
+                resolve();
+            }
+          )
+      )
+    );
+
+    /*
+     * نحمّل نسخة Base64 من الخط
+     * في document.fonts كذلك.
+     */
+    try {
+      const captureFont =
+        new FontFace(
+          ARABIC_FONT_NAME,
+          `url(${fontDataUrl})`,
+          {
+            style: 'normal',
+            weight: '400',
+          }
+        );
+
+      const loadedFont =
+        await captureFont.load();
+
+      document.fonts.add(
+        loadedFont
+      );
+
+      await document.fonts.ready;
+    } catch (error) {
+      console.warn(
+        'Capture FontFace warning:',
+        error
+      );
+    }
 
     await new Promise<void>(
       (resolve) =>
         setTimeout(
           resolve,
-          300
+          350
         )
     );
 
-    return html2canvas(
-      invoiceRef.current,
-      {
-        scale: 3,
-        useCORS: true,
-        backgroundColor:
-          '#ffffff',
-        logging: false,
+    return clone;
+  }
 
-        onclone: async (
-          clonedDocument
-        ) => {
-          try {
-            await clonedDocument.fonts.load(
-              `400 32px "${ARABIC_FONT_NAME}"`
-            );
+  /* =========================================
+     إنشاء Canvas من النسخة الثابتة
+  ========================================= */
 
-            await clonedDocument.fonts.ready;
-          } catch (error) {
-            console.warn(
-              'Cloned font warning:',
-              error
-            );
+  async function createCanvas() {
+    let captureElement:
+      HTMLDivElement | null = null;
+
+    try {
+      captureElement =
+        await createCaptureElement();
+
+      const canvas =
+        await html2canvas(
+          captureElement,
+          {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor:
+              '#ffffff',
+            logging: false,
+            width:
+              TEMPLATE_WIDTH,
+            height:
+              TEMPLATE_HEIGHT,
+            windowWidth:
+              TEMPLATE_WIDTH,
+            windowHeight:
+              TEMPLATE_HEIGHT,
+            scrollX: 0,
+            scrollY: 0,
+
+            onclone: (
+              clonedDocument
+            ) => {
+              const clonedRoot =
+                clonedDocument.querySelector(
+                  '.invoice-capture-root'
+                ) as
+                  | HTMLElement
+                  | null;
+
+              if (
+                clonedRoot
+              ) {
+                clonedRoot.style.width =
+                  `${TEMPLATE_WIDTH}px`;
+
+                clonedRoot.style.height =
+                  `${TEMPLATE_HEIGHT}px`;
+
+                clonedRoot.style.maxWidth =
+                  'none';
+
+                clonedRoot.style.position =
+                  'absolute';
+
+                clonedRoot.style.left =
+                  '0';
+
+                clonedRoot.style.top =
+                  '0';
+              }
+            },
           }
-        },
+        );
+
+      return canvas;
+    } finally {
+      if (
+        captureElement &&
+        captureElement.parentNode
+      ) {
+        captureElement.parentNode.removeChild(
+          captureElement
+        );
       }
-    );
+    }
   }
 
   async function createPdfBlob() {
@@ -639,14 +893,14 @@ export function WorkInvoicePage() {
 
     const image =
       canvas.toDataURL(
-        'image/jpeg',
-        0.98
+        'image/png'
       );
 
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
+      compress: true,
     });
 
     const pageWidth =
@@ -659,12 +913,15 @@ export function WorkInvoicePage() {
       canvas.width /
       canvas.height;
 
-    let width = pageWidth;
+    let width =
+      pageWidth;
+
     let height =
       width / ratio;
 
     if (height > pageHeight) {
-      height = pageHeight;
+      height =
+        pageHeight;
 
       width =
         height * ratio;
@@ -678,11 +935,13 @@ export function WorkInvoicePage() {
 
     pdf.addImage(
       image,
-      'JPEG',
+      'PNG',
       x,
       y,
       width,
-      height
+      height,
+      undefined,
+      'FAST'
     );
 
     return pdf.output('blob');
@@ -726,10 +985,6 @@ export function WorkInvoicePage() {
     );
   }
 
-  /*
-   * كل حفظ يحصل على اسم جديد.
-   * هذا يمنع عارض PDF من فتح نسخة قديمة مخزنة.
-   */
   function getFileName() {
     const number =
       data.invoiceNo
@@ -739,27 +994,36 @@ export function WorkInvoicePage() {
           '-'
         );
 
-    const now = new Date();
+    const now =
+      new Date();
 
     const stamp = [
       now.getFullYear(),
+
       String(
         now.getMonth() + 1
       ).padStart(2, '0'),
+
       String(
         now.getDate()
       ).padStart(2, '0'),
+
       '-',
+
       String(
         now.getHours()
       ).padStart(2, '0'),
+
       String(
         now.getMinutes()
       ).padStart(2, '0'),
+
       String(
         now.getSeconds()
       ).padStart(2, '0'),
+
       '-',
+
       String(
         now.getMilliseconds()
       ).padStart(3, '0'),
@@ -799,7 +1063,7 @@ export function WorkInvoicePage() {
         });
 
         alert(
-          `تم حفظ PDF جديد بنجاح\n${fileName}`
+          `تم حفظ PDF بنجاح\n${fileName}`
         );
       } catch {
         const url =
@@ -813,6 +1077,7 @@ export function WorkInvoicePage() {
           );
 
         anchor.href = url;
+
         anchor.download =
           fileName;
 
@@ -821,6 +1086,7 @@ export function WorkInvoicePage() {
         );
 
         anchor.click();
+
         anchor.remove();
 
         setTimeout(
@@ -832,7 +1098,10 @@ export function WorkInvoicePage() {
         );
       }
     } catch (error) {
-      console.error(error);
+      console.error(
+        'PDF save error:',
+        error
+      );
 
       alert(
         'حدث خطأ أثناء حفظ PDF'
@@ -871,14 +1140,20 @@ export function WorkInvoicePage() {
         });
 
       await Share.share({
-        title: 'فاتورة عمل',
-        text: 'فاتورة عمل',
-        url: result.uri,
+        title:
+          'فاتورة عمل',
+        text:
+          'فاتورة عمل',
+        url:
+          result.uri,
         dialogTitle:
           'مشاركة الفاتورة',
       });
     } catch (error) {
-      console.error(error);
+      console.error(
+        'PDF share error:',
+        error
+      );
 
       alert(
         'تعذرت مشاركة الفاتورة'
@@ -1084,8 +1359,7 @@ export function WorkInvoicePage() {
 
                 <div className="mt-3 pt-3 border-t border-white/10">
                   <div className="text-[11px] text-slate-400 mb-1">
-                    المبلغ كتابةً
-                    تلقائيًا
+                    المبلغ كتابةً تلقائيًا
                   </div>
 
                   <div className="text-white text-sm font-black leading-7">
@@ -1147,9 +1421,7 @@ export function WorkInvoicePage() {
               <button
                 type="button"
                 onClick={async () => {
-                  saveData(
-                    false
-                  );
+                  saveData(false);
 
                   await waitForArabicFont();
 
@@ -1159,13 +1431,11 @@ export function WorkInvoicePage() {
 
                   setTimeout(
                     () => {
-                      window.scrollTo(
-                        {
-                          top: 0,
-                          behavior:
-                            'smooth',
-                        }
-                      );
+                      window.scrollTo({
+                        top: 0,
+                        behavior:
+                          'smooth',
+                      });
                     },
                     50
                   );
@@ -1186,9 +1456,7 @@ export function WorkInvoicePage() {
                 </div>
 
                 <div className="text-slate-400 text-[11px] mt-1">
-                  تأكد من
-                  البيانات قبل
-                  الحفظ
+                  تأكد من البيانات قبل الحفظ
                 </div>
               </div>
 
@@ -1223,19 +1491,25 @@ export function WorkInvoicePage() {
             <div className="grid grid-cols-2 gap-3 mt-5">
               <button
                 type="button"
-                disabled={busy}
+                disabled={
+                  busy
+                }
                 onClick={
                   savePDF
                 }
                 className="h-14 rounded-2xl bg-emerald-600 text-white font-black flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <FileDown className="w-5 h-5" />
-                حفظ PDF
+                {busy
+                  ? 'جاري الحفظ...'
+                  : 'حفظ PDF'}
               </button>
 
               <button
                 type="button"
-                disabled={busy}
+                disabled={
+                  busy
+                }
                 onClick={
                   sharePDF
                 }
@@ -1275,25 +1549,20 @@ function InvoicePreview({
   ];
 
   const customerFontSize =
-    data.customer.length <=
-    18
+    data.customer.length <= 18
       ? 44
-      : data.customer
-            .length <= 28
+      : data.customer.length <= 28
       ? 36
-      : data.customer
-            .length <= 38
+      : data.customer.length <= 38
       ? 30
       : 26;
 
   const totalWordsFontSize =
     totalWords.length <= 38
       ? 34
-      : totalWords.length <=
-        50
+      : totalWords.length <= 50
       ? 30
-      : totalWords.length <=
-        60
+      : totalWords.length <= 60
       ? 27
       : 24;
 
@@ -1321,6 +1590,7 @@ function InvoicePreview({
           preserveAspectRatio="none"
           className="absolute inset-0 w-full h-full"
         >
+          {/* رقم الفاتورة */}
           <SvgEnglishText
             x={170}
             y={430}
@@ -1333,6 +1603,7 @@ function InvoicePreview({
             }
           </SvgEnglishText>
 
+          {/* التاريخ */}
           <SvgEnglishText
             x={884}
             y={430}
@@ -1345,6 +1616,7 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
+          {/* اسم العميل */}
           <text
             x={730}
             y={493}
@@ -1352,9 +1624,7 @@ function InvoicePreview({
             fontSize={
               customerFontSize
             }
-            fontWeight={
-              400
-            }
+            fontWeight={400}
             textAnchor="start"
             dominantBaseline="middle"
             direction="rtl"
@@ -1368,16 +1638,21 @@ function InvoicePreview({
                 'normal',
             }}
           >
-            {data.customer}
+            {
+              data.customer
+            }
           </text>
 
+          {/* البنود */}
           {data.rows.map(
             (
               row,
               index
             ) => (
               <React.Fragment
-                key={index}
+                key={
+                  index
+                }
               >
                 <SvgArabicText
                   x={265}
@@ -1387,9 +1662,7 @@ function InvoicePreview({
                     ]
                   }
                   size={28}
-                  weight={
-                    400
-                  }
+                  weight={400}
                   fill="#000000"
                 >
                   {
@@ -1405,12 +1678,12 @@ function InvoicePreview({
                     ]
                   }
                   size={24}
-                  weight={
-                    900
-                  }
+                  weight={900}
                   fill="#000000"
                 >
-                  {row.qty}
+                  {
+                    row.qty
+                  }
                 </SvgEnglishText>
 
                 <SvgEnglishText
@@ -1421,9 +1694,7 @@ function InvoicePreview({
                     ]
                   }
                   size={24}
-                  weight={
-                    900
-                  }
+                  weight={900}
                   fill="#000000"
                 >
                   {formatMoney(
@@ -1441,9 +1712,7 @@ function InvoicePreview({
                     ]
                   }
                   size={24}
-                  weight={
-                    900
-                  }
+                  weight={900}
                   fill="#000000"
                 >
                   {formatMoney(
@@ -1456,6 +1725,7 @@ function InvoicePreview({
             )
           )}
 
+          {/* المبلغ كتابةً */}
           <SvgArabicText
             x={405}
             y={1262}
@@ -1465,9 +1735,12 @@ function InvoicePreview({
             weight={400}
             fill="#000000"
           >
-            {totalWords}
+            {
+              totalWords
+            }
           </SvgArabicText>
 
+          {/* المجموع الرقمي */}
           <SvgEnglishText
             x={902}
             y={1262}
@@ -1480,6 +1753,7 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
+          {/* المستلم */}
           <SvgArabicText
             x={180}
             y={1398}
@@ -1492,6 +1766,7 @@ function InvoicePreview({
             }
           </SvgArabicText>
 
+          {/* البائع */}
           <SvgArabicText
             x={886}
             y={1398}
@@ -1530,7 +1805,9 @@ function SvgArabicText({
       x={x}
       y={y}
       fill={fill}
-      fontSize={size}
+      fontSize={
+        size
+      }
       fontWeight={
         weight
       }
@@ -1572,8 +1849,12 @@ function SvgEnglishText({
     <text
       x={x}
       y={y}
-      fill={fill}
-      fontSize={size}
+      fill={
+        fill
+      }
+      fontSize={
+        size
+      }
       fontWeight={
         weight
       }
@@ -1601,11 +1882,15 @@ function Section({
   return (
     <section className="mb-4 rounded-[22px] border border-white/10 bg-[#0b1524] p-4">
       <h2 className="text-white text-base font-black mb-4">
-        {title}
+        {
+          title
+        }
       </h2>
 
       <div className="space-y-3">
-        {children}
+        {
+          children
+        }
       </div>
     </section>
   );
@@ -1624,7 +1909,9 @@ function Field({
   onChange:
     (value: string) => void;
   placeholder?: string;
-  dir?: 'rtl' | 'ltr';
+  dir?:
+    | 'rtl'
+    | 'ltr';
   inputMode?:
     | 'text'
     | 'numeric'
@@ -1633,13 +1920,19 @@ function Field({
   return (
     <label className="block">
       <span className="block mb-2 text-[12px] font-bold text-slate-400">
-        {label}
+        {
+          label
+        }
       </span>
 
       <input
         type="text"
-        dir={dir}
-        value={value}
+        dir={
+          dir
+        }
+        value={
+          value
+        }
         inputMode={
           inputMode
         }
@@ -1650,8 +1943,7 @@ function Field({
           event
         ) =>
           onChange(
-            event.target
-              .value
+            event.target.value
           )
         }
         className="w-full h-12 px-3 rounded-xl bg-[#07111d] border border-white/10 text-white text-sm font-bold outline-none focus:border-blue-500/60"
@@ -1673,22 +1965,25 @@ function DateField({
   return (
     <label className="block">
       <span className="block mb-2 text-[12px] font-bold text-slate-400">
-        {label}
+        {
+          label
+        }
       </span>
 
       <input
         type="date"
-        value={value}
+        value={
+          value
+        }
         onChange={(
           event
         ) =>
           onChange(
-            event.target
-              .value
+            event.target.value
           )
         }
         className="w-full h-12 px-3 rounded-xl bg-[#07111d] border border-white/10 text-white text-sm font-bold outline-none focus:border-blue-500/60"
       />
     </label>
   );
-              }
+}
