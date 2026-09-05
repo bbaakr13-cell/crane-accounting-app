@@ -34,7 +34,7 @@ const STORAGE_KEY = 'baakr-work-invoice-v3';
 const TEMPLATE_WIDTH = 1056;
 const TEMPLATE_HEIGHT = 1440;
 
-/* الخط الجديد */
+/* خط Hacen Egypt */
 const ARABIC_FONT_NAME = 'HacenEgypt';
 
 type InvoiceRow = {
@@ -304,7 +304,7 @@ export function WorkInvoicePage() {
           font-family: '${ARABIC_FONT_NAME}';
           src: url('/hacen-egypt.ttf') format('truetype');
           font-style: normal;
-          font-weight: normal;
+          font-weight: 400;
           font-display: block;
         }
       `;
@@ -487,7 +487,7 @@ export function WorkInvoicePage() {
   async function waitForArabicFont() {
     try {
       await document.fonts.load(
-        `32px "${ARABIC_FONT_NAME}"`
+        `400 32px "${ARABIC_FONT_NAME}"`
       );
 
       await document.fonts.ready;
@@ -1121,6 +1121,7 @@ function InvoicePreview({
           preserveAspectRatio="none"
           className="absolute inset-0 w-full h-full"
         >
+          {/* رقم الفاتورة */}
           <SvgEnglishText
             x={170}
             y={430}
@@ -1131,6 +1132,7 @@ function InvoicePreview({
             {data.invoiceNo}
           </SvgEnglishText>
 
+          {/* التاريخ */}
           <SvgEnglishText
             x={884}
             y={430}
@@ -1143,6 +1145,7 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
+          {/* اسم العميل */}
           <text
             x={730}
             y={493}
@@ -1150,7 +1153,7 @@ function InvoicePreview({
             fontSize={
               customerFontSize
             }
-            fontWeight={900}
+            fontWeight={400}
             textAnchor="start"
             dominantBaseline="middle"
             direction="rtl"
@@ -1158,7 +1161,7 @@ function InvoicePreview({
             style={{
               fontFamily:
                 `'${ARABIC_FONT_NAME}'`,
-              fontWeight: 900,
+              fontWeight: 400,
               fontStyle:
                 'normal',
             }}
@@ -1166,6 +1169,7 @@ function InvoicePreview({
             {data.customer}
           </text>
 
+          {/* البنود */}
           {data.rows.map(
             (
               row,
@@ -1182,7 +1186,7 @@ function InvoicePreview({
                     ]
                   }
                   size={28}
-                  weight={900}
+                  weight={400}
                   fill="#000000"
                 >
                   {
@@ -1250,12 +1254,13 @@ function InvoicePreview({
             size={
               totalWordsFontSize
             }
-            weight={900}
+            weight={400}
             fill="#000000"
           >
             {totalWords}
           </SvgArabicText>
 
+          {/* المجموع الرقمي */}
           <SvgEnglishText
             x={902}
             y={1262}
@@ -1268,21 +1273,23 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
+          {/* المستلم */}
           <SvgArabicText
             x={180}
             y={1398}
             size={20}
-            weight={900}
+            weight={400}
             fill="#000000"
           >
             {data.receivedBy}
           </SvgArabicText>
 
+          {/* البائع */}
           <SvgArabicText
             x={886}
             y={1398}
             size={20}
-            weight={900}
+            weight={400}
             fill="#000000"
           >
             {data.salesman}
@@ -1322,7 +1329,7 @@ function SvgArabicText({
       style={{
         fontFamily:
           `'${ARABIC_FONT_NAME}'`,
-        fontWeight: 900,
+        fontWeight: weight,
         fontStyle: 'normal',
       }}
     >
@@ -1461,4 +1468,4 @@ function DateField({
       />
     </label>
   );
-    }
+  }
