@@ -52,6 +52,10 @@ import {
 } from '@/pages/EquipmentDetailPage';
 
 import {
+  EquipmentDocumentsPage,
+} from '@/pages/EquipmentDocumentsPage';
+
+import {
   MonthlyDetailPage,
 } from '@/pages/MonthlyDetailPage';
 
@@ -502,7 +506,6 @@ function App() {
       )}
 
       <Routes>
-
         <Route
           path="/"
           element={
@@ -556,6 +559,14 @@ function App() {
           path="/equipment/:id"
           element={
             <EquipmentDetailPage />
+          }
+        />
+
+        {/* ملفات المعدات */}
+        <Route
+          path="/equipment-documents"
+          element={
+            <EquipmentDocumentsPage />
           }
         />
 
@@ -677,7 +688,6 @@ function App() {
             <AboutPage />
           }
         />
-
       </Routes>
     </>
   );
