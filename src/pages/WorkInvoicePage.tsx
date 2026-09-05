@@ -31,10 +31,6 @@ import { AppLayout } from '@/components/layout/AppLayout';
 
 const STORAGE_KEY = 'baakr-work-invoice-v3';
 
-/*
-  القالب الجديد
-  public/work-invoice-template.png
-*/
 const TEMPLATE_WIDTH = 1056;
 const TEMPLATE_HEIGHT = 1440;
 
@@ -69,10 +65,6 @@ type InvoiceData = {
 };
 
 const createEmptyInvoice = (): InvoiceData => ({
-  /*
-    هذه البيانات أصبحت مطبوعة داخل صورة القالب.
-    أبقيناها هنا فقط حتى لا تتأثر البيانات القديمة المحفوظة.
-  */
   companyArabic: 'رافعات الحديثة',
   companyEnglish: 'RAFIEAT AL-HADITHA',
 
@@ -123,16 +115,11 @@ function toNumber(value: string) {
 
   const result = Number(cleaned);
 
-  return Number.isFinite(result)
-    ? result
-    : 0;
+  return Number.isFinite(result) ? result : 0;
 }
 
 function rowTotal(row: InvoiceRow) {
-  return (
-    toNumber(row.qty) *
-    toNumber(row.unitPrice)
-  );
+  return toNumber(row.qty) * toNumber(row.unitPrice);
 }
 
 function formatMoney(value: number) {
@@ -147,8 +134,7 @@ function formatDate(value: string) {
   if (!value) return '';
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] =
-      value.split('-');
+    const [year, month, day] = value.split('-');
 
     return `${Number(day)} / ${Number(month)} / ${year}`;
   }
@@ -156,12 +142,8 @@ function formatDate(value: string) {
   return value;
 }
 
-function numberToArabicWords(
-  value: number
-): string {
-  const n = Math.floor(
-    Math.abs(value)
-  );
+function numberToArabicWords(value: number): string {
+  const n = Math.floor(Math.abs(value));
 
   if (n === 0) {
     return 'صفر ريال لا غير';
@@ -219,9 +201,7 @@ function numberToArabicWords(
     'تسعمائة',
   ];
 
-  function under100(
-    num: number
-  ): string {
+  function under100(num: number): string {
     if (num < 10) {
       return ones[num];
     }
@@ -230,11 +210,8 @@ function numberToArabicWords(
       return teens[num - 10];
     }
 
-    const t =
-      Math.floor(num / 10);
-
-    const o =
-      num % 10;
+    const t = Math.floor(num / 10);
+    const o = num % 10;
 
     if (o === 0) {
       return tens[t];
@@ -243,18 +220,13 @@ function numberToArabicWords(
     return `${ones[o]} و${tens[t]}`;
   }
 
-  function under1000(
-    num: number
-  ): string {
+  function under1000(num: number): string {
     if (num < 100) {
       return under100(num);
     }
 
-    const h =
-      Math.floor(num / 100);
-
-    const rest =
-      num % 100;
+    const h = Math.floor(num / 100);
+    const rest = num % 100;
 
     if (rest === 0) {
       return hundreds[h];
@@ -263,37 +235,28 @@ function numberToArabicWords(
     return `${hundreds[h]} و${under100(rest)}`;
   }
 
-  function convert(
-    num: number
-  ): string {
+  function convert(num: number): string {
     if (num < 1000) {
       return under1000(num);
     }
 
     if (num < 1000000) {
-      const thousands =
-        Math.floor(num / 1000);
-
-      const rest =
-        num % 1000;
+      const thousands = Math.floor(num / 1000);
+      const rest = num % 1000;
 
       let thousandText = '';
 
       if (thousands === 1) {
         thousandText = 'ألف';
-      } else if (
-        thousands === 2
-      ) {
+      } else if (thousands === 2) {
         thousandText = 'ألفان';
       } else if (
         thousands >= 3 &&
         thousands <= 10
       ) {
-        thousandText =
-          `${under1000(thousands)} آلاف`;
+        thousandText = `${under1000(thousands)} آلاف`;
       } else {
-        thousandText =
-          `${under1000(thousands)} ألف`;
+        thousandText = `${under1000(thousands)} ألف`;
       }
 
       if (rest === 0) {
@@ -313,14 +276,10 @@ export function WorkInvoicePage() {
   const navigate = useNavigate();
 
   const invoiceRef =
-    useRef<HTMLDivElement | null>(
-      null
-    );
+    useRef<HTMLDivElement | null>(null);
 
   const [data, setData] =
-    useState<InvoiceData>(
-      createEmptyInvoice()
-    );
+    useState<InvoiceData>(createEmptyInvoice());
 
   const [preview, setPreview] =
     useState(false);
@@ -331,17 +290,13 @@ export function WorkInvoicePage() {
   useEffect(() => {
     try {
       const raw =
-        localStorage.getItem(
-          STORAGE_KEY
-        );
+        localStorage.getItem(STORAGE_KEY);
 
       if (!raw) return;
 
-      const parsed =
-        JSON.parse(raw);
+      const parsed = JSON.parse(raw);
 
-      const fresh =
-        createEmptyInvoice();
+      const fresh = createEmptyInvoice();
 
       const savedRows =
         Array.isArray(parsed?.rows)
@@ -356,8 +311,7 @@ export function WorkInvoicePage() {
           { length: 4 },
           (_, index) => ({
             ...fresh.rows[index],
-            ...(savedRows[index] ||
-              {}),
+            ...(savedRows[index] || {}),
           })
         ),
       });
@@ -390,9 +344,7 @@ export function WorkInvoicePage() {
   const totalWords = useMemo(
     () =>
       grandTotal > 0
-        ? numberToArabicWords(
-            grandTotal
-          )
+        ? numberToArabicWords(grandTotal)
         : '',
     [grandTotal]
   );
@@ -422,8 +374,7 @@ export function WorkInvoicePage() {
           rowIndex === index
             ? {
                 ...row,
-                [field]:
-                  value,
+                [field]: value,
               }
             : row
       ),
@@ -440,16 +391,12 @@ export function WorkInvoicePage() {
       );
 
       if (showMessage) {
-        alert(
-          'تم حفظ بيانات الفاتورة'
-        );
+        alert('تم حفظ بيانات الفاتورة');
       }
     } catch (error) {
       console.error(error);
 
-      alert(
-        'تعذر حفظ بيانات الفاتورة'
-      );
+      alert('تعذر حفظ بيانات الفاتورة');
     }
   }
 
@@ -461,11 +408,9 @@ export function WorkInvoicePage() {
 
     if (!accepted) return;
 
-    const fresh =
-      createEmptyInvoice();
+    const fresh = createEmptyInvoice();
 
     setData(fresh);
-
     setPreview(false);
 
     localStorage.setItem(
@@ -482,9 +427,7 @@ export function WorkInvoicePage() {
 
     const images =
       Array.from(
-        element.querySelectorAll(
-          'img'
-        )
+        element.querySelectorAll('img')
       );
 
     await Promise.all(
@@ -492,9 +435,7 @@ export function WorkInvoicePage() {
         (image) =>
           new Promise<void>(
             (resolve) => {
-              if (
-                image.complete
-              ) {
+              if (image.complete) {
                 resolve();
                 return;
               }
@@ -511,9 +452,7 @@ export function WorkInvoicePage() {
   }
 
   async function createCanvas() {
-    if (
-      !invoiceRef.current
-    ) {
+    if (!invoiceRef.current) {
       throw new Error(
         'Invoice preview not found'
       );
@@ -529,10 +468,7 @@ export function WorkInvoicePage() {
 
     await new Promise<void>(
       (resolve) =>
-        setTimeout(
-          resolve,
-          150
-        )
+        setTimeout(resolve, 150)
     );
 
     return html2canvas(
@@ -540,8 +476,7 @@ export function WorkInvoicePage() {
       {
         scale: 3,
         useCORS: true,
-        backgroundColor:
-          '#ffffff',
+        backgroundColor: '#ffffff',
         logging: false,
       }
     );
@@ -559,8 +494,7 @@ export function WorkInvoicePage() {
 
     const pdf =
       new jsPDF({
-        orientation:
-          'portrait',
+        orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
@@ -572,35 +506,21 @@ export function WorkInvoicePage() {
       pdf.internal.pageSize.getHeight();
 
     const ratio =
-      canvas.width /
-      canvas.height;
+      canvas.width / canvas.height;
 
-    let width =
-      pageWidth;
+    let width = pageWidth;
+    let height = width / ratio;
 
-    let height =
-      width / ratio;
-
-    if (
-      height >
-      pageHeight
-    ) {
-      height =
-        pageHeight;
-
-      width =
-        height * ratio;
+    if (height > pageHeight) {
+      height = pageHeight;
+      width = height * ratio;
     }
 
     const x =
-      (pageWidth -
-        width) /
-      2;
+      (pageWidth - width) / 2;
 
     const y =
-      (pageHeight -
-        height) /
-      2;
+      (pageHeight - height) / 2;
 
     pdf.addImage(
       image,
@@ -611,54 +531,36 @@ export function WorkInvoicePage() {
       height
     );
 
-    return pdf.output(
-      'blob'
-    );
+    return pdf.output('blob');
   }
 
   function blobToBase64(
     blob: Blob
   ): Promise<string> {
     return new Promise(
-      (
-        resolve,
-        reject
-      ) => {
+      (resolve, reject) => {
         const reader =
           new FileReader();
 
-        reader.onloadend =
-          () => {
-            const result =
-              String(
-                reader.result ||
-                  ''
-              );
+        reader.onloadend = () => {
+          const result =
+            String(reader.result || '');
 
-            const commaIndex =
-              result.indexOf(
-                ','
-              );
+          const commaIndex =
+            result.indexOf(',');
 
-            resolve(
-              commaIndex >= 0
-                ? result.slice(
-                    commaIndex +
-                      1
-                  )
-                : result
-            );
-          };
+          resolve(
+            commaIndex >= 0
+              ? result.slice(commaIndex + 1)
+              : result
+          );
+        };
 
         reader.onerror =
           () =>
-            reject(
-              reader.error
-            );
+            reject(reader.error);
 
-        reader.readAsDataURL(
-          blob
-        );
+        reader.readAsDataURL(blob);
       }
     );
   }
@@ -689,57 +591,41 @@ export function WorkInvoicePage() {
         await createPdfBlob();
 
       const base64 =
-        await blobToBase64(
-          blob
-        );
+        await blobToBase64(blob);
 
       const fileName =
         getFileName();
 
       try {
-        await Filesystem.writeFile(
-          {
-            path: fileName,
-            data: base64,
-            directory:
-              Directory.Documents,
-            recursive: true,
-          }
-        );
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory:
+            Directory.Documents,
+          recursive: true,
+        });
 
-        alert(
-          'تم حفظ PDF بنجاح'
-        );
+        alert('تم حفظ PDF بنجاح');
       } catch {
         const url =
-          URL.createObjectURL(
-            blob
-          );
+          URL.createObjectURL(blob);
 
         const anchor =
-          document.createElement(
-            'a'
-          );
+          document.createElement('a');
 
-        anchor.href =
-          url;
-
-        anchor.download =
-          fileName;
+        anchor.href = url;
+        anchor.download = fileName;
 
         document.body.appendChild(
           anchor
         );
 
         anchor.click();
-
         anchor.remove();
 
         setTimeout(
           () =>
-            URL.revokeObjectURL(
-              url
-            ),
+            URL.revokeObjectURL(url),
           1500
         );
       }
@@ -766,28 +652,21 @@ export function WorkInvoicePage() {
         await createPdfBlob();
 
       const base64 =
-        await blobToBase64(
-          blob
-        );
+        await blobToBase64(blob);
 
       const result =
-        await Filesystem.writeFile(
-          {
-            path: getFileName(),
-            data: base64,
-            directory:
-              Directory.Cache,
-            recursive: true,
-          }
-        );
+        await Filesystem.writeFile({
+          path: getFileName(),
+          data: base64,
+          directory:
+            Directory.Cache,
+          recursive: true,
+        });
 
       await Share.share({
-        title:
-          'فاتورة عمل',
-        text:
-          'فاتورة عمل',
-        url:
-          result.uri,
+        title: 'فاتورة عمل',
+        text: 'فاتورة عمل',
+        url: result.uri,
         dialogTitle:
           'مشاركة الفاتورة',
       });
@@ -831,9 +710,7 @@ export function WorkInvoicePage() {
 
           <button
             type="button"
-            onClick={
-              resetInvoice
-            }
+            onClick={resetInvoice}
             className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center"
           >
             <RotateCcw className="w-5 h-5 text-red-400" />
@@ -846,13 +723,9 @@ export function WorkInvoicePage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field
                   label="رقم الفاتورة"
-                  value={
-                    data.invoiceNo
-                  }
+                  value={data.invoiceNo}
                   inputMode="numeric"
-                  onChange={(
-                    value
-                  ) =>
+                  onChange={(value) =>
                     setField(
                       'invoiceNo',
                       value
@@ -862,12 +735,8 @@ export function WorkInvoicePage() {
 
                 <DateField
                   label="التاريخ"
-                  value={
-                    data.date
-                  }
-                  onChange={(
-                    value
-                  ) =>
+                  value={data.date}
+                  onChange={(value) =>
                     setField(
                       'date',
                       value
@@ -878,13 +747,9 @@ export function WorkInvoicePage() {
 
               <Field
                 label="المطلوب من السيد / السادة"
-                value={
-                  data.customer
-                }
-                placeholder="مثال: شركة أركان الحفر المحدودة"
-                onChange={(
-                  value
-                ) =>
+                value={data.customer}
+                placeholder="مثال: شركة المياه الوطنية"
+                onChange={(value) =>
                   setField(
                     'customer',
                     value
@@ -896,30 +761,20 @@ export function WorkInvoicePage() {
             <Section title="البيان والأسعار">
               <div className="space-y-4">
                 {data.rows.map(
-                  (
-                    row,
-                    index
-                  ) => (
+                  (row, index) => (
                     <div
-                      key={
-                        index
-                      }
+                      key={index}
                       className="rounded-2xl border border-white/10 bg-black/20 p-3"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-white text-sm font-black">
-                          السطر{' '}
-                          {index +
-                            1}
+                          السطر {index + 1}
                         </span>
 
                         <span className="text-emerald-400 text-xs font-black">
                           {formatMoney(
-                            totals[
-                              index
-                            ]
-                          ) ||
-                            '0'}{' '}
+                            totals[index]
+                          ) || '0'}{' '}
                           ر.س
                         </span>
                       </div>
@@ -929,10 +784,8 @@ export function WorkInvoicePage() {
                         value={
                           row.description
                         }
-                        placeholder="مثال: إيجار كرين 25 طن"
-                        onChange={(
-                          value
-                        ) =>
+                        placeholder="مثال: إيجار كرين رفع حديد"
+                        onChange={(value) =>
                           setRow(
                             index,
                             'description',
@@ -944,13 +797,9 @@ export function WorkInvoicePage() {
                       <div className="grid grid-cols-2 gap-3 mt-3">
                         <Field
                           label="الكمية"
-                          value={
-                            row.qty
-                          }
+                          value={row.qty}
                           inputMode="decimal"
-                          onChange={(
-                            value
-                          ) =>
+                          onChange={(value) =>
                             setRow(
                               index,
                               'qty',
@@ -965,9 +814,7 @@ export function WorkInvoicePage() {
                             row.unitPrice
                           }
                           inputMode="decimal"
-                          onChange={(
-                            value
-                          ) =>
+                          onChange={(value) =>
                             setRow(
                               index,
                               'unitPrice',
@@ -990,8 +837,7 @@ export function WorkInvoicePage() {
                   <span className="text-2xl text-emerald-400 font-black">
                     {formatMoney(
                       grandTotal
-                    ) ||
-                      '0'}{' '}
+                    ) || '0'}{' '}
                     ر.س
                   </span>
                 </div>
@@ -1016,9 +862,7 @@ export function WorkInvoicePage() {
                   value={
                     data.receivedBy
                   }
-                  onChange={(
-                    value
-                  ) =>
+                  onChange={(value) =>
                     setField(
                       'receivedBy',
                       value
@@ -1031,9 +875,7 @@ export function WorkInvoicePage() {
                   value={
                     data.salesman
                   }
-                  onChange={(
-                    value
-                  ) =>
+                  onChange={(value) =>
                     setField(
                       'salesman',
                       value
@@ -1047,9 +889,7 @@ export function WorkInvoicePage() {
               <button
                 type="button"
                 onClick={() =>
-                  saveData(
-                    true
-                  )
+                  saveData(true)
                 }
                 className="h-14 rounded-2xl bg-slate-800 border border-white/10 text-white font-black flex items-center justify-center gap-2"
               >
@@ -1060,26 +900,15 @@ export function WorkInvoicePage() {
               <button
                 type="button"
                 onClick={() => {
-                  saveData(
-                    false
-                  );
+                  saveData(false);
+                  setPreview(true);
 
-                  setPreview(
-                    true
-                  );
-
-                  setTimeout(
-                    () => {
-                      window.scrollTo(
-                        {
-                          top: 0,
-                          behavior:
-                            'smooth',
-                        }
-                      );
-                    },
-                    50
-                  );
+                  setTimeout(() => {
+                    window.scrollTo({
+                      top: 0,
+                      behavior: 'smooth',
+                    });
+                  }, 50);
                 }}
                 className="h-14 rounded-2xl bg-blue-600 text-white font-black flex items-center justify-center gap-2"
               >
@@ -1104,9 +933,7 @@ export function WorkInvoicePage() {
               <button
                 type="button"
                 onClick={() =>
-                  setPreview(
-                    false
-                  )
+                  setPreview(false)
                 }
                 className="h-10 px-4 rounded-xl bg-white/10 text-white font-bold flex items-center gap-2"
               >
@@ -1116,30 +943,18 @@ export function WorkInvoicePage() {
             </div>
 
             <InvoicePreview
-              invoiceRef={
-                invoiceRef
-              }
+              invoiceRef={invoiceRef}
               data={data}
-              totals={
-                totals
-              }
-              grandTotal={
-                grandTotal
-              }
-              totalWords={
-                totalWords
-              }
+              totals={totals}
+              grandTotal={grandTotal}
+              totalWords={totalWords}
             />
 
             <div className="grid grid-cols-2 gap-3 mt-5">
               <button
                 type="button"
-                disabled={
-                  busy
-                }
-                onClick={
-                  savePDF
-                }
+                disabled={busy}
+                onClick={savePDF}
                 className="h-14 rounded-2xl bg-emerald-600 text-white font-black flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <FileDown className="w-5 h-5" />
@@ -1148,12 +963,8 @@ export function WorkInvoicePage() {
 
               <button
                 type="button"
-                disabled={
-                  busy
-                }
-                onClick={
-                  sharePDF
-                }
+                disabled={busy}
+                onClick={sharePDF}
                 className="h-14 rounded-2xl bg-blue-600 text-white font-black flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Share2 className="w-5 h-5" />
@@ -1186,22 +997,20 @@ function InvoicePreview({
   totalWords: string;
 }) {
   /*
-    مواقع أول 4 أسطر
-    داخل الجدول الجديد.
+    البنود الآن تبدأ تحت عنوان البيان مباشرة.
+    والمسافة بين كل بند والثاني 40 تقريباً.
   */
   const rowY = [
-    700,
-    738,
-    776,
-    814,
+    687,
+    727,
+    767,
+    807,
   ];
 
   return (
     <div className="w-full">
       <div
-        ref={
-          invoiceRef
-        }
+        ref={invoiceRef}
         className="relative w-full bg-white overflow-hidden"
         style={{
           aspectRatio: `${TEMPLATE_WIDTH} / ${TEMPLATE_HEIGHT}`,
@@ -1210,9 +1019,7 @@ function InvoicePreview({
         <img
           src="/work-invoice-template.png"
           alt="فاتورة"
-          draggable={
-            false
-          }
+          draggable={false}
           className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none"
         />
 
@@ -1221,23 +1028,11 @@ function InvoicePreview({
           preserveAspectRatio="none"
           className="absolute inset-0 w-full h-full"
         >
-          {/*
-            لا نكتب:
-            رافعات الحديثة
-            بوم تراك
-            كرينات
-            النشاط
-            الموقع
-            فاتورة نقداً
-
-            لأنها أصبحت موجودة داخل الصورة نفسها.
-          */}
-
           {/* رقم الفاتورة */}
           <SvgEnglishText
             x={170}
-            y={438}
-            size={25}
+            y={430}
+            size={23}
             weight={900}
             fill="#111111"
           >
@@ -1246,65 +1041,48 @@ function InvoicePreview({
 
           {/* التاريخ */}
           <SvgEnglishText
-            x={900}
-            y={438}
-            size={23}
+            x={884}
+            y={430}
+            size={22}
             weight={900}
             fill="#111111"
           >
-            {formatDate(
-              data.date
-            )}
+            {formatDate(data.date)}
           </SvgEnglishText>
 
           {/* اسم العميل */}
           <SvgArabicText
-            x={450}
-            y={497}
-            size={27}
+            x={410}
+            y={493}
+            size={25}
             weight={900}
             fill="#111111"
           >
             {data.customer}
           </SvgArabicText>
 
-          {/* البنود الأربعة */}
+          {/* البنود */}
           {data.rows.map(
-            (
-              row,
-              index
-            ) => (
+            (row, index) => (
               <React.Fragment
-                key={
-                  index
-                }
+                key={index}
               >
-                {/* البيان */}
+                {/* البيان - خط عربي أسود واضح */}
                 <SvgArabicText
-                  x={264}
-                  y={
-                    rowY[
-                      index
-                    ]
-                  }
-                  size={25}
+                  x={265}
+                  y={rowY[index]}
+                  size={24}
                   weight={900}
                   fill="#111111"
                 >
-                  {
-                    row.description
-                  }
+                  {row.description}
                 </SvgArabicText>
 
                 {/* الكمية */}
                 <SvgEnglishText
-                  x={534}
-                  y={
-                    rowY[
-                      index
-                    ]
-                  }
-                  size={25}
+                  x={533}
+                  y={rowY[index]}
+                  size={24}
                   weight={900}
                   fill="#111111"
                 >
@@ -1313,13 +1091,9 @@ function InvoicePreview({
 
                 {/* سعر الوحدة */}
                 <SvgEnglishText
-                  x={684}
-                  y={
-                    rowY[
-                      index
-                    ]
-                  }
-                  size={25}
+                  x={682}
+                  y={rowY[index]}
+                  size={24}
                   weight={900}
                   fill="#111111"
                 >
@@ -1332,31 +1106,29 @@ function InvoicePreview({
 
                 {/* إجمالي السطر */}
                 <SvgEnglishText
-                  x={900}
-                  y={
-                    rowY[
-                      index
-                    ]
-                  }
-                  size={25}
+                  x={874}
+                  y={rowY[index]}
+                  size={24}
                   weight={900}
                   fill="#111111"
                 >
                   {formatMoney(
-                    totals[
-                      index
-                    ]
+                    totals[index]
                   )}
                 </SvgEnglishText>
               </React.Fragment>
             )
           )}
 
-          {/* المبلغ بالحروف */}
+          {/*
+            المبلغ بالحروف
+            بجانب كلمة "المجموع"
+            خط عربي أسود وواضح
+          */}
           <SvgArabicText
-            x={395}
-            y={1260}
-            size={27}
+            x={355}
+            y={1250}
+            size={23}
             weight={900}
             fill="#111111"
           >
@@ -1365,9 +1137,9 @@ function InvoicePreview({
 
           {/* الإجمالي الرقمي */}
           <SvgEnglishText
-            x={900}
-            y={1258}
-            size={40}
+            x={902}
+            y={1250}
+            size={42}
             weight={900}
             fill="#000000"
           >
@@ -1381,7 +1153,7 @@ function InvoicePreview({
             x={180}
             y={1398}
             size={18}
-            weight={800}
+            weight={900}
             fill="#111111"
           >
             {data.receivedBy}
@@ -1392,7 +1164,7 @@ function InvoicePreview({
             x={886}
             y={1398}
             size={18}
-            weight={800}
+            weight={900}
             fill="#111111"
           >
             {data.salesman}
@@ -1403,6 +1175,15 @@ function InvoicePreview({
   );
 }
 
+/*
+  الخط العربي المستخدم في:
+  اسم العميل
+  البيان
+  المبلغ بالحروف
+  التوقيع
+
+  أسود + عريض + واضح
+*/
 function SvgArabicText({
   children,
   x,
@@ -1411,17 +1192,11 @@ function SvgArabicText({
   weight,
   fill,
 }: {
-  children:
-    React.ReactNode;
-
+  children: React.ReactNode;
   x: number;
-
   y: number;
-
   size: number;
-
   weight: number;
-
   fill: string;
 }) {
   return (
@@ -1429,12 +1204,8 @@ function SvgArabicText({
       x={x}
       y={y}
       fill={fill}
-      fontSize={
-        size
-      }
-      fontWeight={
-        weight
-      }
+      fontSize={size}
+      fontWeight={weight}
       textAnchor="middle"
       dominantBaseline="middle"
       direction="rtl"
@@ -1442,6 +1213,9 @@ function SvgArabicText({
       style={{
         fontFamily:
           'Tahoma, Arial, sans-serif',
+        paintOrder: 'stroke',
+        stroke: 'rgba(0,0,0,0.08)',
+        strokeWidth: 0.3,
       }}
     >
       {children}
@@ -1457,17 +1231,11 @@ function SvgEnglishText({
   weight,
   fill,
 }: {
-  children:
-    React.ReactNode;
-
+  children: React.ReactNode;
   x: number;
-
   y: number;
-
   size: number;
-
   weight: number;
-
   fill: string;
 }) {
   return (
@@ -1475,12 +1243,8 @@ function SvgEnglishText({
       x={x}
       y={y}
       fill={fill}
-      fontSize={
-        size
-      }
-      fontWeight={
-        weight
-      }
+      fontSize={size}
+      fontWeight={weight}
       textAnchor="middle"
       dominantBaseline="middle"
       direction="ltr"
@@ -1499,9 +1263,7 @@ function Section({
   children,
 }: {
   title: string;
-
-  children:
-    React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <section className="mb-4 rounded-[22px] border border-white/10 bg-[#0b1524] p-4">
@@ -1525,18 +1287,14 @@ function Field({
   inputMode = 'text',
 }: {
   label: string;
-
   value: string;
 
   onChange:
-    (value: string) =>
-      void;
+    (value: string) => void;
 
   placeholder?: string;
 
-  dir?:
-    | 'rtl'
-    | 'ltr';
+  dir?: 'rtl' | 'ltr';
 
   inputMode?:
     | 'text'
@@ -1552,18 +1310,10 @@ function Field({
       <input
         type="text"
         dir={dir}
-        value={
-          value
-        }
-        inputMode={
-          inputMode
-        }
-        placeholder={
-          placeholder
-        }
-        onChange={(
-          event
-        ) =>
+        value={value}
+        inputMode={inputMode}
+        placeholder={placeholder}
+        onChange={(event) =>
           onChange(
             event.target.value
           )
@@ -1580,12 +1330,10 @@ function DateField({
   onChange,
 }: {
   label: string;
-
   value: string;
 
   onChange:
-    (value: string) =>
-      void;
+    (value: string) => void;
 }) {
   return (
     <label className="block">
@@ -1595,12 +1343,8 @@ function DateField({
 
       <input
         type="date"
-        value={
-          value
-        }
-        onChange={(
-          event
-        ) =>
+        value={value}
+        onChange={(event) =>
           onChange(
             event.target.value
           )
@@ -1609,4 +1353,4 @@ function DateField({
       />
     </label>
   );
-        }
+        }      
