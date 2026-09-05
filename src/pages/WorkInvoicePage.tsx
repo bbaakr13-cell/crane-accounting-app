@@ -34,7 +34,8 @@ const STORAGE_KEY = 'baakr-work-invoice-v3';
 const TEMPLATE_WIDTH = 1056;
 const TEMPLATE_HEIGHT = 1440;
 
-const ARABIC_FONT_NAME = 'InvoiceNaskh';
+/* الخط الجديد */
+const ARABIC_FONT_NAME = 'HacenEgypt';
 
 type InvoiceRow = {
   description: string;
@@ -301,9 +302,9 @@ export function WorkInvoicePage() {
       style.textContent = `
         @font-face {
           font-family: '${ARABIC_FONT_NAME}';
-          src: url('/NotoNaskhArabic-Bold.ttf') format('truetype');
+          src: url('/hacen-egypt.ttf') format('truetype');
           font-style: normal;
-          font-weight: 700 900;
+          font-weight: normal;
           font-display: block;
         }
       `;
@@ -486,7 +487,7 @@ export function WorkInvoicePage() {
   async function waitForArabicFont() {
     try {
       await document.fonts.load(
-        `900 32px "${ARABIC_FONT_NAME}"`
+        `32px "${ARABIC_FONT_NAME}"`
       );
 
       await document.fonts.ready;
@@ -1080,11 +1081,6 @@ function InvoicePreview({
     807,
   ];
 
-  /*
-   * اسم العميل:
-   * قصير = كبير
-   * طويل = يصغر تلقائياً
-   */
   const customerFontSize =
     data.customer.length <= 18
       ? 44
@@ -1094,11 +1090,6 @@ function InvoicePreview({
       ? 30
       : 26;
 
-  /*
-   * المبلغ كتابةً:
-   * نفس المكان السابق.
-   * فقط تم تكبير الخط.
-   */
   const totalWordsFontSize =
     totalWords.length <= 38
       ? 30
@@ -1130,7 +1121,6 @@ function InvoicePreview({
           preserveAspectRatio="none"
           className="absolute inset-0 w-full h-full"
         >
-          {/* رقم الفاتورة */}
           <SvgEnglishText
             x={170}
             y={430}
@@ -1141,7 +1131,6 @@ function InvoicePreview({
             {data.invoiceNo}
           </SvgEnglishText>
 
-          {/* التاريخ */}
           <SvgEnglishText
             x={884}
             y={430}
@@ -1154,11 +1143,6 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
-          {/*
-            اسم العميل:
-            نقطة البداية عند النقطتين :
-            ويمتد إلى اليسار
-          */}
           <text
             x={730}
             y={493}
@@ -1182,7 +1166,6 @@ function InvoicePreview({
             {data.customer}
           </text>
 
-          {/* البنود */}
           {data.rows.map(
             (
               row,
@@ -1191,7 +1174,6 @@ function InvoicePreview({
               <React.Fragment
                 key={index}
               >
-                {/* البيان */}
                 <SvgArabicText
                   x={265}
                   y={
@@ -1208,7 +1190,6 @@ function InvoicePreview({
                   }
                 </SvgArabicText>
 
-                {/* الكمية */}
                 <SvgEnglishText
                   x={533}
                   y={
@@ -1223,7 +1204,6 @@ function InvoicePreview({
                   {row.qty}
                 </SvgEnglishText>
 
-                {/* سعر الوحدة */}
                 <SvgEnglishText
                   x={682}
                   y={
@@ -1242,7 +1222,6 @@ function InvoicePreview({
                   )}
                 </SvgEnglishText>
 
-                {/* السعر الإجمالي */}
                 <SvgEnglishText
                   x={874}
                   y={
@@ -1264,11 +1243,7 @@ function InvoicePreview({
             )
           )}
 
-          {/*
-            المبلغ كتابةً:
-            نفس المكان تماماً.
-            فقط الحجم أكبر.
-          */}
+          {/* المبلغ كتابةً - نفس المكان والحجم */}
           <SvgArabicText
             x={405}
             y={1262}
@@ -1281,7 +1256,6 @@ function InvoicePreview({
             {totalWords}
           </SvgArabicText>
 
-          {/* المجموع الرقمي - لم يتغير */}
           <SvgEnglishText
             x={902}
             y={1262}
@@ -1294,7 +1268,6 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
-          {/* المستلم */}
           <SvgArabicText
             x={180}
             y={1398}
@@ -1305,7 +1278,6 @@ function InvoicePreview({
             {data.receivedBy}
           </SvgArabicText>
 
-          {/* البائع */}
           <SvgArabicText
             x={886}
             y={1398}
@@ -1489,4 +1461,4 @@ function DateField({
       />
     </label>
   );
-        }
+    }
