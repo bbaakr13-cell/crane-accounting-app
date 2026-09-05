@@ -34,6 +34,8 @@ const STORAGE_KEY = 'baakr-work-invoice-v3';
 const TEMPLATE_WIDTH = 1056;
 const TEMPLATE_HEIGHT = 1440;
 
+const ARABIC_FONT_NAME = 'InvoiceNaskh';
+
 type InvoiceRow = {
   description: string;
   qty: string;
@@ -247,9 +249,11 @@ function numberToArabicWords(value: number): string {
         thousands >= 3 &&
         thousands <= 10
       ) {
-        thousandText = `${under1000(thousands)} آلاف`;
+        thousandText =
+          `${under1000(thousands)} آلاف`;
       } else {
-        thousandText = `${under1000(thousands)} ألف`;
+        thousandText =
+          `${under1000(thousands)} ألف`;
       }
 
       if (rest === 0) {
@@ -278,6 +282,31 @@ export function WorkInvoicePage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    /*
+      تحميل الخط العربي من public.
+      هذا هو التغيير المهم:
+      لا نعتمد على Tahoma أو خط الهاتف.
+    */
+    const styleId = 'invoice-arabic-font-style';
+
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+
+      style.id = styleId;
+
+      style.textContent = `
+        @font-face {
+          font-family: '${ARABIC_FONT_NAME}';
+          src: url('/NotoNaskhArabic-Bold.ttf') format('truetype');
+          font-style: normal;
+          font-weight: 700 900;
+          font-display: block;
+        }
+      `;
+
+      document.head.appendChild(style);
+    }
+
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
 
@@ -425,6 +454,21 @@ export function WorkInvoicePage() {
     );
   }
 
+  async function waitForArabicFont() {
+    try {
+      await document.fonts.load(
+        `900 32px "${ARABIC_FONT_NAME}"`
+      );
+
+      await document.fonts.ready;
+    } catch (error) {
+      console.warn(
+        'Arabic font load warning:',
+        error
+      );
+    }
+  }
+
   async function createCanvas() {
     if (!invoiceRef.current) {
       throw new Error(
@@ -432,16 +476,11 @@ export function WorkInvoicePage() {
       );
     }
 
-    try {
-      await document.fonts?.ready;
-    } catch {
-      // ignore
-    }
-
+    await waitForArabicFont();
     await waitForTemplate();
 
     await new Promise<void>((resolve) =>
-      setTimeout(resolve, 150)
+      setTimeout(resolve, 250)
     );
 
     return html2canvas(
@@ -518,9 +557,7 @@ export function WorkInvoicePage() {
 
           resolve(
             commaIndex >= 0
-              ? result.slice(
-                  commaIndex + 1
-                )
+              ? result.slice(commaIndex + 1)
               : result
           );
         };
@@ -552,10 +589,7 @@ export function WorkInvoicePage() {
       saveData(false);
 
       const blob = await createPdfBlob();
-
-      const base64 =
-        await blobToBase64(blob);
-
+      const base64 = await blobToBase64(blob);
       const fileName = getFileName();
 
       try {
@@ -568,8 +602,7 @@ export function WorkInvoicePage() {
 
         alert('تم حفظ PDF بنجاح');
       } catch {
-        const url =
-          URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
 
         const anchor =
           document.createElement('a');
@@ -583,17 +616,14 @@ export function WorkInvoicePage() {
         anchor.remove();
 
         setTimeout(
-          () =>
-            URL.revokeObjectURL(url),
+          () => URL.revokeObjectURL(url),
           1500
         );
       }
     } catch (error) {
       console.error(error);
 
-      alert(
-        'حدث خطأ أثناء حفظ PDF'
-      );
+      alert('حدث خطأ أثناء حفظ PDF');
     } finally {
       setBusy(false);
     }
@@ -608,9 +638,7 @@ export function WorkInvoicePage() {
       saveData(false);
 
       const blob = await createPdfBlob();
-
-      const base64 =
-        await blobToBase64(blob);
+      const base64 = await blobToBase64(blob);
 
       const result =
         await Filesystem.writeFile({
@@ -629,9 +657,7 @@ export function WorkInvoicePage() {
     } catch (error) {
       console.error(error);
 
-      alert(
-        'تعذرت مشاركة الفاتورة'
-      );
+      alert('تعذرت مشاركة الفاتورة');
     } finally {
       setBusy(false);
     }
@@ -680,10 +706,7 @@ export function WorkInvoicePage() {
                   value={data.invoiceNo}
                   inputMode="numeric"
                   onChange={(value) =>
-                    setField(
-                      'invoiceNo',
-                      value
-                    )
+                    setField('invoiceNo', value)
                   }
                 />
 
@@ -691,10 +714,7 @@ export function WorkInvoicePage() {
                   label="التاريخ"
                   value={data.date}
                   onChange={(value) =>
-                    setField(
-                      'date',
-                      value
-                    )
+                    setField('date', value)
                   }
                 />
               </div>
@@ -704,10 +724,7 @@ export function WorkInvoicePage() {
                 value={data.customer}
                 placeholder="مثال: شركة المياه الوطنية"
                 onChange={(value) =>
-                  setField(
-                    'customer',
-                    value
-                  )
+                  setField('customer', value)
                 }
               />
             </Section>
@@ -785,10 +802,7 @@ export function WorkInvoicePage() {
                   </span>
 
                   <span className="text-2xl text-emerald-400 font-black">
-                    {formatMoney(
-                      grandTotal
-                    ) || '0'}{' '}
-                    ر.س
+                    {formatMoney(grandTotal) || '0'} ر.س
                   </span>
                 </div>
 
@@ -811,10 +825,7 @@ export function WorkInvoicePage() {
                   label="المستلم"
                   value={data.receivedBy}
                   onChange={(value) =>
-                    setField(
-                      'receivedBy',
-                      value
-                    )
+                    setField('receivedBy', value)
                   }
                 />
 
@@ -822,10 +833,7 @@ export function WorkInvoicePage() {
                   label="البائع"
                   value={data.salesman}
                   onChange={(value) =>
-                    setField(
-                      'salesman',
-                      value
-                    )
+                    setField('salesman', value)
                   }
                 />
               </div>
@@ -834,9 +842,7 @@ export function WorkInvoicePage() {
             <div className="grid grid-cols-2 gap-3 mt-5">
               <button
                 type="button"
-                onClick={() =>
-                  saveData(true)
-                }
+                onClick={() => saveData(true)}
                 className="h-14 rounded-2xl bg-slate-800 border border-white/10 text-white font-black flex items-center justify-center gap-2"
               >
                 <Save className="w-5 h-5" />
@@ -845,8 +851,11 @@ export function WorkInvoicePage() {
 
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   saveData(false);
+
+                  await waitForArabicFont();
+
                   setPreview(true);
 
                   setTimeout(() => {
@@ -878,9 +887,7 @@ export function WorkInvoicePage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setPreview(false)
-                }
+                onClick={() => setPreview(false)}
                 className="h-10 px-4 rounded-xl bg-white/10 text-white font-bold flex items-center gap-2"
               >
                 <X className="w-4 h-4" />
@@ -973,7 +980,7 @@ function InvoicePreview({
             y={430}
             size={23}
             weight={900}
-            fill="#111111"
+            fill="#000000"
           >
             {data.invoiceNo}
           </SvgEnglishText>
@@ -984,27 +991,27 @@ function InvoicePreview({
             y={430}
             size={22}
             weight={900}
-            fill="#111111"
+            fill="#000000"
           >
             {formatDate(data.date)}
           </SvgEnglishText>
 
-          {/* اسم العميل */}
+          {/* المطلوب من السيد / شركة المياه */}
           <SvgArabicText
             x={410}
             y={493}
-            size={25}
+            size={28}
             weight={900}
-            fill="#111111"
+            fill="#000000"
           >
             {data.customer}
           </SvgArabicText>
 
-          {/* البنود الأربعة */}
+          {/* البنود */}
           {data.rows.map(
             (row, index) => (
               <React.Fragment key={index}>
-                {/* البيان - عربي أسود حجم 28 */}
+                {/* البيان */}
                 <SvgArabicText
                   x={265}
                   y={rowY[index]}
@@ -1035,9 +1042,7 @@ function InvoicePreview({
                   fill="#000000"
                 >
                   {formatMoney(
-                    toNumber(
-                      row.unitPrice
-                    )
+                    toNumber(row.unitPrice)
                   )}
                 </SvgEnglishText>
 
@@ -1049,15 +1054,13 @@ function InvoicePreview({
                   weight={900}
                   fill="#000000"
                 >
-                  {formatMoney(
-                    totals[index]
-                  )}
+                  {formatMoney(totals[index])}
                 </SvgEnglishText>
               </React.Fragment>
             )
           )}
 
-          {/* المبلغ بالحروف بجانب المجموع - حجم 28 */}
+          {/* المبلغ كتابةً */}
           <SvgArabicText
             x={355}
             y={1250}
@@ -1083,7 +1086,7 @@ function InvoicePreview({
           <SvgArabicText
             x={180}
             y={1398}
-            size={18}
+            size={20}
             weight={900}
             fill="#000000"
           >
@@ -1094,7 +1097,7 @@ function InvoicePreview({
           <SvgArabicText
             x={886}
             y={1398}
-            size={18}
+            size={20}
             weight={900}
             fill="#000000"
           >
@@ -1133,11 +1136,14 @@ function SvgArabicText({
       direction="rtl"
       unicodeBidi="plaintext"
       style={{
-        fontFamily:
-          'Tahoma, Arial, sans-serif',
-        paintOrder: 'stroke',
-        stroke: 'rgba(0,0,0,0.08)',
-        strokeWidth: 0.3,
+        /*
+          مهم:
+          نستخدم الخط المرفوع داخل public
+          وليس Tahoma من الجهاز.
+        */
+        fontFamily: `'${ARABIC_FONT_NAME}'`,
+        fontWeight: 900,
+        fontStyle: 'normal',
       }}
     >
       {children}
@@ -1171,8 +1177,7 @@ function SvgEnglishText({
       dominantBaseline="middle"
       direction="ltr"
       style={{
-        fontFamily:
-          'Arial, Tahoma, sans-serif',
+        fontFamily: 'Arial, sans-serif',
       }}
     >
       {children}
@@ -1231,9 +1236,7 @@ function Field({
         inputMode={inputMode}
         placeholder={placeholder}
         onChange={(event) =>
-          onChange(
-            event.target.value
-          )
+          onChange(event.target.value)
         }
         className="w-full h-12 px-3 rounded-xl bg-[#07111d] border border-white/10 text-white text-sm font-bold outline-none focus:border-blue-500/60"
       />
@@ -1260,9 +1263,7 @@ function DateField({
         type="date"
         value={value}
         onChange={(event) =>
-          onChange(
-            event.target.value
-          )
+          onChange(event.target.value)
         }
         className="w-full h-12 px-3 rounded-xl bg-[#07111d] border border-white/10 text-white text-sm font-bold outline-none focus:border-blue-500/60"
       />
