@@ -640,6 +640,12 @@ export function DashboardPage() {
       tone: 'gold',
     },
     {
+      label: 'ملفات المعدات',
+      image: '/icons/equipment-documents.png',
+      path: '/equipment-documents',
+      tone: 'blue',
+    },
+    {
       label: 'مشاوير يومية',
       image: '/icons/daily-trips.png',
       path: '/daily-trips',
@@ -1492,4 +1498,4 @@ function MoneyCard({
       </p>
     </button>
   );
-              }
+    }
