@@ -780,9 +780,7 @@ export function WorkInvoicePage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field
                   label="رقم الفاتورة"
-                  value={
-                    data.invoiceNo
-                  }
+                  value={data.invoiceNo}
                   inputMode="numeric"
                   onChange={(value) =>
                     setField(
@@ -1046,9 +1044,7 @@ export function WorkInvoicePage() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={
-                  sharePDF
-                }
+                onClick={sharePDF}
                 className="h-14 rounded-2xl bg-blue-600 text-white font-black flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Share2 className="w-5 h-5" />
@@ -1084,6 +1080,11 @@ function InvoicePreview({
     807,
   ];
 
+  /*
+   * اسم العميل:
+   * قصير = كبير
+   * طويل = يصغر تلقائياً
+   */
   const customerFontSize =
     data.customer.length <= 18
       ? 44
@@ -1093,14 +1094,19 @@ function InvoicePreview({
       ? 30
       : 26;
 
+  /*
+   * المبلغ كتابةً:
+   * نفس المكان السابق.
+   * فقط تم تكبير الخط.
+   */
   const totalWordsFontSize =
     totalWords.length <= 38
-      ? 24
+      ? 30
       : totalWords.length <= 50
-      ? 22
+      ? 26
       : totalWords.length <= 60
-      ? 20
-      : 18;
+      ? 24
+      : 22;
 
   return (
     <div className="w-full">
@@ -1148,7 +1154,11 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
-          {/* اسم العميل - يبدأ من بعد : */}
+          {/*
+            اسم العميل:
+            نقطة البداية عند النقطتين :
+            ويمتد إلى اليسار
+          */}
           <text
             x={730}
             y={493}
@@ -1157,7 +1167,7 @@ function InvoicePreview({
               customerFontSize
             }
             fontWeight={900}
-            textAnchor="end"
+            textAnchor="start"
             dominantBaseline="middle"
             direction="rtl"
             unicodeBidi="plaintext"
@@ -1172,7 +1182,7 @@ function InvoicePreview({
             {data.customer}
           </text>
 
-          {/* البنود - بدون تغيير */}
+          {/* البنود */}
           {data.rows.map(
             (
               row,
@@ -1181,6 +1191,7 @@ function InvoicePreview({
               <React.Fragment
                 key={index}
               >
+                {/* البيان */}
                 <SvgArabicText
                   x={265}
                   y={
@@ -1197,6 +1208,7 @@ function InvoicePreview({
                   }
                 </SvgArabicText>
 
+                {/* الكمية */}
                 <SvgEnglishText
                   x={533}
                   y={
@@ -1211,6 +1223,7 @@ function InvoicePreview({
                   {row.qty}
                 </SvgEnglishText>
 
+                {/* سعر الوحدة */}
                 <SvgEnglishText
                   x={682}
                   y={
@@ -1229,6 +1242,7 @@ function InvoicePreview({
                   )}
                 </SvgEnglishText>
 
+                {/* السعر الإجمالي */}
                 <SvgEnglishText
                   x={874}
                   y={
@@ -1250,7 +1264,11 @@ function InvoicePreview({
             )
           )}
 
-          {/* المبلغ كتابةً - داخل المساحة البيضاء قبل المجموع */}
+          {/*
+            المبلغ كتابةً:
+            نفس المكان تماماً.
+            فقط الحجم أكبر.
+          */}
           <SvgArabicText
             x={405}
             y={1262}
@@ -1263,7 +1281,7 @@ function InvoicePreview({
             {totalWords}
           </SvgArabicText>
 
-          {/* المجموع الرقمي - بدون تغيير */}
+          {/* المجموع الرقمي - لم يتغير */}
           <SvgEnglishText
             x={902}
             y={1262}
@@ -1471,4 +1489,4 @@ function DateField({
       />
     </label>
   );
-}
+        }
