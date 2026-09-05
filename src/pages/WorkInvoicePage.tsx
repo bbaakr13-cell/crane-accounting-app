@@ -1084,11 +1084,6 @@ function InvoicePreview({
     807,
   ];
 
-  /*
-   * حجم اسم العميل يتغير تلقائيًا:
-   * الاسم القصير يبقى كبير.
-   * الاسم الطويل يصغر حتى يبقى في مكانه.
-   */
   const customerFontSize =
     data.customer.length <= 18
       ? 44
@@ -1098,17 +1093,13 @@ function InvoicePreview({
       ? 30
       : 26;
 
-  /*
-   * حجم المبلغ كتابةً يتغير تلقائيًا
-   * حتى يبقى داخل خانة المجموع.
-   */
   const totalWordsFontSize =
-    totalWords.length <= 30
-      ? 27
-      : totalWords.length <= 40
+    totalWords.length <= 38
       ? 24
       : totalWords.length <= 50
-      ? 21
+      ? 22
+      : totalWords.length <= 60
+      ? 20
       : 18;
 
   return (
@@ -1157,12 +1148,7 @@ function InvoicePreview({
             )}
           </SvgEnglishText>
 
-          {/*
-            اسم العميل:
-            يبدأ من بعد النقطتين عند
-            المطلوب من السيد / السادة :
-            ويمتد باتجاه اليسار.
-          */}
+          {/* اسم العميل - يبدأ من بعد : */}
           <text
             x={730}
             y={493}
@@ -1195,7 +1181,6 @@ function InvoicePreview({
               <React.Fragment
                 key={index}
               >
-                {/* البيان */}
                 <SvgArabicText
                   x={265}
                   y={
@@ -1212,7 +1197,6 @@ function InvoicePreview({
                   }
                 </SvgArabicText>
 
-                {/* الكمية */}
                 <SvgEnglishText
                   x={533}
                   y={
@@ -1227,7 +1211,6 @@ function InvoicePreview({
                   {row.qty}
                 </SvgEnglishText>
 
-                {/* سعر الوحدة - بدون تغيير */}
                 <SvgEnglishText
                   x={682}
                   y={
@@ -1246,7 +1229,6 @@ function InvoicePreview({
                   )}
                 </SvgEnglishText>
 
-                {/* السعر الإجمالي - بدون تغيير */}
                 <SvgEnglishText
                   x={874}
                   y={
@@ -1268,36 +1250,20 @@ function InvoicePreview({
             )
           )}
 
-          {/*
-            المبلغ كتابةً:
-            داخل المساحة بين Total S.R.
-            وكلمة المجموع.
-            يبدأ من جهة المجموع ويمتد لليسار.
-          */}
-          <text
-            x={655}
+          {/* المبلغ كتابةً - داخل المساحة البيضاء قبل المجموع */}
+          <SvgArabicText
+            x={405}
             y={1262}
-            fill="#000000"
-            fontSize={
+            size={
               totalWordsFontSize
             }
-            fontWeight={900}
-            textAnchor="end"
-            dominantBaseline="middle"
-            direction="rtl"
-            unicodeBidi="plaintext"
-            style={{
-              fontFamily:
-                `'${ARABIC_FONT_NAME}'`,
-              fontWeight: 900,
-              fontStyle:
-                'normal',
-            }}
+            weight={900}
+            fill="#000000"
           >
             {totalWords}
-          </text>
+          </SvgArabicText>
 
-          {/* 5,988 - بدون تغيير */}
+          {/* المجموع الرقمي - بدون تغيير */}
           <SvgEnglishText
             x={902}
             y={1262}
@@ -1505,4 +1471,4 @@ function DateField({
       />
     </label>
   );
-    }
+}
