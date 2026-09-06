@@ -15,7 +15,6 @@ import {
   Clock,
   RefreshCw,
   CloudUpload,
-  Cloud,
 } from 'lucide-react';
 
 import {
@@ -33,20 +32,6 @@ import {
   restoreBackup,
   runAutomaticBackup,
 } from '@/lib/backup';
-
-import {
-  uploadBackupObjectToDrive,
-  listDriveBackups,
-  downloadBackupFromDrive,
-  deleteDriveBackup,
-} from '@/lib/googleDrive';
-
-type DriveBackup = {
-  id: string;
-  name: string;
-  mimeType?: string;
-  createdTime?: string;
-};
 
 function formatDate(
   value: string
@@ -90,28 +75,6 @@ function getTypeName(
   }
 }
 
-function getDriveBackupName(
-  fileName: string
-) {
-  if (
-    fileName.includes(
-      'DAILY'
-    )
-  ) {
-    return 'نسخة يومية';
-  }
-
-  if (
-    fileName.includes(
-      'WEEKLY'
-    )
-  ) {
-    return 'نسخة أسبوعية';
-  }
-
-  return 'نسخة Google Drive';
-}
-
 export function BackupPage() {
   const [
     backups,
@@ -121,21 +84,9 @@ export function BackupPage() {
   >([]);
 
   const [
-    driveBackups,
-    setDriveBackups,
-  ] = useState<
-    DriveBackup[]
-  >([]);
-
-  const [
     loading,
     setLoading,
   ] = useState(true);
-
-  const [
-    driveLoading,
-    setDriveLoading,
-  ] = useState(false);
 
   const [
     working,
@@ -187,54 +138,8 @@ export function BackupPage() {
     }
   }
 
-  async function loadDriveBackups(
-    showSuccess = false
-  ) {
-    if (driveLoading) {
-      return;
-    }
-
-    setDriveLoading(true);
-
-    try {
-      const list =
-        await listDriveBackups();
-
-      setDriveBackups(
-        list.filter(
-          (item) =>
-            item.name
-              .toLowerCase()
-              .endsWith(
-                '.json'
-              )
-        )
-      );
-
-      if (showSuccess) {
-        showMessage(
-          'تم تحديث نسخ Google Drive'
-        );
-      }
-    } catch (error) {
-      console.error(
-        'Drive list error:',
-        error
-      );
-
-      showMessage(
-        'تعذر قراءة النسخ من Google Drive',
-        true
-      );
-    } finally {
-      setDriveLoading(false);
-    }
-  }
-
   useEffect(() => {
     loadBackups();
-
-    loadDriveBackups();
   }, []);
 
   const dailyCount =
@@ -293,7 +198,8 @@ export function BackupPage() {
   }
 
   /* ==========================
-     رفع نسخة مباشرة إلى Drive
+     حفظ نسخة إلى Drive
+     عن طريق نافذة Android
   ========================== */
 
   async function handleSaveToDrive() {
@@ -308,29 +214,37 @@ export function BackupPage() {
       const result =
         await createManualBackup();
 
-      const driveFileName =
-        `BAKR-PRO-BACKUP-${Date.now()}.json`;
-
-      await uploadBackupObjectToDrive(
-        driveFileName,
-        result.backup
-      );
+      const uri =
+        await getBackupFileUri(
+          result.fileName
+        );
 
       await loadBackups();
 
-      await loadDriveBackups();
-
       showMessage(
-        'تم حفظ النسخة في Google Drive بنجاح'
+        'تم إنشاء النسخة على الجهاز'
       );
+
+      await Share.share({
+        title:
+          'نسخة BAKR PRO الاحتياطية',
+
+        text:
+          'نسخة احتياطية لتطبيق BAKR PRO',
+
+        url: uri,
+
+        dialogTitle:
+          'اختر Google Drive لحفظ النسخة',
+      });
     } catch (error) {
       console.error(
-        'Drive backup error:',
+        'Backup share error:',
         error
       );
 
       showMessage(
-        'تعذر حفظ النسخة في Google Drive',
+        'تعذر تجهيز النسخة للحفظ',
         true
       );
     } finally {
@@ -357,7 +271,7 @@ export function BackupPage() {
 
       if (success) {
         showMessage(
-          'تم تحديث النسخ التلقائية بنجاح'
+          'تم تحديث النسخ التلقائية على الجهاز'
         );
       } else {
         showMessage(
@@ -423,65 +337,6 @@ export function BackupPage() {
   }
 
   /* ==========================
-     استعادة من Google Drive
-  ========================== */
-
-  async function handleDriveRestore(
-    item: DriveBackup
-  ) {
-    if (working) {
-      return;
-    }
-
-    const approved =
-      window.confirm(
-        'هل تريد استعادة هذه النسخة من Google Drive؟\n\n' +
-          `اسم الملف:\n${item.name}\n\n` +
-          'سيتم استبدال بيانات التطبيق الحالية بالبيانات الموجودة في النسخة.\n\n' +
-          'سيتم إنشاء نسخة أمان من بياناتك الحالية قبل الاستعادة.'
-      );
-
-    if (!approved) {
-      return;
-    }
-
-    setWorking(true);
-
-    try {
-      const text =
-        await downloadBackupFromDrive(
-          item.id
-        );
-
-      const backup =
-        parseBackupFile(
-          text
-        );
-
-      await restoreBackup(
-        backup
-      );
-
-      window.alert(
-        'تمت استعادة النسخة من Google Drive بنجاح.\nسيتم إعادة تحميل التطبيق الآن.'
-      );
-
-      window.location.reload();
-    } catch (error) {
-      console.error(
-        'Drive restore error:',
-        error
-      );
-
-      window.alert(
-        'تعذر استعادة النسخة من Google Drive.\nتأكد أن الملف نسخة صحيحة لـ BAKR PRO.'
-      );
-    } finally {
-      setWorking(false);
-    }
-  }
-
-  /* ==========================
      حذف نسخة محلية
   ========================== */
 
@@ -519,54 +374,6 @@ export function BackupPage() {
 
       showMessage(
         'تعذر حذف النسخة',
-        true
-      );
-    } finally {
-      setWorking(false);
-    }
-  }
-
-  /* ==========================
-     حذف نسخة من Google Drive
-  ========================== */
-
-  async function handleDriveDelete(
-    item: DriveBackup
-  ) {
-    if (working) {
-      return;
-    }
-
-    const approved =
-      window.confirm(
-        'هل تريد حذف هذه النسخة من Google Drive نهائيًا؟\n\n' +
-          item.name
-      );
-
-    if (!approved) {
-      return;
-    }
-
-    setWorking(true);
-
-    try {
-      await deleteDriveBackup(
-        item.id
-      );
-
-      await loadDriveBackups();
-
-      showMessage(
-        'تم حذف النسخة من Google Drive'
-      );
-    } catch (error) {
-      console.error(
-        'Drive delete error:',
-        error
-      );
-
-      showMessage(
-        'تعذر حذف النسخة من Google Drive',
         true
       );
     } finally {
@@ -781,7 +588,7 @@ export function BackupPage() {
                 1.8,
             }}
           >
-            حماية بيانات BAKR PRO واستعادتها عند الحاجة
+            حماية بيانات BAKR PRO وحفظها بدون الحاجة للإنترنت
           </p>
         </div>
 
@@ -1119,292 +926,6 @@ export function BackupPage() {
           </div>
         )}
 
-        {/* =====================
-            GOOGLE DRIVE
-        ====================== */}
-
-        <div
-          style={{
-            padding:
-              16,
-
-            borderRadius:
-              20,
-
-            background:
-              'rgba(15,30,52,0.96)',
-
-            border:
-              '1px solid rgba(34,197,94,0.20)',
-
-            marginBottom:
-              22,
-          }}
-        >
-          <div
-            style={{
-              display:
-                'flex',
-
-              alignItems:
-                'center',
-
-              justifyContent:
-                'space-between',
-
-              gap:
-                10,
-
-              marginBottom:
-                14,
-            }}
-          >
-            <div
-              style={{
-                display:
-                  'flex',
-
-                alignItems:
-                  'center',
-
-                gap:
-                  9,
-
-                fontSize:
-                  18,
-
-                fontWeight:
-                  900,
-              }}
-            >
-              <Cloud
-                size={24}
-                color="#4ade80"
-              />
-
-              نسخ Google Drive
-            </div>
-
-            <button
-              type="button"
-              disabled={
-                driveLoading ||
-                working
-              }
-              onClick={() =>
-                loadDriveBackups(
-                  true
-                )
-              }
-              style={{
-                border:
-                  '1px solid rgba(255,255,255,0.10)',
-
-                borderRadius:
-                  11,
-
-                padding:
-                  '8px 10px',
-
-                background:
-                  'rgba(255,255,255,0.05)',
-
-                color:
-                  '#ffffff',
-
-                display:
-                  'flex',
-
-                alignItems:
-                  'center',
-
-                gap:
-                  5,
-
-                fontWeight:
-                  800,
-              }}
-            >
-              <RefreshCw
-                size={17}
-              />
-
-              تحديث
-            </button>
-          </div>
-
-          {driveLoading ? (
-            <div
-              style={
-                driveEmptyBox
-              }
-            >
-              جاري قراءة Google Drive...
-            </div>
-          ) : driveBackups.length ===
-            0 ? (
-            <div
-              style={
-                driveEmptyBox
-              }
-            >
-              لا توجد نسخ في Google Drive
-            </div>
-          ) : (
-            <div
-              style={{
-                display:
-                  'grid',
-
-                gap:
-                  9,
-              }}
-            >
-              {driveBackups.map(
-                (item) => (
-                  <div
-                    key={
-                      item.id
-                    }
-                    style={{
-                      padding:
-                        13,
-
-                      borderRadius:
-                        14,
-
-                      background:
-                        'rgba(255,255,255,0.04)',
-
-                      border:
-                        '1px solid rgba(255,255,255,0.07)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight:
-                          900,
-
-                        fontSize:
-                          14,
-                      }}
-                    >
-                      {getDriveBackupName(
-                        item.name
-                      )}
-                    </div>
-
-                    <div
-                      style={{
-                        color:
-                          '#cbd5e1',
-
-                        fontSize:
-                          11,
-
-                        marginTop:
-                          5,
-
-                        wordBreak:
-                          'break-all',
-                      }}
-                    >
-                      {item.name}
-                    </div>
-
-                    {item.createdTime && (
-                      <div
-                        style={{
-                          color:
-                            '#94a3b8',
-
-                          fontSize:
-                            11,
-
-                          marginTop:
-                            5,
-                        }}
-                      >
-                        {formatDate(
-                          item.createdTime
-                        )}
-                      </div>
-                    )}
-
-                    <div
-                      style={{
-                        display:
-                          'grid',
-
-                        gridTemplateColumns:
-                          '1fr 1fr',
-
-                        gap:
-                          7,
-
-                        marginTop:
-                          11,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        disabled={
-                          working
-                        }
-                        onClick={() =>
-                          handleDriveRestore(
-                            item
-                          )
-                        }
-                        style={{
-                          ...smallButton,
-
-                          color:
-                            '#86efac',
-                        }}
-                      >
-                        <RotateCcw
-                          size={17}
-                        />
-
-                        استعادة
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={
-                          working
-                        }
-                        onClick={() =>
-                          handleDriveDelete(
-                            item
-                          )
-                        }
-                        style={{
-                          ...smallButton,
-
-                          color:
-                            '#fca5a5',
-                        }}
-                      >
-                        <Trash2
-                          size={17}
-                        />
-
-                        حذف
-                      </button>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* =====================
-            LOCAL BACKUPS
-        ====================== */}
-
         <div
           style={{
             marginBottom:
@@ -1616,10 +1137,12 @@ export function BackupPage() {
               1.9,
           }}
         >
-          🛡️ يحتفظ BAKR PRO بنسخ محلية،
-          ويمكن حفظ واستعادة النسخ مباشرة
-          من Google Drive. كما يحتفظ التطبيق
-          بآخر 7 نسخ يومية و4 نسخ أسبوعية.
+          🛡️ يحفظ BAKR PRO النسخ الاحتياطية
+          أولًا على الجهاز بدون إنترنت.
+          ويمكنك بعد ذلك إرسال النسخة إلى
+          Google Drive أو أي مكان آخر من
+          نافذة المشاركة. يحتفظ التطبيق بآخر
+          7 نسخ يومية و4 نسخ أسبوعية.
         </div>
       </div>
     </div>
@@ -1810,25 +1333,4 @@ const emptyBox:
 
   border:
     '1px solid rgba(255,255,255,0.07)',
-};
-
-const driveEmptyBox:
-  React.CSSProperties = {
-  padding:
-    22,
-
-  textAlign:
-    'center',
-
-  borderRadius:
-    14,
-
-  color:
-    '#94a3b8',
-
-  background:
-    'rgba(255,255,255,0.025)',
-
-  border:
-    '1px solid rgba(255,255,255,0.06)',
 };
