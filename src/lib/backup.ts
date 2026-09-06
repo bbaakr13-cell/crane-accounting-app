@@ -521,6 +521,7 @@ export async function createWeeklyBackup() {
 
 /* ==============================
    رفع اليومية إلى Google Drive
+   محفوظة للاستخدام اليدوي لاحقًا
 ============================== */
 
 async function uploadDailyBackupToDrive() {
@@ -559,6 +560,7 @@ async function uploadDailyBackupToDrive() {
 
 /* ==============================
    رفع الأسبوعية إلى Google Drive
+   محفوظة للاستخدام اليدوي لاحقًا
 ============================== */
 
 async function uploadWeeklyBackupToDrive() {
@@ -596,36 +598,29 @@ async function uploadWeeklyBackupToDrive() {
 }
 
 /* ==============================
-   النسخ التلقائي
+   النسخ التلقائي المحلي
+
+   مهم:
+   لا يحتاج إنترنت
+   لا يسجل دخول Google
+   لا يرفع إلى Drive
 ============================== */
 
 export async function runAutomaticBackup() {
   try {
+    // حفظ نسخة يومية على الجهاز
     await createDailyBackup();
+
+    // حفظ نسخة أسبوعية على الجهاز
     await createWeeklyBackup();
 
-    try {
-      await uploadDailyBackupToDrive();
-    } catch (error) {
-      console.error(
-        'خطأ رفع النسخة اليومية إلى Google Drive:',
-        error
-      );
-    }
-
-    try {
-      await uploadWeeklyBackupToDrive();
-    } catch (error) {
-      console.error(
-        'خطأ رفع النسخة الأسبوعية إلى Google Drive:',
-        error
-      );
-    }
+    // لا يتم الاتصال بـ Google Drive هنا.
+    // رفع Drive سيكون من زر منفصل.
 
     return true;
   } catch (error) {
     console.error(
-      'خطأ في النسخ الاحتياطي التلقائي',
+      'خطأ في النسخ الاحتياطي المحلي التلقائي',
       error
     );
 
@@ -877,4 +872,4 @@ export async function saveBackupForExport(
         fileName
       ),
   };
-}
+    }
