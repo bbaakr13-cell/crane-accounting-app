@@ -59,11 +59,8 @@ type ExternalExpenseRecord = {
 const EXPENSE_STORAGE_KEY =
   'crane_accounting_driver_equipment_expenses_v1';
 
-const HACEN_FONT_NAME =
-  'HacenEgypt';
-
-const HACEN_FONT_URL =
-  '/hacen-egypt.ttf';
+const HACEN_FONT_NAME = 'HacenEgypt';
+const HACEN_FONT_URL = '/hacen-egypt.ttf';
 
 const monthNames = [
   'يناير',
@@ -80,71 +77,38 @@ const monthNames = [
   'ديسمبر',
 ];
 
-function normalizeArabicNumbers(
-  value: string
-) {
+function normalizeArabicNumbers(value: string) {
   return value
     .replace(/[٠-٩]/g, (digit) =>
-      String(
-        '٠١٢٣٤٥٦٧٨٩'.indexOf(
-          digit
-        )
-      )
+      String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
     )
     .replace(/[۰-۹]/g, (digit) =>
-      String(
-        '۰۱۲۳۴۵۶۷۸۹'.indexOf(
-          digit
-        )
-      )
+      String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))
     )
     .replace(/٬/g, '')
     .replace(/,/g, '');
 }
 
-function formatEquipmentName(
-  value: string
-) {
+function formatEquipmentName(value: string) {
   return value
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(
-      /كرين\s*(\d+)/g,
-      'كرين $1'
-    )
-    .replace(
-      /(\d+)\s*طن/g,
-      '$1 طن'
-    )
-    .replace(
-      /طن([^\s])/g,
-      'طن $1'
-    )
+    .replace(/كرين\s*(\d+)/g, 'كرين $1')
+    .replace(/(\d+)\s*طن/g, '$1 طن')
+    .replace(/طن([^\s])/g, 'طن $1')
     .trim();
 }
 
-function getDateParts(
-  dateValue: string
-) {
-  const parts =
-    String(
-      dateValue || ''
-    ).split('-');
+function getDateParts(dateValue: string) {
+  const parts = String(dateValue || '').split('-');
 
-  if (
-    parts.length < 3
-  ) {
+  if (parts.length < 3) {
     return null;
   }
 
-  const year =
-    Number(parts[0]);
-
-  const month =
-    Number(parts[1]);
-
-  const day =
-    Number(parts[2]);
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
 
   if (
     !Number.isFinite(year) ||
@@ -162,18 +126,12 @@ function getDateParts(
 }
 
 export function MonthlyDetailPage() {
-  const { id } =
-    useParams<{
-      id: string;
-    }>();
+  const { id } = useParams<{ id: string }>();
 
-  const now =
-    new Date();
+  const now = new Date();
 
   const reportRef =
-    useRef<HTMLDivElement>(
-      null
-    );
+    useRef<HTMLDivElement>(null);
 
   const [
     equipmentList,
@@ -183,9 +141,7 @@ export function MonthlyDetailPage() {
   const [
     equipmentId,
     setEquipmentId,
-  ] = useState(
-    id || ''
-  );
+  ] = useState(id || '');
 
   const [
     equipmentLoading,
@@ -195,16 +151,12 @@ export function MonthlyDetailPage() {
   const [
     year,
     setYear,
-  ] = useState(
-    now.getFullYear()
-  );
+  ] = useState(now.getFullYear());
 
   const [
     month,
     setMonth,
-  ] = useState(
-    now.getMonth()
-  );
+  ] = useState(now.getMonth());
 
   const [
     creatingPdf,
@@ -214,9 +166,7 @@ export function MonthlyDetailPage() {
   const [
     externalExpenses,
     setExternalExpenses,
-  ] = useState<
-    ExternalExpenseRecord[]
-  >([]);
+  ] = useState<ExternalExpenseRecord[]>([]);
 
   const [
     rowsLoaded,
@@ -224,51 +174,33 @@ export function MonthlyDetailPage() {
   ] = useState(false);
 
   useEffect(() => {
-    let cancelled =
-      false;
+    let cancelled = false;
 
     async function loadEquipment() {
-      setEquipmentLoading(
-        true
-      );
+      setEquipmentLoading(true);
 
       try {
         const list =
           await fetchEquipment();
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
-        setEquipmentList(
-          list
-        );
+        setEquipmentList(list);
 
         if (
           id &&
           list.some(
             (item) =>
-              String(
-                item.id
-              ) ===
-              String(id)
+              String(item.id) === String(id)
           )
         ) {
+          setEquipmentId(String(id));
+        } else if (list.length > 0) {
           setEquipmentId(
-            String(id)
-          );
-        } else if (
-          list.length > 0
-        ) {
-          setEquipmentId(
-            String(
-              list[0].id
-            )
+            String(list[0].id)
           );
         } else {
-          setEquipmentId(
-            ''
-          );
+          setEquipmentId('');
         }
       } catch (error) {
         console.error(
@@ -277,19 +209,12 @@ export function MonthlyDetailPage() {
         );
 
         if (!cancelled) {
-          setEquipmentList(
-            []
-          );
-
-          setEquipmentId(
-            ''
-          );
+          setEquipmentList([]);
+          setEquipmentId('');
         }
       } finally {
         if (!cancelled) {
-          setEquipmentLoading(
-            false
-          );
+          setEquipmentLoading(false);
         }
       }
     }
@@ -306,12 +231,8 @@ export function MonthlyDetailPage() {
       return (
         equipmentList.find(
           (item) =>
-            String(
-              item.id
-            ) ===
-            String(
-              equipmentId
-            )
+            String(item.id) ===
+            String(equipmentId)
         ) || null
       );
     }, [
@@ -324,9 +245,7 @@ export function MonthlyDetailPage() {
     'لا توجد معدة محددة';
 
   const displayEquipmentName =
-    formatEquipmentName(
-      equipmentName
-    );
+    formatEquipmentName(equipmentName);
 
   const daysInMonth =
     useMemo(() => {
@@ -335,38 +254,24 @@ export function MonthlyDetailPage() {
         month + 1,
         0
       ).getDate();
-    }, [
-      year,
-      month,
-    ]);
+    }, [year, month]);
 
   const storageKey =
     equipmentId
       ? `monthly-ledger-v3-${equipmentId}-${year}-${month}`
       : `monthly-ledger-v3-no-equipment-${year}-${month}`;
 
-  function createEmptyRows():
-    DayRow[] {
+  function createEmptyRows(): DayRow[] {
     return Array.from(
-      {
-        length:
-          daysInMonth,
-      },
+      { length: daysInMonth },
       (_, index) => ({
-        day:
-          index + 1,
-        workType:
-          '',
-        tripType:
-          '',
-        tripPrice:
-          0,
-        expenseType:
-          '',
-        expenseAmount:
-          0,
-        notes:
-          '',
+        day: index + 1,
+        workType: '',
+        tripType: '',
+        tripPrice: 0,
+        expenseType: '',
+        expenseAmount: 0,
+        notes: '',
       })
     );
   }
@@ -374,88 +279,58 @@ export function MonthlyDetailPage() {
   const [
     rows,
     setRows,
-  ] =
-    useState<DayRow[]>(
-      createEmptyRows()
-    );
+  ] = useState<DayRow[]>(
+    createEmptyRows()
+  );
 
   useEffect(() => {
-    setRowsLoaded(
-      false
-    );
+    setRowsLoaded(false);
 
     if (!equipmentId) {
-      setRows(
-        createEmptyRows()
-      );
-
-      setRowsLoaded(
-        true
-      );
-
+      setRows(createEmptyRows());
+      setRowsLoaded(true);
       return;
     }
 
     try {
       const saved =
-        localStorage.getItem(
-          storageKey
-        );
+        localStorage.getItem(storageKey);
 
       if (!saved) {
-        setRows(
-          createEmptyRows()
-        );
-
-        setRowsLoaded(
-          true
-        );
-
+        setRows(createEmptyRows());
+        setRowsLoaded(true);
         return;
       }
 
       const parsed =
-        JSON.parse(
-          saved
-        ) as DayRow[];
+        JSON.parse(saved) as DayRow[];
 
       const prepared =
-        createEmptyRows().map(
-          (row) => {
-            const found =
-              parsed.find(
-                (item) =>
-                  item.day ===
-                  row.day
-              );
+        createEmptyRows().map((row) => {
+          const found =
+            parsed.find(
+              (item) =>
+                item.day === row.day
+            );
 
-            if (!found) {
-              return row;
-            }
+          return found
+            ? {
+                ...row,
+                ...found,
+              }
+            : row;
+        });
 
-            return {
-              ...row,
-              ...found,
-            };
-          }
-        );
-
-      setRows(
-        prepared
-      );
+      setRows(prepared);
     } catch (error) {
       console.error(
         'تعذر قراءة الحساب الشهري:',
         error
       );
 
-      setRows(
-        createEmptyRows()
-      );
+      setRows(createEmptyRows());
     } finally {
-      setRowsLoaded(
-        true
-      );
+      setRowsLoaded(true);
     }
   }, [
     equipmentId,
@@ -476,9 +351,7 @@ export function MonthlyDetailPage() {
     try {
       localStorage.setItem(
         storageKey,
-        JSON.stringify(
-          rows
-        )
+        JSON.stringify(rows)
       );
     } catch (error) {
       console.error(
@@ -501,25 +374,15 @@ export function MonthlyDetailPage() {
         );
 
       if (!raw) {
-        setExternalExpenses(
-          []
-        );
-
+        setExternalExpenses([]);
         return;
       }
 
       const parsed =
         JSON.parse(raw);
 
-      if (
-        !Array.isArray(
-          parsed
-        )
-      ) {
-        setExternalExpenses(
-          []
-        );
-
+      if (!Array.isArray(parsed)) {
+        setExternalExpenses([]);
         return;
       }
 
@@ -532,38 +395,30 @@ export function MonthlyDetailPage() {
         error
       );
 
-      setExternalExpenses(
-        []
-      );
+      setExternalExpenses([]);
     }
   }
 
   useEffect(() => {
     loadExternalExpenses();
 
-    const handleStorage =
-      (
-        event:
-          StorageEvent
-      ) => {
-        if (
-          !event.key ||
-          event.key ===
-            EXPENSE_STORAGE_KEY
-        ) {
-          loadExternalExpenses();
-        }
-      };
-
-    const handleFocus =
-      () => {
+    const handleStorage = (
+      event: StorageEvent
+    ) => {
+      if (
+        !event.key ||
+        event.key ===
+          EXPENSE_STORAGE_KEY
+      ) {
         loadExternalExpenses();
-      };
+      }
+    };
 
-    const handleUpdated =
-      () => {
-        loadExternalExpenses();
-      };
+    const handleFocus = () =>
+      loadExternalExpenses();
+
+    const handleUpdated = () =>
+      loadExternalExpenses();
 
     window.addEventListener(
       'storage',
@@ -608,30 +463,22 @@ export function MonthlyDetailPage() {
         (expense) => {
           if (
             String(
-              expense.equipmentId ||
-                ''
-            ) !==
-            String(
-              equipmentId
-            )
+              expense.equipmentId || ''
+            ) !== String(equipmentId)
           ) {
             return false;
           }
 
           const date =
-            getDateParts(
-              expense.date
-            );
+            getDateParts(expense.date);
 
           if (!date) {
             return false;
           }
 
           return (
-            date.year ===
-              year &&
-            date.month ===
-              month + 1
+            date.year === year &&
+            date.month === month + 1
           );
         }
       );
@@ -653,22 +500,14 @@ export function MonthlyDetailPage() {
       monthlyExternalExpenses.forEach(
         (expense) => {
           const date =
-            getDateParts(
-              expense.date
-            );
+            getDateParts(expense.date);
 
-          if (!date) {
-            return;
-          }
+          if (!date) return;
 
           const current =
-            map.get(
-              date.day
-            ) || [];
+            map.get(date.day) || [];
 
-          current.push(
-            expense
-          );
+          current.push(expense);
 
           map.set(
             date.day,
@@ -678,17 +517,14 @@ export function MonthlyDetailPage() {
       );
 
       return map;
-    }, [
-      monthlyExternalExpenses,
-    ]);
+    }, [monthlyExternalExpenses]);
 
   function getDayExternalExpenses(
     day: number
   ) {
     return (
-      externalExpensesByDay.get(
-        day
-      ) || []
+      externalExpensesByDay.get(day) ||
+      []
     );
   }
 
@@ -698,14 +534,9 @@ export function MonthlyDetailPage() {
     return getDayExternalExpenses(
       day
     ).reduce(
-      (
-        sum,
-        expense
-      ) =>
+      (sum, expense) =>
         sum +
-        (Number(
-          expense.amount
-        ) || 0),
+        (Number(expense.amount) || 0),
       0
     );
   }
@@ -714,9 +545,7 @@ export function MonthlyDetailPage() {
     day: number
   ) {
     const records =
-      getDayExternalExpenses(
-        day
-      );
+      getDayExternalExpenses(day);
 
     return Array.from(
       new Set(
@@ -734,31 +563,24 @@ export function MonthlyDetailPage() {
     day: number
   ) {
     const records =
-      getDayExternalExpenses(
-        day
-      );
+      getDayExternalExpenses(day);
 
     return records
-      .map(
-        (expense) => {
-          const parts = [
-            expense.driverName
-              ? `السائق: ${expense.driverName}`
-              : '',
+      .map((expense) => {
+        const parts = [
+          expense.driverName
+            ? `السائق: ${expense.driverName}`
+            : '',
 
-            expense.location
-              ? `الموقع: ${expense.location}`
-              : '',
+          expense.location
+            ? `الموقع: ${expense.location}`
+            : '',
 
-            expense.notes ||
-              '',
-          ].filter(Boolean);
+          expense.notes || '',
+        ].filter(Boolean);
 
-          return parts.join(
-            ' - '
-          );
-        }
-      )
+        return parts.join(' - ');
+      })
       .filter(Boolean)
       .join(' | ');
   }
@@ -772,21 +594,15 @@ export function MonthlyDetailPage() {
       | 'notes',
     value: string
   ) {
-    setRows(
-      (
-        oldRows
-      ) =>
-        oldRows.map(
-          (row) =>
-            row.day ===
-            day
-              ? {
-                  ...row,
-                  [field]:
-                    value,
-                }
-              : row
-        )
+    setRows((oldRows) =>
+      oldRows.map((row) =>
+        row.day === day
+          ? {
+              ...row,
+              [field]: value,
+            }
+          : row
+      )
     );
   }
 
@@ -798,48 +614,34 @@ export function MonthlyDetailPage() {
     value: string
   ) {
     const normalized =
-      normalizeArabicNumbers(
-        value
-      );
+      normalizeArabicNumbers(value);
 
     const numberValue =
-      normalized.trim() ===
-      ''
+      normalized.trim() === ''
         ? 0
-        : Number(
-            normalized
-          );
+        : Number(normalized);
 
-    setRows(
-      (
-        oldRows
-      ) =>
-        oldRows.map(
-          (row) =>
-            row.day ===
-            day
-              ? {
-                  ...row,
-
-                  [field]:
-                    Number.isFinite(
-                      numberValue
-                    )
-                      ? numberValue
-                      : 0,
-                }
-              : row
-        )
+    setRows((oldRows) =>
+      oldRows.map((row) =>
+        row.day === day
+          ? {
+              ...row,
+              [field]:
+                Number.isFinite(
+                  numberValue
+                )
+                  ? numberValue
+                  : 0,
+            }
+          : row
+      )
     );
   }
 
   const totals =
     useMemo(() => {
       return rows.reduce(
-        (
-          sum,
-          row
-        ) => {
+        (sum, row) => {
           const linkedExpenses =
             externalExpensesByDay.get(
               row.day
@@ -861,33 +663,25 @@ export function MonthlyDetailPage() {
           const hasWork =
             row.workType.trim() ||
             row.tripType.trim() ||
-            row.tripPrice >
-              0 ||
+            row.tripPrice > 0 ||
             row.expenseType.trim() ||
-            row.expenseAmount >
-              0 ||
+            row.expenseAmount > 0 ||
             row.notes.trim() ||
-            linkedExpenses.length >
-              0;
+            linkedExpenses.length > 0;
 
           if (hasWork) {
-            sum.registeredDays +=
-              1;
+            sum.registeredDays += 1;
           }
 
           if (
             row.tripType.trim() ||
-            row.tripPrice >
-              0
+            row.tripPrice > 0
           ) {
-            sum.trips +=
-              1;
+            sum.trips += 1;
           }
 
           sum.income +=
-            Number(
-              row.tripPrice
-            ) || 0;
+            Number(row.tripPrice) || 0;
 
           sum.manualExpense +=
             Number(
@@ -900,20 +694,11 @@ export function MonthlyDetailPage() {
           return sum;
         },
         {
-          trips:
-            0,
-
-          income:
-            0,
-
-          manualExpense:
-            0,
-
-          linkedExpense:
-            0,
-
-          registeredDays:
-            0,
+          trips: 0,
+          income: 0,
+          manualExpense: 0,
+          linkedExpense: 0,
+          registeredDays: 0,
         }
       );
     }, [
@@ -931,129 +716,76 @@ export function MonthlyDetailPage() {
 
   const inputStyle:
     React.CSSProperties = {
-    width:
-      '100%',
-
-    minWidth:
-      120,
-
-    padding:
-      '10px 8px',
-
-    borderRadius:
-      10,
-
+    width: '100%',
+    minWidth: 120,
+    padding: '10px 8px',
+    borderRadius: 10,
     border:
       '1px solid #26364f',
-
-    background:
-      '#0a1424',
-
-    color:
-      '#ffffff',
-
-    fontSize:
-      13,
-
-    boxSizing:
-      'border-box',
-
-    outline:
-      'none',
+    background: '#0a1424',
+    color: '#ffffff',
+    fontSize: 13,
+    boxSizing: 'border-box',
+    outline: 'none',
   };
 
   const selectStyle:
     React.CSSProperties = {
     ...inputStyle,
-
-    minWidth:
-      0,
-
-    padding:
-      12,
+    minWidth: 0,
+    padding: 12,
   };
 
   const summaryCard:
     React.CSSProperties = {
-    background:
-      '#0b1527',
-
+    background: '#0b1527',
     border:
       '1px solid #1d2d47',
-
-    borderRadius:
-      16,
-
-    padding:
-      14,
-
-    textAlign:
-      'center',
+    borderRadius: 16,
+    padding: 14,
+    textAlign: 'center',
   };
 
   const buttonStyle:
     React.CSSProperties = {
-    border:
-      'none',
-
-    borderRadius:
-      14,
-
-    padding:
-      '14px 10px',
-
-    fontSize:
-      14,
-
-    fontWeight:
-      800,
-
-    cursor:
-      'pointer',
-
-    display:
-      'flex',
-
-    alignItems:
-      'center',
-
+    border: 'none',
+    borderRadius: 14,
+    padding: '14px 10px',
+    fontSize: 14,
+    fontWeight: 800,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
     justifyContent:
       'center',
-
-    gap:
-      6,
-
-    color:
-      '#ffffff',
+    gap: 6,
+    color: '#ffffff',
   };
 
   const pdfCell:
     React.CSSProperties = {
     border:
-      '1px solid #d1d5db',
-
-    padding:
-      4,
-
-    fontWeight:
-      400,
+      '1px solid #b8c6d8',
+    padding: '6px 4px',
+    height: 25,
+    fontSize: 14,
+    lineHeight: 1.15,
+    fontWeight: 400,
+    verticalAlign: 'middle',
   };
 
   function pdfHeaderCell(
     width: string
-  ):
-    React.CSSProperties {
+  ): React.CSSProperties {
     return {
       width,
-
-      padding:
-        7,
-
+      padding: '9px 4px',
       border:
         '1px solid #d1d5db',
-
-      fontWeight:
-        400,
+      fontSize: 15,
+      lineHeight: 1.1,
+      fontWeight: 400,
+      verticalAlign: 'middle',
     };
   }
 
@@ -1066,8 +798,7 @@ export function MonthlyDetailPage() {
 
     return (
       `BAKR-PRO-${cleanEquipment}-` +
-      `${monthNames[month]}-` +
-      `${year}.pdf`
+      `${monthNames[month]}-${year}.pdf`
     );
   }
 
@@ -1075,43 +806,30 @@ export function MonthlyDetailPage() {
     blob: Blob
   ): Promise<string> {
     return new Promise(
-      (
-        resolve,
-        reject
-      ) => {
+      (resolve, reject) => {
         const reader =
           new FileReader();
 
-        reader.onloadend =
-          () => {
-            const result =
-              reader.result as string;
+        reader.onloadend = () => {
+          const result =
+            reader.result as string;
 
-            const base64 =
-              result.includes(
-                ','
-              )
-                ? result.split(
-                    ','
-                  )[1]
-                : result;
+          const base64 =
+            result.includes(',')
+              ? result.split(',')[1]
+              : result;
 
-            resolve(
-              base64
-            );
-          };
+          resolve(base64);
+        };
 
-        reader.onerror =
-          () =>
-            reject(
-              new Error(
-                'تعذر قراءة ملف PDF'
-              )
-            );
+        reader.onerror = () =>
+          reject(
+            new Error(
+              'تعذر قراءة ملف PDF'
+            )
+          );
 
-        reader.readAsDataURL(
-          blob
-        );
+        reader.readAsDataURL(blob);
       }
     );
   }
@@ -1122,14 +840,11 @@ export function MonthlyDetailPage() {
         await fetch(
           HACEN_FONT_URL,
           {
-            cache:
-              'no-store',
+            cache: 'no-store',
           }
         );
 
-      if (
-        !response.ok
-      ) {
+      if (!response.ok) {
         throw new Error(
           'تعذر تحميل خط Hacen Egypt'
         );
@@ -1143,11 +858,8 @@ export function MonthlyDetailPage() {
           HACEN_FONT_NAME,
           buffer,
           {
-            style:
-              'normal',
-
-            weight:
-              '400',
+            style: 'normal',
+            weight: '400',
           }
         );
 
@@ -1172,9 +884,7 @@ export function MonthlyDetailPage() {
   }
 
   async function createPdfBlob() {
-    if (
-      !reportRef.current
-    ) {
+    if (!reportRef.current) {
       throw new Error(
         'تعذر العثور على التقرير'
       );
@@ -1183,12 +893,9 @@ export function MonthlyDetailPage() {
     await ensureHacenFont();
 
     await new Promise<void>(
-      (
-        resolve
-      ) => {
+      (resolve) => {
         window.setTimeout(
-          () =>
-            resolve(),
+          () => resolve(),
           300
         );
       }
@@ -1198,17 +905,11 @@ export function MonthlyDetailPage() {
       await html2canvas(
         reportRef.current,
         {
-          scale:
-            1.7,
-
-          useCORS:
-            true,
-
+          scale: 2,
+          useCORS: true,
           backgroundColor:
             '#ffffff',
-
-          logging:
-            false,
+          logging: false,
 
           onclone:
             async (
@@ -1221,9 +922,7 @@ export function MonthlyDetailPage() {
                   | HTMLElement
                   | null;
 
-              if (
-                report
-              ) {
+              if (report) {
                 report.style.fontFamily =
                   `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`;
               }
@@ -1234,9 +933,7 @@ export function MonthlyDetailPage() {
                 );
 
                 await clonedDocument.fonts.ready;
-              } catch (
-                error
-              ) {
+              } catch (error) {
                 console.error(
                   'Clone font error:',
                   error
@@ -1249,7 +946,7 @@ export function MonthlyDetailPage() {
     const imageData =
       canvas.toDataURL(
         'image/jpeg',
-        0.95
+        0.97
       );
 
     const pdf =
@@ -1265,8 +962,7 @@ export function MonthlyDetailPage() {
     const pageHeight =
       pdf.internal.pageSize.getHeight();
 
-    const margin =
-      8;
+    const margin = 6;
 
     const imageWidth =
       pageWidth -
@@ -1283,8 +979,7 @@ export function MonthlyDetailPage() {
       pageHeight -
       margin * 2;
 
-    let position =
-      margin;
+    let position = margin;
 
     pdf.addImage(
       imageData,
@@ -1300,8 +995,7 @@ export function MonthlyDetailPage() {
       printableHeight;
 
     while (
-      heightLeft >
-      0
+      heightLeft > 0
     ) {
       pdf.addPage();
 
@@ -1325,9 +1019,7 @@ export function MonthlyDetailPage() {
         printableHeight;
     }
 
-    return pdf.output(
-      'blob'
-    );
+    return pdf.output('blob');
   }
 
   async function createPdfFile() {
@@ -1335,18 +1027,12 @@ export function MonthlyDetailPage() {
       await createPdfBlob();
 
     const base64 =
-      await blobToBase64(
-        blob
-      );
+      await blobToBase64(blob);
 
     const result =
       await Filesystem.writeFile({
-        path:
-          getFileName(),
-
-        data:
-          base64,
-
+        path: getFileName(),
+        data: base64,
         directory:
           Directory.Cache,
       });
@@ -1355,20 +1041,15 @@ export function MonthlyDetailPage() {
   }
 
   async function handleSavePdf() {
-    if (
-      !equipmentId
-    ) {
+    if (!equipmentId) {
       alert(
         'اختر المعدة أولاً'
       );
-
       return;
     }
 
     try {
-      setCreatingPdf(
-        true
-      );
+      setCreatingPdf(true);
 
       const fileUri =
         await createPdfFile();
@@ -1380,8 +1061,7 @@ export function MonthlyDetailPage() {
         text:
           `${displayEquipmentName} - ${monthNames[month]} ${year}`,
 
-        url:
-          fileUri,
+        url: fileUri,
 
         dialogTitle:
           'حفظ أو مشاركة كشف الحساب',
@@ -1396,27 +1076,20 @@ export function MonthlyDetailPage() {
         'تعذر إنشاء ملف PDF'
       );
     } finally {
-      setCreatingPdf(
-        false
-      );
+      setCreatingPdf(false);
     }
   }
 
   async function handleShare() {
-    if (
-      !equipmentId
-    ) {
+    if (!equipmentId) {
       alert(
         'اختر المعدة أولاً'
       );
-
       return;
     }
 
     try {
-      setCreatingPdf(
-        true
-      );
+      setCreatingPdf(true);
 
       const fileUri =
         await createPdfFile();
@@ -1428,21 +1101,12 @@ export function MonthlyDetailPage() {
         text:
           `المعدة: ${displayEquipmentName}\n` +
           `الشهر: ${monthNames[month]} ${year}\n` +
-          `إجمالي الدخل: ${totals.income.toLocaleString(
-            'en-US'
-          )} ر.س\n` +
-          `إجمالي المصروفات: ${totalExpense.toLocaleString(
-            'en-US'
-          )} ر.س\n` +
-          `مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString(
-            'en-US'
-          )} ر.س\n` +
-          `صافي الشهر: ${net.toLocaleString(
-            'en-US'
-          )} ر.س`,
+          `إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
+          `إجمالي المصروفات: ${totalExpense.toLocaleString('en-US')} ر.س\n` +
+          `مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString('en-US')} ر.س\n` +
+          `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
 
-        url:
-          fileUri,
+        url: fileUri,
 
         dialogTitle:
           'مشاركة كشف الحساب',
@@ -1457,20 +1121,15 @@ export function MonthlyDetailPage() {
         'تعذر مشاركة كشف الحساب'
       );
     } finally {
-      setCreatingPdf(
-        false
-      );
+      setCreatingPdf(false);
     }
   }
 
   function handleWhatsApp() {
-    if (
-      !equipmentId
-    ) {
+    if (!equipmentId) {
       alert(
         'اختر المعدة أولاً'
       );
-
       return;
     }
 
@@ -1480,18 +1139,10 @@ export function MonthlyDetailPage() {
       `🏗️ المعدة: ${displayEquipmentName}\n` +
       `📅 الشهر: ${monthNames[month]} ${year}\n\n` +
       `🚚 عدد المشاوير: ${totals.trips}\n` +
-      `💰 إجمالي الدخل: ${totals.income.toLocaleString(
-        'en-US'
-      )} ر.س\n` +
-      `💸 إجمالي المصروفات: ${totalExpense.toLocaleString(
-        'en-US'
-      )} ر.س\n` +
-      `👷 مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString(
-        'en-US'
-      )} ر.س\n` +
-      `✅ صافي الشهر: ${net.toLocaleString(
-        'en-US'
-      )} ر.س\n` +
+      `💰 إجمالي الدخل: ${totals.income.toLocaleString('en-US')} ر.س\n` +
+      `💸 إجمالي المصروفات: ${totalExpense.toLocaleString('en-US')} ر.س\n` +
+      `👷 مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString('en-US')} ر.س\n` +
+      `✅ صافي الشهر: ${net.toLocaleString('en-US')} ر.س\n` +
       `📝 أيام مسجلة: ${totals.registeredDays}`;
 
     window.open(
@@ -1516,7 +1167,17 @@ export function MonthlyDetailPage() {
 
           .monthly-pdf-report,
           .monthly-pdf-report * {
-            font-family: '${HACEN_FONT_NAME}', Arial, Tahoma, sans-serif !important;
+            font-family:
+              '${HACEN_FONT_NAME}',
+              Arial,
+              Tahoma,
+              sans-serif !important;
+          }
+
+          .monthly-pdf-report .bakr-title {
+            font-family:
+              Arial,
+              sans-serif !important;
           }
         `}
       </style>
@@ -1524,32 +1185,18 @@ export function MonthlyDetailPage() {
       <div
         dir="rtl"
         style={{
-          padding:
-            18,
-
-          paddingBottom:
-            110,
-
-          maxWidth:
-            1100,
-
-          margin:
-            'auto',
-
-          color:
-            '#ffffff',
+          padding: 18,
+          paddingBottom: 110,
+          maxWidth: 1100,
+          margin: 'auto',
+          color: '#ffffff',
         }}
       >
         <h1
           style={{
-            margin:
-              0,
-
-            fontSize:
-              27,
-
-            fontWeight:
-              800,
+            margin: 0,
+            fontSize: 27,
+            fontWeight: 800,
           }}
         >
           الحساب الشهري
@@ -1557,11 +1204,8 @@ export function MonthlyDetailPage() {
 
         <p
           style={{
-            color:
-              '#94a3b8',
-
-            marginTop:
-              7,
+            color: '#94a3b8',
+            marginTop: 7,
           }}
         >
           سجل أعمال ومشاوير ومصاريف{' '}
@@ -1570,52 +1214,33 @@ export function MonthlyDetailPage() {
 
         <div
           style={{
-            background:
-              '#0b1527',
-
+            background: '#0b1527',
             border:
               '1px solid #1d2d47',
-
-            borderRadius:
-              18,
-
-            padding:
-              14,
-
-            marginBottom:
-              18,
-
-            display:
-              'grid',
-
-            gap:
-              10,
+            borderRadius: 18,
+            padding: 14,
+            marginBottom: 18,
+            display: 'grid',
+            gap: 10,
           }}
         >
           <label>
             <small
               style={{
-                color:
-                  '#94a3b8',
+                color: '#94a3b8',
               }}
             >
               المعدة
             </small>
 
             <select
-              value={
-                equipmentId
-              }
-              onChange={(
-                e
-              ) =>
+              value={equipmentId}
+              onChange={(e) =>
                 setEquipmentId(
                   e.target.value
                 )
               }
-              style={
-                selectStyle
-              }
+              style={selectStyle}
               disabled={
                 equipmentLoading ||
                 equipmentList.length ===
@@ -1633,13 +1258,9 @@ export function MonthlyDetailPage() {
                 </option>
               ) : (
                 equipmentList.map(
-                  (
-                    item
-                  ) => (
+                  (item) => (
                     <option
-                      key={
-                        item.id
-                      }
+                      key={item.id}
                       value={String(
                         item.id
                       )}
@@ -1656,45 +1277,28 @@ export function MonthlyDetailPage() {
 
           <div
             style={{
-              display:
-                'grid',
-
+              display: 'grid',
               gridTemplateColumns:
                 '1fr 1fr',
-
-              gap:
-                10,
+              gap: 10,
             }}
           >
             <select
-              value={
-                month
-              }
-              onChange={(
-                e
-              ) =>
+              value={month}
+              onChange={(e) =>
                 setMonth(
                   Number(
                     e.target.value
                   )
                 )
               }
-              style={
-                selectStyle
-              }
+              style={selectStyle}
             >
               {monthNames.map(
-                (
-                  name,
-                  index
-                ) => (
+                (name, index) => (
                   <option
-                    key={
-                      name
-                    }
-                    value={
-                      index
-                    }
+                    key={name}
+                    value={index}
                   >
                     {name}
                   </option>
@@ -1703,31 +1307,19 @@ export function MonthlyDetailPage() {
             </select>
 
             <select
-              value={
-                year
-              }
-              onChange={(
-                e
-              ) =>
+              value={year}
+              onChange={(e) =>
                 setYear(
                   Number(
                     e.target.value
                   )
                 )
               }
-              style={
-                selectStyle
-              }
+              style={selectStyle}
             >
               {Array.from(
-                {
-                  length:
-                    7,
-                },
-                (
-                  _,
-                  index
-                ) => {
+                { length: 7 },
+                (_, index) => {
                   const y =
                     now.getFullYear() -
                     2 +
@@ -1735,12 +1327,8 @@ export function MonthlyDetailPage() {
 
                   return (
                     <option
-                      key={
-                        y
-                      }
-                      value={
-                        y
-                      }
+                      key={y}
+                      value={y}
                     >
                       {y}
                     </option>
@@ -1753,44 +1341,25 @@ export function MonthlyDetailPage() {
 
         <div
           style={{
-            display:
-              'grid',
-
+            display: 'grid',
             gridTemplateColumns:
               'repeat(2, 1fr)',
-
-            gap:
-              10,
-
-            marginBottom:
-              18,
+            gap: 10,
+            marginBottom: 18,
           }}
         >
-          <div
-            style={
-              summaryCard
-            }
-          >
+          <div style={summaryCard}>
             إجمالي المشاوير
-
             <h2>
-              {
-                totals.trips
-              }
+              {totals.trips}
             </h2>
           </div>
 
-          <div
-            style={
-              summaryCard
-            }
-          >
+          <div style={summaryCard}>
             إجمالي الدخل
-
             <h2
               style={{
-                color:
-                  '#22c55e',
+                color: '#22c55e',
               }}
             >
               {totals.income.toLocaleString(
@@ -1800,17 +1369,11 @@ export function MonthlyDetailPage() {
             </h2>
           </div>
 
-          <div
-            style={
-              summaryCard
-            }
-          >
+          <div style={summaryCard}>
             إجمالي المصروفات
-
             <h2
               style={{
-                color:
-                  '#ef4444',
+                color: '#ef4444',
               }}
             >
               {totalExpense.toLocaleString(
@@ -1818,37 +1381,10 @@ export function MonthlyDetailPage() {
               )}{' '}
               ر.س
             </h2>
-
-            {totals.linkedExpense >
-              0 && (
-              <div
-                style={{
-                  marginTop:
-                    5,
-
-                  fontSize:
-                    10,
-
-                  color:
-                    '#fca5a5',
-                }}
-              >
-                منها مصاريف السواقين والمعدات:{' '}
-                {totals.linkedExpense.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </div>
-            )}
           </div>
 
-          <div
-            style={
-              summaryCard
-            }
-          >
+          <div style={summaryCard}>
             صافي الشهر
-
             <h2
               style={{
                 color:
@@ -1867,29 +1403,19 @@ export function MonthlyDetailPage() {
 
         <div
           style={{
-            overflowX:
-              'auto',
-
+            overflowX: 'auto',
             border:
               '1px solid #1d2d47',
-
-            borderRadius:
-              18,
+            borderRadius: 18,
           }}
         >
           <table
             style={{
-              width:
-                '100%',
-
-              minWidth:
-                1050,
-
+              width: '100%',
+              minWidth: 1050,
               borderCollapse:
                 'collapse',
-
-              textAlign:
-                'center',
+              textAlign: 'center',
             }}
           >
             <thead>
@@ -1899,475 +1425,326 @@ export function MonthlyDetailPage() {
                     '#101b2e',
                 }}
               >
-                <th>
-                  اليوم
-                </th>
-
-                <th>
-                  نوع العمل
-                </th>
-
-                <th>
-                  موقع العمل
-                </th>
-
-                <th>
-                  سعر المشوار
-                </th>
-
-                <th>
-                  مصاريف أخرى
-                </th>
-
-                <th>
-                  ملاحظات
-                </th>
+                <th>اليوم</th>
+                <th>نوع العمل</th>
+                <th>موقع العمل</th>
+                <th>سعر المشوار</th>
+                <th>مصاريف أخرى</th>
+                <th>ملاحظات</th>
               </tr>
             </thead>
 
             <tbody>
-              {rows.map(
-                (
-                  row
-                ) => {
-                  const linked =
-                    getDayExternalExpenses(
-                      row.day
-                    );
+              {rows.map((row) => {
+                const linked =
+                  getDayExternalExpenses(
+                    row.day
+                  );
 
-                  const linkedTotal =
-                    getDayExternalTotal(
-                      row.day
-                    );
+                const linkedTotal =
+                  getDayExternalTotal(
+                    row.day
+                  );
 
-                  return (
-                    <tr
-                      key={
-                        row.day
-                      }
-                      style={{
-                        borderTop:
-                          '1px solid #1d2d47',
-                      }}
-                    >
-                      <td>
-                        {
-                          row.day
+                return (
+                  <tr
+                    key={row.day}
+                    style={{
+                      borderTop:
+                        '1px solid #1d2d47',
+                    }}
+                  >
+                    <td>{row.day}</td>
+
+                    <td>
+                      <input
+                        value={
+                          row.workType
                         }
-                      </td>
+                        onChange={(e) =>
+                          updateTextRow(
+                            row.day,
+                            'workType',
+                            e.target.value
+                          )
+                        }
+                        style={inputStyle}
+                      />
+                    </td>
 
-                      <td>
-                        <input
-                          value={
-                            row.workType
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateTextRow(
-                              row.day,
-                              'workType',
-                              e.target.value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                        />
-                      </td>
+                    <td>
+                      <input
+                        value={
+                          row.tripType
+                        }
+                        onChange={(e) =>
+                          updateTextRow(
+                            row.day,
+                            'tripType',
+                            e.target.value
+                          )
+                        }
+                        style={inputStyle}
+                      />
+                    </td>
 
-                      <td>
-                        <input
-                          value={
-                            row.tripType
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateTextRow(
-                              row.day,
-                              'tripType',
-                              e.target.value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                        />
-                      </td>
+                    <td>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={
+                          row.tripPrice ||
+                          ''
+                        }
+                        onChange={(e) =>
+                          updateNumberRow(
+                            row.day,
+                            'tripPrice',
+                            e.target.value
+                          )
+                        }
+                        style={inputStyle}
+                      />
+                    </td>
 
-                      <td>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={
-                            row.tripPrice ||
-                            ''
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateNumberRow(
-                              row.day,
-                              'tripPrice',
-                              e.target.value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                        />
-                      </td>
-
-                      <td>
+                    <td>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gap: 6,
+                        }}
+                      >
                         <div
                           style={{
-                            display:
-                              'grid',
-
-                            gap:
-                              6,
+                            display: 'flex',
+                            gap: 5,
                           }}
                         >
+                          <input
+                            value={
+                              row.expenseType
+                            }
+                            onChange={(e) =>
+                              updateTextRow(
+                                row.day,
+                                'expenseType',
+                                e.target.value
+                              )
+                            }
+                            placeholder="مصروف يدوي"
+                            style={
+                              inputStyle
+                            }
+                          />
+
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={
+                              row.expenseAmount ||
+                              ''
+                            }
+                            onChange={(e) =>
+                              updateNumberRow(
+                                row.day,
+                                'expenseAmount',
+                                e.target.value
+                              )
+                            }
+                            style={{
+                              ...inputStyle,
+                              minWidth: 80,
+                            }}
+                          />
+                        </div>
+
+                        {linked.length >
+                          0 && (
                           <div
                             style={{
-                              display:
-                                'flex',
-
-                              gap:
-                                5,
+                              background:
+                                'rgba(239,68,68,0.10)',
+                              border:
+                                '1px solid rgba(239,68,68,0.25)',
+                              borderRadius:
+                                10,
+                              padding:
+                                '7px 8px',
+                              textAlign:
+                                'right',
                             }}
                           >
-                            <input
-                              value={
-                                row.expenseType
-                              }
-                              onChange={(
-                                e
-                              ) =>
-                                updateTextRow(
-                                  row.day,
-                                  'expenseType',
-                                  e.target.value
-                                )
-                              }
-                              placeholder="مصروف يدوي"
-                              style={
-                                inputStyle
-                              }
-                            />
-
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              value={
-                                row.expenseAmount ||
-                                ''
-                              }
-                              onChange={(
-                                e
-                              ) =>
-                                updateNumberRow(
-                                  row.day,
-                                  'expenseAmount',
-                                  e.target.value
-                                )
-                              }
-                              style={{
-                                ...inputStyle,
-
-                                minWidth:
-                                  80,
-                              }}
-                            />
-                          </div>
-
-                          {linked.length >
-                            0 && (
                             <div
                               style={{
-                                background:
-                                  'rgba(239,68,68,0.10)',
-
-                                border:
-                                  '1px solid rgba(239,68,68,0.25)',
-
-                                borderRadius:
+                                fontSize:
                                   10,
-
-                                padding:
-                                  '7px 8px',
-
-                                textAlign:
-                                  'right',
+                                color:
+                                  '#fca5a5',
+                                fontWeight:
+                                  800,
                               }}
                             >
-                              <div
-                                style={{
-                                  fontSize:
-                                    10,
-
-                                  color:
-                                    '#fca5a5',
-
-                                  fontWeight:
-                                    800,
-                                }}
-                              >
-                                مصاريف السواقين والمعدات
-                              </div>
-
-                              {linked.map(
-                                (
-                                  expense
-                                ) => (
-                                  <div
-                                    key={
-                                      expense.id
-                                    }
-                                    style={{
-                                      marginTop:
-                                        4,
-
-                                      fontSize:
-                                        10,
-
-                                      color:
-                                        '#e2e8f0',
-
-                                      lineHeight:
-                                        1.5,
-                                    }}
-                                  >
-                                    {expense.category ||
-                                      'مصروف'}{' '}
-                                    —{' '}
-
-                                    <b
-                                      style={{
-                                        color:
-                                          '#fb7185',
-                                      }}
-                                    >
-                                      {Number(
-                                        expense.amount ||
-                                          0
-                                      ).toLocaleString(
-                                        'en-US'
-                                      )}{' '}
-                                      ر.س
-                                    </b>
-
-                                    {expense.driverName
-                                      ? ` • ${expense.driverName}`
-                                      : ''}
-                                  </div>
-                                )
-                              )}
-
-                              <div
-                                style={{
-                                  marginTop:
-                                    5,
-
-                                  paddingTop:
-                                    5,
-
-                                  borderTop:
-                                    '1px solid rgba(239,68,68,0.18)',
-
-                                  fontSize:
-                                    11,
-
-                                  color:
-                                    '#fb7185',
-
-                                  fontWeight:
-                                    900,
-                                }}
-                              >
-                                الإجمالي:{' '}
-                                {linkedTotal.toLocaleString(
-                                  'en-US'
-                                )}{' '}
-                                ر.س
-                              </div>
+                              مصاريف السواقين والمعدات
                             </div>
-                          )}
-                        </div>
-                      </td>
 
-                      <td>
-                        <input
-                          value={
-                            row.notes
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            updateTextRow(
-                              row.day,
-                              'notes',
-                              e.target.value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                        />
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
+                            {linked.map(
+                              (
+                                expense
+                              ) => (
+                                <div
+                                  key={
+                                    expense.id
+                                  }
+                                  style={{
+                                    marginTop:
+                                      4,
+                                    fontSize:
+                                      10,
+                                    color:
+                                      '#e2e8f0',
+                                  }}
+                                >
+                                  {expense.category ||
+                                    'مصروف'}{' '}
+                                  —{' '}
+                                  {Number(
+                                    expense.amount ||
+                                      0
+                                  ).toLocaleString(
+                                    'en-US'
+                                  )}{' '}
+                                  ر.س
+                                </div>
+                              )
+                            )}
+
+                            <div
+                              style={{
+                                marginTop:
+                                  5,
+                                fontSize:
+                                  11,
+                                color:
+                                  '#fb7185',
+                                fontWeight:
+                                  900,
+                              }}
+                            >
+                              الإجمالي:{' '}
+                              {linkedTotal.toLocaleString(
+                                'en-US'
+                              )}{' '}
+                              ر.س
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    <td>
+                      <input
+                        value={row.notes}
+                        onChange={(e) =>
+                          updateTextRow(
+                            row.day,
+                            'notes',
+                            e.target.value
+                          )
+                        }
+                        style={inputStyle}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         <div
           style={{
-            marginTop:
-              18,
-
-            display:
-              'grid',
-
+            marginTop: 18,
+            display: 'grid',
             gridTemplateColumns:
               'repeat(3,1fr)',
-
-            gap:
-              8,
+            gap: 8,
           }}
         >
           <button
-            onClick={
-              handleSavePdf
-            }
-            disabled={
-              creatingPdf
-            }
+            onClick={handleSavePdf}
+            disabled={creatingPdf}
             style={{
               ...buttonStyle,
-
-              background:
-                '#2563eb',
+              background: '#2563eb',
             }}
           >
-            <Download
-              size={
-                18
-              }
-            />
-
+            <Download size={18} />
             {creatingPdf
               ? 'جاري...'
               : 'حفظ PDF'}
           </button>
 
           <button
-            onClick={
-              handleShare
-            }
-            disabled={
-              creatingPdf
-            }
+            onClick={handleShare}
+            disabled={creatingPdf}
             style={{
               ...buttonStyle,
-
-              background:
-                '#7c3aed',
+              background: '#7c3aed',
             }}
           >
-            <Share2
-              size={
-                18
-              }
-            />
-
+            <Share2 size={18} />
             مشاركة
           </button>
 
           <button
-            onClick={
-              handleWhatsApp
-            }
+            onClick={handleWhatsApp}
             style={{
               ...buttonStyle,
-
-              background:
-                '#16a34a',
+              background: '#16a34a',
             }}
           >
             <MessageCircle
-              size={
-                18
-              }
+              size={18}
             />
-
             واتساب
           </button>
         </div>
 
+        {/* التقرير المخفي الخاص بالـ PDF */}
         <div
-          ref={
-            reportRef
-          }
+          ref={reportRef}
           className="monthly-pdf-report"
           dir="rtl"
           style={{
-            position:
-              'fixed',
-
-            left:
-              '-10000px',
-
-            top:
-              0,
-
-            width:
-              1000,
-
-            minHeight:
-              1414,
-
-            background:
-              '#ffffff',
-
-            color:
-              '#111827',
-
-            padding:
-              '18px',
-
+            position: 'fixed',
+            left: '-10000px',
+            top: 0,
+            width: 1000,
+            minHeight: 1414,
+            background: '#ffffff',
+            color: '#111827',
+            padding: 18,
             boxSizing:
               'border-box',
-
             fontFamily:
               `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`,
-
-            fontWeight:
-              400,
+            fontWeight: 400,
           }}
         >
+          {/* العنوان - أصغر مثل التصميم المعتمد */}
           <div
             style={{
-              textAlign:
-                'center',
-
-              marginBottom:
-                14,
+              textAlign: 'center',
+              marginBottom: 12,
             }}
           >
             <div
+              className="bakr-title"
               style={{
-                fontSize:
-                  36,
-
-                fontWeight:
-                  400,
-
-                color:
-                  '#0b3b82',
+                fontSize: 25,
+                lineHeight: 1,
+                fontWeight: 900,
+                color: '#0b3b82',
               }}
             >
               BAKR PRO
@@ -2375,17 +1752,11 @@ export function MonthlyDetailPage() {
 
             <div
               style={{
-                fontSize:
-                  29,
-
-                fontWeight:
-                  400,
-
-                color:
-                  '#102f61',
-
-                marginTop:
-                  5,
+                fontSize: 27,
+                lineHeight: 1.15,
+                fontWeight: 400,
+                color: '#102f61',
+                marginTop: 8,
               }}
             >
               كشف الحساب الشهري
@@ -2393,60 +1764,42 @@ export function MonthlyDetailPage() {
 
             <div
               style={{
-                fontSize:
-                  14,
-
-                color:
-                  '#475569',
-
-                marginTop:
-                  6,
+                fontSize: 16,
+                lineHeight: 1.15,
+                color: '#475569',
+                marginTop: 5,
               }}
             >
               تقرير شامل للأعمال والمشاوير والمصاريف
             </div>
           </div>
 
+          {/* بيانات المعدة والشهر والسنة */}
           <div
             style={{
-              display:
-                'grid',
-
+              display: 'grid',
               gridTemplateColumns:
                 '1.4fr 1fr 1fr',
-
               border:
-                '1px solid #cbd5e1',
-
-              borderRadius:
-                10,
-
-              marginBottom:
-                12,
-
-              overflow:
-                'hidden',
+                '1px solid #b8c6d8',
+              borderRadius: 10,
+              marginBottom: 10,
+              overflow: 'hidden',
             }}
           >
             <div
               style={{
-                padding:
-                  12,
-
-                textAlign:
-                  'center',
-
+                padding: '10px 12px',
+                textAlign: 'center',
                 borderLeft:
-                  '1px solid #e2e8f0',
+                  '1px solid #d6dfeb',
               }}
             >
               <div
                 style={{
-                  color:
-                    '#0b3b82',
-
-                  fontWeight:
-                    400,
+                  color: '#0b3b82',
+                  fontSize: 19,
+                  fontWeight: 400,
                 }}
               >
                 المعدة
@@ -2454,41 +1807,28 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize:
-                    18,
-
-                  fontWeight:
-                    400,
-
-                  marginTop:
-                    4,
+                  fontSize: 23,
+                  fontWeight: 400,
+                  marginTop: 3,
                 }}
               >
-                {
-                  displayEquipmentName
-                }
+                {displayEquipmentName}
               </div>
             </div>
 
             <div
               style={{
-                padding:
-                  12,
-
-                textAlign:
-                  'center',
-
+                padding: '10px 12px',
+                textAlign: 'center',
                 borderLeft:
-                  '1px solid #e2e8f0',
+                  '1px solid #d6dfeb',
               }}
             >
               <div
                 style={{
-                  color:
-                    '#0b3b82',
-
-                  fontWeight:
-                    400,
+                  color: '#0b3b82',
+                  fontSize: 19,
+                  fontWeight: 400,
                 }}
               >
                 الشهر
@@ -2496,40 +1836,26 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize:
-                    18,
-
-                  fontWeight:
-                    400,
-
-                  marginTop:
-                    4,
+                  fontSize: 23,
+                  fontWeight: 400,
+                  marginTop: 3,
                 }}
               >
-                {
-                  monthNames[
-                    month
-                  ]
-                }
+                {monthNames[month]}
               </div>
             </div>
 
             <div
               style={{
-                padding:
-                  12,
-
-                textAlign:
-                  'center',
+                padding: '10px 12px',
+                textAlign: 'center',
               }}
             >
               <div
                 style={{
-                  color:
-                    '#0b3b82',
-
-                  fontWeight:
-                    400,
+                  color: '#0b3b82',
+                  fontSize: 19,
+                  fontWeight: 400,
                 }}
               >
                 السنة
@@ -2537,39 +1863,25 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize:
-                    18,
-
-                  fontWeight:
-                    400,
-
-                  marginTop:
-                    4,
+                  fontSize: 23,
+                  fontWeight: 400,
+                  marginTop: 3,
                 }}
               >
-                {
-                  year
-                }
+                {year}
               </div>
             </div>
           </div>
 
+          {/* جدول كشف الحساب */}
           <table
             style={{
-              width:
-                '100%',
-
+              width: '100%',
               borderCollapse:
                 'collapse',
-
-              tableLayout:
-                'fixed',
-
-              fontSize:
-                10,
-
-              textAlign:
-                'center',
+              tableLayout: 'fixed',
+              fontSize: 14,
+              textAlign: 'center',
             }}
           >
             <thead>
@@ -2577,77 +1889,61 @@ export function MonthlyDetailPage() {
                 style={{
                   background:
                     '#073b7a',
-
-                  color:
-                    '#ffffff',
+                  color: '#ffffff',
                 }}
               >
                 <th
-                  style={
-                    pdfHeaderCell(
-                      '6%'
-                    )
-                  }
+                  style={pdfHeaderCell(
+                    '7%'
+                  )}
                 >
                   اليوم
                 </th>
 
                 <th
-                  style={
-                    pdfHeaderCell(
-                      '15%'
-                    )
-                  }
+                  style={pdfHeaderCell(
+                    '15%'
+                  )}
                 >
                   نوع العمل
                 </th>
 
                 <th
-                  style={
-                    pdfHeaderCell(
-                      '16%'
-                    )
-                  }
+                  style={pdfHeaderCell(
+                    '16%'
+                  )}
                 >
                   موقع العمل
                 </th>
 
                 <th
-                  style={
-                    pdfHeaderCell(
-                      '13%'
-                    )
-                  }
+                  style={pdfHeaderCell(
+                    '14%'
+                  )}
                 >
                   سعر المشوار
                 </th>
 
                 <th
-                  style={
-                    pdfHeaderCell(
-                      '18%'
-                    )
-                  }
+                  style={pdfHeaderCell(
+                    '18%'
+                  )}
                 >
                   بيان المصروف
                 </th>
 
                 <th
-                  style={
-                    pdfHeaderCell(
-                      '12%'
-                    )
-                  }
+                  style={pdfHeaderCell(
+                    '13%'
+                  )}
                 >
                   المبلغ
                 </th>
 
                 <th
-                  style={
-                    pdfHeaderCell(
-                      '20%'
-                    )
-                  }
+                  style={pdfHeaderCell(
+                    '17%'
+                  )}
                 >
                   ملاحظات
                 </th>
@@ -2656,45 +1952,23 @@ export function MonthlyDetailPage() {
 
             <tbody>
               {Array.from(
-                {
-                  length:
-                    31,
-                },
-                (
-                  _,
-                  index
-                ) => {
+                { length: 31 },
+                (_, index) => {
                   const day =
-                    index +
-                    1;
+                    index + 1;
 
                   const row =
                     rows.find(
-                      (
-                        item
-                      ) =>
-                        item.day ===
-                        day
+                      (item) =>
+                        item.day === day
                     ) || {
                       day,
-
-                      workType:
-                        '',
-
-                      tripType:
-                        '',
-
-                      tripPrice:
-                        0,
-
-                      expenseType:
-                        '',
-
-                      expenseAmount:
-                        0,
-
-                      notes:
-                        '',
+                      workType: '',
+                      tripType: '',
+                      tripPrice: 0,
+                      expenseType: '',
+                      expenseAmount: 0,
+                      notes: '',
                     };
 
                   const linkedTotal =
@@ -2713,80 +1987,51 @@ export function MonthlyDetailPage() {
                     );
 
                   const combinedExpense =
-                    (
-                      Number(
-                        row.expenseAmount
-                      ) ||
-                      0
-                    ) +
+                    (Number(
+                      row.expenseAmount
+                    ) || 0) +
                     linkedTotal;
 
                   const expenseDescription =
                     [
                       row.expenseType,
-
                       linkedCategories,
                     ]
-                      .filter(
-                        Boolean
-                      )
-                      .join(
-                        ' + '
-                      );
+                      .filter(Boolean)
+                      .join(' + ');
 
                   const combinedNotes =
                     [
                       row.notes,
-
                       linkedNotes,
                     ]
-                      .filter(
-                        Boolean
-                      )
-                      .join(
-                        ' | '
-                      );
+                      .filter(Boolean)
+                      .join(' | ');
 
                   return (
-                    <tr
-                      key={
-                        day
-                      }
-                    >
+                    <tr key={day}>
                       <td
-                        style={
-                          pdfCell
-                        }
+                        style={{
+                          ...pdfCell,
+                          fontSize: 15,
+                        }}
                       >
-                        {
-                          day
-                        }
+                        {day}
+                      </td>
+
+                      <td style={pdfCell}>
+                        {row.workType}
+                      </td>
+
+                      <td style={pdfCell}>
+                        {row.tripType}
                       </td>
 
                       <td
-                        style={
-                          pdfCell
-                        }
-                      >
-                        {
-                          row.workType
-                        }
-                      </td>
-
-                      <td
-                        style={
-                          pdfCell
-                        }
-                      >
-                        {
-                          row.tripType
-                        }
-                      </td>
-
-                      <td
-                        style={
-                          pdfCell
-                        }
+                        style={{
+                          ...pdfCell,
+                          fontSize: 14,
+                        }}
                       >
                         {row.tripPrice >
                         0
@@ -2796,20 +2041,14 @@ export function MonthlyDetailPage() {
                           : ''}
                       </td>
 
-                      <td
-                        style={
-                          pdfCell
-                        }
-                      >
-                        {
-                          expenseDescription
-                        }
+                      <td style={pdfCell}>
+                        {expenseDescription}
                       </td>
 
                       <td
                         style={{
                           ...pdfCell,
-
+                          fontSize: 14,
                           color:
                             combinedExpense >
                             0
@@ -2828,14 +2067,10 @@ export function MonthlyDetailPage() {
                       <td
                         style={{
                           ...pdfCell,
-
-                          fontSize:
-                            9,
+                          fontSize: 12,
                         }}
                       >
-                        {
-                          combinedNotes
-                        }
+                        {combinedNotes}
                       </td>
                     </tr>
                   );
@@ -2844,218 +2079,79 @@ export function MonthlyDetailPage() {
             </tbody>
           </table>
 
+          {/* الملخص */}
           <div
             style={{
-              display:
-                'grid',
-
+              display: 'grid',
               gridTemplateColumns:
                 'repeat(5, 1fr)',
-
-              gap:
-                8,
-
-              marginTop:
-                12,
+              gap: 7,
+              marginTop: 10,
             }}
           >
-            <div
-              style={{
-                border:
-                  '1px solid #16a34a',
+            <PdfSummary
+              border="#16a34a"
+              label="إجمالي الدخل"
+              value={`${totals.income.toLocaleString(
+                'en-US'
+              )} ر.س`}
+              valueColor="#15803d"
+            />
 
-                borderRadius:
-                  8,
+            <PdfSummary
+              border="#ef4444"
+              label="إجمالي المصروفات"
+              value={`${totalExpense.toLocaleString(
+                'en-US'
+              )} ر.س`}
+              valueColor="#dc2626"
+            />
 
-                padding:
-                  9,
+            <PdfSummary
+              border="#2563eb"
+              label="صافي الشهر"
+              value={`${net.toLocaleString(
+                'en-US'
+              )} ر.س`}
+              valueColor={
+                net >= 0
+                  ? '#2563eb'
+                  : '#dc2626'
+              }
+            />
 
-                textAlign:
-                  'center',
-              }}
-            >
-              <div>
-                إجمالي الدخل
-              </div>
+            <PdfSummary
+              border="#f59e0b"
+              label="أيام مسجلة"
+              value={String(
+                totals.registeredDays
+              )}
+            />
 
-              <strong
-                style={{
-                  color:
-                    '#15803d',
-
-                  fontWeight:
-                    400,
-                }}
-              >
-                {totals.income.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </strong>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1px solid #ef4444',
-
-                borderRadius:
-                  8,
-
-                padding:
-                  9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div>
-                إجمالي المصروفات
-              </div>
-
-              <strong
-                style={{
-                  color:
-                    '#dc2626',
-
-                  fontWeight:
-                    400,
-                }}
-              >
-                {totalExpense.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </strong>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1px solid #2563eb',
-
-                borderRadius:
-                  8,
-
-                padding:
-                  9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div>
-                صافي الشهر
-              </div>
-
-              <strong
-                style={{
-                  color:
-                    net >= 0
-                      ? '#2563eb'
-                      : '#dc2626',
-
-                  fontWeight:
-                    400,
-                }}
-              >
-                {net.toLocaleString(
-                  'en-US'
-                )}{' '}
-                ر.س
-              </strong>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1px solid #f59e0b',
-
-                borderRadius:
-                  8,
-
-                padding:
-                  9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div>
-                أيام مسجلة
-              </div>
-
-              <strong
-                style={{
-                  fontWeight:
-                    400,
-                }}
-              >
-                {
-                  totals.registeredDays
-                }
-              </strong>
-            </div>
-
-            <div
-              style={{
-                border:
-                  '1px solid #7c3aed',
-
-                borderRadius:
-                  8,
-
-                padding:
-                  9,
-
-                textAlign:
-                  'center',
-              }}
-            >
-              <div>
-                المشاوير
-              </div>
-
-              <strong
-                style={{
-                  fontWeight:
-                    400,
-                }}
-              >
-                {
-                  totals.trips
-                }
-              </strong>
-            </div>
+            <PdfSummary
+              border="#7c3aed"
+              label="المشاوير"
+              value={String(
+                totals.trips
+              )}
+            />
           </div>
 
           {totals.linkedExpense >
             0 && (
             <div
               style={{
-                marginTop:
-                  10,
-
+                marginTop: 8,
                 border:
                   '1px solid #fecaca',
-
-                borderRadius:
-                  8,
-
-                padding:
-                  10,
-
-                textAlign:
-                  'center',
-
-                background:
-                  '#fff7f7',
-
-                color:
-                  '#991b1b',
-
-                fontWeight:
-                  400,
+                borderRadius: 8,
+                padding: 8,
+                textAlign: 'center',
+                background: '#fff1f2',
+                color: '#dc2626',
+                fontSize: 17,
+                lineHeight: 1.1,
+                fontWeight: 400,
               }}
             >
               مصاريف السواقين والمعدات:{' '}
@@ -3068,26 +2164,15 @@ export function MonthlyDetailPage() {
 
           <div
             style={{
-              marginTop:
-                12,
-
-              background:
-                '#073b7a',
-
-              color:
-                '#ffffff',
-
-              borderRadius:
-                5,
-
-              padding:
-                8,
-
-              textAlign:
-                'center',
-
-              fontWeight:
-                400,
+              marginTop: 8,
+              background: '#073b7a',
+              color: '#ffffff',
+              borderRadius: 5,
+              padding: 8,
+              textAlign: 'center',
+              fontSize: 15,
+              lineHeight: 1.1,
+              fontWeight: 400,
             }}
           >
             تم إعداد هذا الكشف بواسطة BAKR PRO
@@ -3096,4 +2181,53 @@ export function MonthlyDetailPage() {
       </div>
     </AppLayout>
   );
-    }
+}
+
+function PdfSummary({
+  border,
+  label,
+  value,
+  valueColor,
+}: {
+  border: string;
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  return (
+    <div
+      style={{
+        border:
+          `1px solid ${border}`,
+        borderRadius: 8,
+        padding: '8px 5px',
+        textAlign: 'center',
+        minHeight: 54,
+        boxSizing: 'border-box',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 16,
+          lineHeight: 1.1,
+          marginBottom: 4,
+          fontWeight: 400,
+        }}
+      >
+        {label}
+      </div>
+
+      <strong
+        style={{
+          display: 'block',
+          fontSize: 19,
+          lineHeight: 1.05,
+          color: valueColor,
+          fontWeight: 400,
+        }}
+      >
+        {value}
+      </strong>
+    </div>
+  );
+          }
