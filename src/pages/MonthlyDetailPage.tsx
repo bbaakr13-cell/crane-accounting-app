@@ -457,8 +457,7 @@ export function MonthlyDetailPage() {
           if (
             String(
               expense.equipmentId || ''
-            ) !==
-            String(equipmentId)
+            ) !== String(equipmentId)
           ) {
             return false;
           }
@@ -853,7 +852,7 @@ export function MonthlyDetailPage() {
     await new Promise<void>((resolve) => {
       window.setTimeout(
         () => resolve(),
-        300
+        350
       );
     });
 
@@ -866,8 +865,8 @@ export function MonthlyDetailPage() {
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        width: report.scrollWidth,
-        height: report.scrollHeight,
+        width: 794,
+        height: 1123,
 
         onclone: async (
           clonedDocument
@@ -878,9 +877,6 @@ export function MonthlyDetailPage() {
             ) as HTMLElement | null;
 
           if (clonedReport) {
-            clonedReport.style.fontFamily =
-              `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`;
-
             clonedReport.style.width =
               '794px';
 
@@ -891,7 +887,10 @@ export function MonthlyDetailPage() {
               '1123px';
 
             clonedReport.style.padding =
-              '16px 18px 12px';
+              '12px 18px 10px';
+
+            clonedReport.style.fontFamily =
+              `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`;
           }
 
           try {
@@ -930,21 +929,13 @@ export function MonthlyDetailPage() {
 
     const margin = 3;
 
-    const imageWidth =
-      pageWidth -
-      margin * 2;
-
-    const imageHeight =
-      pageHeight -
-      margin * 2;
-
     pdf.addImage(
       imageData,
       'JPEG',
       margin,
       margin,
-      imageWidth,
-      imageHeight,
+      pageWidth - margin * 2,
+      pageHeight - margin * 2,
       undefined,
       'FAST'
     );
@@ -971,10 +962,7 @@ export function MonthlyDetailPage() {
 
   async function handleSavePdf() {
     if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
-
+      alert('اختر المعدة أولاً');
       return;
     }
 
@@ -1013,10 +1001,7 @@ export function MonthlyDetailPage() {
 
   async function handleShare() {
     if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
-
+      alert('اختر المعدة أولاً');
       return;
     }
 
@@ -1059,10 +1044,7 @@ export function MonthlyDetailPage() {
 
   function handleWhatsApp() {
     if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
-
+      alert('اختر المعدة أولاً');
       return;
     }
 
@@ -1282,13 +1264,11 @@ export function MonthlyDetailPage() {
         >
           <div style={summaryCard}>
             إجمالي المشاوير
-
             <h2>{totals.trips}</h2>
           </div>
 
           <div style={summaryCard}>
             إجمالي الدخل
-
             <h2
               style={{
                 color: '#22c55e',
@@ -1303,7 +1283,6 @@ export function MonthlyDetailPage() {
 
           <div style={summaryCard}>
             إجمالي المصروفات
-
             <h2
               style={{
                 color: '#ef4444',
@@ -1318,7 +1297,6 @@ export function MonthlyDetailPage() {
 
           <div style={summaryCard}>
             صافي الشهر
-
             <h2
               style={{
                 color:
@@ -1619,7 +1597,7 @@ export function MonthlyDetailPage() {
           </button>
         </div>
 
-        {/* تقرير PDF النهائي */}
+        {/* PDF */}
         <div
           ref={reportRef}
           className="monthly-pdf-report"
@@ -1628,28 +1606,38 @@ export function MonthlyDetailPage() {
             position: 'fixed',
             left: '-10000px',
             top: 0,
+
             width: 794,
             height: 1123,
             minHeight: 1123,
+
+            padding: '12px 18px 10px',
+
             background: '#ffffff',
             color: '#111827',
-            padding: '16px 18px 12px',
+
             boxSizing: 'border-box',
             overflow: 'hidden',
+
             fontFamily:
               `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`,
+
             fontWeight: 400,
           }}
         >
           {/* رأس التقرير */}
           <div
             style={{
-              height: 105,
+              height: 82,
+
               display: 'flex',
               flexDirection: 'column',
+
               alignItems: 'center',
               justifyContent: 'center',
+
               textAlign: 'center',
+
               boxSizing: 'border-box',
             }}
           >
@@ -1657,11 +1645,9 @@ export function MonthlyDetailPage() {
               className="bakr-title"
               style={{
                 fontSize: 29,
-                lineHeight: 1,
+                lineHeight: '32px',
                 fontWeight: 900,
                 color: '#0b3b82',
-                margin: 0,
-                padding: 0,
               }}
             >
               BAKR PRO
@@ -1670,11 +1656,9 @@ export function MonthlyDetailPage() {
             <div
               style={{
                 fontSize: 30,
-                lineHeight: 1,
-                fontWeight: 400,
+                lineHeight: '32px',
                 color: '#102f61',
-                marginTop: 7,
-                padding: 0,
+                fontWeight: 400,
               }}
             >
               كشف الحساب الشهري
@@ -1683,30 +1667,35 @@ export function MonthlyDetailPage() {
             <div
               style={{
                 fontSize: 22,
-                lineHeight: 1,
-                fontWeight: 400,
+                lineHeight: '24px',
                 color: '#475569',
-                marginTop: 7,
-                padding: 0,
+                fontWeight: 400,
               }}
             >
               تقرير شامل للأعمال والمشاوير والمصاريف
             </div>
           </div>
 
-          {/* المعدة / الشهر / السنة */}
+          {/* بيانات التقرير */}
           <div
             style={{
-              height: 72,
+              height: 76,
+
               display: 'grid',
+
               gridTemplateColumns:
                 '1.4fr 1fr 1fr',
+
               border:
                 '1px solid #9eb0c8',
+
               borderRadius: 8,
+
               overflow: 'hidden',
+
               boxSizing: 'border-box',
-              marginBottom: 8,
+
+              marginBottom: 7,
             }}
           >
             <InfoBox
@@ -1727,14 +1716,20 @@ export function MonthlyDetailPage() {
             />
           </div>
 
-          {/* الجدول */}
+          {/* جدول الشهر */}
           <table
             style={{
               width: '100%',
-              borderCollapse: 'collapse',
+
+              borderCollapse:
+                'collapse',
+
               tableLayout: 'fixed',
+
               textAlign: 'center',
+
               direction: 'rtl',
+
               margin: 0,
               padding: 0,
             }}
@@ -1742,51 +1737,41 @@ export function MonthlyDetailPage() {
             <thead>
               <tr
                 style={{
-                  height: 32,
-                  background: '#073b7a',
+                  height: 34,
+
+                  background:
+                    '#073b7a',
+
                   color: '#ffffff',
                 }}
               >
-                {[
-                  ['اليوم', '7%'],
-                  ['نوع العمل', '15%'],
-                  ['موقع العمل', '16%'],
-                  ['سعر المشوار', '14%'],
-                  ['بيان المصروف', '18%'],
-                  ['المبلغ', '13%'],
-                  ['ملاحظات', '17%'],
-                ].map(([label, width]) => (
-                  <th
-                    key={label}
-                    style={{
-                      width,
-                      height: 32,
-                      border:
-                        '1px solid #d1d5db',
-                      padding: 0,
-                      fontSize: 21,
-                      lineHeight: 1,
-                      fontWeight: 400,
-                      textAlign: 'center',
-                      verticalAlign: 'middle',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        lineHeight: 1,
-                      }}
-                    >
-                      {label}
-                    </div>
-                  </th>
-                ))}
+                <PdfHeaderCell width="7%">
+                  اليوم
+                </PdfHeaderCell>
+
+                <PdfHeaderCell width="15%">
+                  نوع العمل
+                </PdfHeaderCell>
+
+                <PdfHeaderCell width="16%">
+                  موقع العمل
+                </PdfHeaderCell>
+
+                <PdfHeaderCell width="14%">
+                  سعر المشوار
+                </PdfHeaderCell>
+
+                <PdfHeaderCell width="18%">
+                  بيان المصروف
+                </PdfHeaderCell>
+
+                <PdfHeaderCell width="13%">
+                  المبلغ
+                </PdfHeaderCell>
+
+                <PdfHeaderCell width="17%">
+                  ملاحظات
+                </PdfHeaderCell>
               </tr>
             </thead>
 
@@ -1794,7 +1779,8 @@ export function MonthlyDetailPage() {
               {Array.from(
                 { length: 31 },
                 (_, index) => {
-                  const day = index + 1;
+                  const day =
+                    index + 1;
 
                   const row =
                     rows.find(
@@ -1811,7 +1797,9 @@ export function MonthlyDetailPage() {
                     };
 
                   const linkedTotal =
-                    getDayExternalTotal(day);
+                    getDayExternalTotal(
+                      day
+                    );
 
                   const linkedCategories =
                     getDayExternalCategories(
@@ -1819,7 +1807,9 @@ export function MonthlyDetailPage() {
                     );
 
                   const linkedNotes =
-                    getDayExternalNotes(day);
+                    getDayExternalNotes(
+                      day
+                    );
 
                   const combinedExpense =
                     (Number(
@@ -1847,7 +1837,7 @@ export function MonthlyDetailPage() {
                     <tr
                       key={day}
                       style={{
-                        height: 22,
+                        height: 24,
                       }}
                     >
                       <PdfTableCell>
@@ -1876,7 +1866,8 @@ export function MonthlyDetailPage() {
 
                       <PdfTableCell
                         color={
-                          combinedExpense > 0
+                          combinedExpense >
+                          0
                             ? '#dc2626'
                             : '#111827'
                         }
@@ -1898,15 +1889,20 @@ export function MonthlyDetailPage() {
             </tbody>
           </table>
 
-          {/* مربعات الملخص */}
+          {/* الملخص */}
           <div
             style={{
+              height: 68,
+
               display: 'grid',
+
               gridTemplateColumns:
                 'repeat(5, 1fr)',
+
               gap: 5,
-              height: 65,
+
               marginTop: 7,
+
               boxSizing: 'border-box',
             }}
           >
@@ -1958,51 +1954,87 @@ export function MonthlyDetailPage() {
             />
           </div>
 
-          {/* السطر الأحمر */}
+          {/* مصاريف مرتبطة */}
           {totals.linkedExpense > 0 && (
             <div
               style={{
-                height: 35,
+                height: 38,
+
                 marginTop: 6,
+
                 border:
                   '1px solid #fecaca',
+
                 borderRadius: 6,
-                background: '#fff1f2',
+
+                background:
+                  '#fff1f2',
+
                 color: '#dc2626',
+
                 fontSize: 24,
-                lineHeight: 1,
+
+                lineHeight: '30px',
+
                 fontWeight: 400,
+
                 display: 'flex',
+
                 alignItems: 'center',
-                justifyContent: 'center',
+
+                justifyContent:
+                  'center',
+
                 textAlign: 'center',
-                boxSizing: 'border-box',
+
+                boxSizing:
+                  'border-box',
+
+                paddingTop: 2,
               }}
             >
               مصاريف السواقين والمعدات:&nbsp;
+
               {totals.linkedExpense.toLocaleString(
                 'en-US'
               )}{' '}
+
               ر.س
             </div>
           )}
 
-          {/* السطر الأزرق */}
+          {/* التذييل */}
           <div
             style={{
-              height: 34,
+              height: 38,
+
               marginTop: 6,
-              background: '#073b7a',
+
+              background:
+                '#073b7a',
+
               color: '#ffffff',
+
               borderRadius: 4,
+
               fontSize: 20,
-              lineHeight: 1,
+
+              lineHeight: '28px',
+
               fontWeight: 400,
+
               display: 'flex',
+
               alignItems: 'center',
-              justifyContent: 'center',
+
+              justifyContent:
+                'center',
+
               textAlign: 'center',
+
               boxSizing: 'border-box',
+
+              paddingTop: 2,
             }}
           >
             تم إعداد هذا الكشف بواسطة BAKR PRO
@@ -2025,27 +2057,47 @@ function InfoBox({
   return (
     <div
       style={{
-        borderLeft: borderLeft
-          ? '1px solid #c7d2e0'
-          : 'none',
+        borderLeft:
+          borderLeft
+            ? '1px solid #c7d2e0'
+            : 'none',
 
         display: 'flex',
+
         flexDirection: 'column',
 
         alignItems: 'center',
-        justifyContent: 'center',
+
+        justifyContent:
+          'center',
 
         textAlign: 'center',
 
         boxSizing: 'border-box',
+
+        overflow: 'hidden',
       }}
     >
       <div
         style={{
           fontSize: 25,
-          lineHeight: 1,
+
+          lineHeight: '29px',
+
           fontWeight: 400,
+
           color: '#0b3b82',
+
+          height: 29,
+
+          display: 'flex',
+
+          alignItems: 'center',
+
+          justifyContent:
+            'center',
+
+          width: '100%',
         }}
       >
         {label}
@@ -2054,15 +2106,100 @@ function InfoBox({
       <div
         style={{
           fontSize: 30,
-          lineHeight: 1,
+
+          lineHeight: '34px',
+
           fontWeight: 400,
+
           color: '#111827',
-          marginTop: 7,
+
+          height: 34,
+
+          display: 'flex',
+
+          alignItems: 'center',
+
+          justifyContent:
+            'center',
+
+          width: '100%',
+
+          whiteSpace: 'nowrap',
+
+          overflow: 'hidden',
         }}
       >
         {value}
       </div>
     </div>
+  );
+}
+
+function PdfHeaderCell({
+  children,
+  width,
+}: {
+  children: React.ReactNode;
+  width: string;
+}) {
+  return (
+    <th
+      style={{
+        width,
+
+        height: 34,
+
+        border:
+          '1px solid #d1d5db',
+
+        padding: 0,
+
+        margin: 0,
+
+        boxSizing: 'border-box',
+
+        textAlign: 'center',
+
+        verticalAlign: 'middle',
+
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+
+          height: 34,
+
+          display: 'flex',
+
+          alignItems: 'center',
+
+          justifyContent:
+            'center',
+
+          boxSizing: 'border-box',
+
+          padding: '0 2px',
+
+          margin: 0,
+
+          fontSize: 21,
+
+          lineHeight: '26px',
+
+          fontWeight: 400,
+
+          textAlign: 'center',
+
+          whiteSpace: 'nowrap',
+
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </div>
+    </th>
   );
 }
 
@@ -2076,40 +2213,64 @@ function PdfTableCell({
   return (
     <td
       style={{
-        height: 22,
+        height: 24,
+
         border:
           '1px solid #b8c6d8',
+
         padding: 0,
-        fontSize: 20,
-        lineHeight: 1,
-        fontWeight: 400,
-        textAlign: 'center',
-        verticalAlign: 'middle',
-        boxSizing: 'border-box',
-        overflow: 'hidden',
+
+        margin: 0,
+
         color,
+
+        textAlign: 'center',
+
+        verticalAlign: 'middle',
+
+        boxSizing: 'border-box',
+
+        overflow: 'hidden',
       }}
     >
       <div
         style={{
           width: '100%',
-          height: 21,
+
+          height: 24,
 
           display: 'flex',
 
           alignItems: 'center',
-          justifyContent: 'center',
+
+          justifyContent:
+            'center',
+
+          padding: '0 2px',
+
+          margin: 0,
+
+          boxSizing: 'border-box',
+
+          fontFamily:
+            `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`,
+
+          fontSize: 20,
+
+          /*
+           * مهم:
+           * لا نستخدم line-height: 1
+           * مع Hacen Egypt.
+           */
+          lineHeight: '24px',
+
+          fontWeight: 400,
 
           textAlign: 'center',
 
           whiteSpace: 'nowrap',
+
           overflow: 'hidden',
-
-          lineHeight: 1,
-
-          padding: '0 2px',
-
-          boxSizing: 'border-box',
         }}
       >
         {children}
@@ -2132,7 +2293,7 @@ function PdfSummary({
   return (
     <div
       style={{
-        height: 65,
+        height: 68,
 
         border:
           `1px solid ${border}`,
@@ -2140,26 +2301,49 @@ function PdfSummary({
         borderRadius: 7,
 
         display: 'flex',
+
         flexDirection: 'column',
 
         alignItems: 'center',
-        justifyContent: 'center',
+
+        justifyContent:
+          'center',
 
         textAlign: 'center',
 
         padding: 0,
+
         margin: 0,
 
         boxSizing: 'border-box',
+
+        overflow: 'hidden',
       }}
     >
       <div
         style={{
+          width: '100%',
+
+          height: 28,
+
+          display: 'flex',
+
+          alignItems: 'center',
+
+          justifyContent:
+            'center',
+
           fontSize: 21,
-          lineHeight: 1,
+
+          lineHeight: '26px',
+
           fontWeight: 400,
-          margin: 0,
+
           padding: 0,
+
+          margin: 0,
+
+          whiteSpace: 'nowrap',
         }}
       >
         {label}
@@ -2167,18 +2351,34 @@ function PdfSummary({
 
       <div
         style={{
+          width: '100%',
+
+          height: 29,
+
+          display: 'flex',
+
+          alignItems: 'center',
+
+          justifyContent:
+            'center',
+
           fontSize: 22,
-          lineHeight: 1,
+
+          lineHeight: '27px',
+
           fontWeight: 400,
 
           color: valueColor,
 
-          marginTop: 7,
           padding: 0,
+
+          margin: 0,
+
+          whiteSpace: 'nowrap',
         }}
       >
         {value}
       </div>
     </div>
   );
-  }
+            }
