@@ -148,15 +148,11 @@ export function MonthlyDetailPage() {
     setEquipmentLoading,
   ] = useState(true);
 
-  const [
-    year,
-    setYear,
-  ] = useState(now.getFullYear());
+  const [year, setYear] =
+    useState(now.getFullYear());
 
-  const [
-    month,
-    setMonth,
-  ] = useState(now.getMonth());
+  const [month, setMonth] =
+    useState(now.getMonth());
 
   const [
     creatingPdf,
@@ -276,12 +272,8 @@ export function MonthlyDetailPage() {
     );
   }
 
-  const [
-    rows,
-    setRows,
-  ] = useState<DayRow[]>(
-    createEmptyRows()
-  );
+  const [rows, setRows] =
+    useState<DayRow[]>(createEmptyRows());
 
   useEffect(() => {
     setRowsLoaded(false);
@@ -309,15 +301,11 @@ export function MonthlyDetailPage() {
         createEmptyRows().map((row) => {
           const found =
             parsed.find(
-              (item) =>
-                item.day === row.day
+              (item) => item.day === row.day
             );
 
           return found
-            ? {
-                ...row,
-                ...found,
-              }
+            ? { ...row, ...found }
             : row;
         });
 
@@ -341,10 +329,7 @@ export function MonthlyDetailPage() {
   ]);
 
   useEffect(() => {
-    if (
-      !equipmentId ||
-      !rowsLoaded
-    ) {
+    if (!equipmentId || !rowsLoaded) {
       return;
     }
 
@@ -378,8 +363,7 @@ export function MonthlyDetailPage() {
         return;
       }
 
-      const parsed =
-        JSON.parse(raw);
+      const parsed = JSON.parse(raw);
 
       if (!Array.isArray(parsed)) {
         setExternalExpenses([]);
@@ -407,8 +391,7 @@ export function MonthlyDetailPage() {
     ) => {
       if (
         !event.key ||
-        event.key ===
-          EXPENSE_STORAGE_KEY
+        event.key === EXPENSE_STORAGE_KEY
       ) {
         loadExternalExpenses();
       }
@@ -455,9 +438,7 @@ export function MonthlyDetailPage() {
 
   const monthlyExternalExpenses =
     useMemo(() => {
-      if (!equipmentId) {
-        return [];
-      }
+      if (!equipmentId) return [];
 
       return externalExpenses.filter(
         (expense) => {
@@ -472,9 +453,7 @@ export function MonthlyDetailPage() {
           const date =
             getDateParts(expense.date);
 
-          if (!date) {
-            return false;
-          }
+          if (!date) return false;
 
           return (
             date.year === year &&
@@ -509,10 +488,7 @@ export function MonthlyDetailPage() {
 
           current.push(expense);
 
-          map.set(
-            date.day,
-            current
-          );
+          map.set(date.day, current);
         }
       );
 
@@ -523,8 +499,7 @@ export function MonthlyDetailPage() {
     day: number
   ) {
     return (
-      externalExpensesByDay.get(day) ||
-      []
+      externalExpensesByDay.get(day) || []
     );
   }
 
@@ -551,8 +526,7 @@ export function MonthlyDetailPage() {
       new Set(
         records
           .map(
-            (expense) =>
-              expense.category
+            (expense) => expense.category
           )
           .filter(Boolean)
       )
@@ -649,10 +623,7 @@ export function MonthlyDetailPage() {
 
           const linkedTotal =
             linkedExpenses.reduce(
-              (
-                expenseSum,
-                expense
-              ) =>
+              (expenseSum, expense) =>
                 expenseSum +
                 (Number(
                   expense.amount
@@ -684,12 +655,9 @@ export function MonthlyDetailPage() {
             Number(row.tripPrice) || 0;
 
           sum.manualExpense +=
-            Number(
-              row.expenseAmount
-            ) || 0;
+            Number(row.expenseAmount) || 0;
 
-          sum.linkedExpense +=
-            linkedTotal;
+          sum.linkedExpense += linkedTotal;
 
           return sum;
         },
@@ -711,8 +679,7 @@ export function MonthlyDetailPage() {
     totals.linkedExpense;
 
   const net =
-    totals.income -
-    totalExpense;
+    totals.income - totalExpense;
 
   const inputStyle:
     React.CSSProperties = {
@@ -720,8 +687,7 @@ export function MonthlyDetailPage() {
     minWidth: 120,
     padding: '10px 8px',
     borderRadius: 10,
-    border:
-      '1px solid #26364f',
+    border: '1px solid #26364f',
     background: '#0a1424',
     color: '#ffffff',
     fontSize: 13,
@@ -739,8 +705,7 @@ export function MonthlyDetailPage() {
   const summaryCard:
     React.CSSProperties = {
     background: '#0b1527',
-    border:
-      '1px solid #1d2d47',
+    border: '1px solid #1d2d47',
     borderRadius: 16,
     padding: 14,
     textAlign: 'center',
@@ -756,20 +721,22 @@ export function MonthlyDetailPage() {
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    justifyContent:
-      'center',
+    justifyContent: 'center',
     gap: 6,
     color: '#ffffff',
   };
 
+  /*
+   * تم تكبير النصوص داخل الجدول فقط.
+   * حجم الصف بقي قريباً من السابق حتى يظل التقرير صفحة واحدة.
+   */
   const pdfCell:
     React.CSSProperties = {
-    border:
-      '1px solid #b8c6d8',
-    padding: '6px 4px',
+    border: '1px solid #b8c6d8',
+    padding: '5px 4px',
     height: 25,
-    fontSize: 14,
-    lineHeight: 1.15,
+    fontSize: 17,
+    lineHeight: 1.05,
     fontWeight: 400,
     verticalAlign: 'middle',
   };
@@ -779,11 +746,10 @@ export function MonthlyDetailPage() {
   ): React.CSSProperties {
     return {
       width,
-      padding: '9px 4px',
-      border:
-        '1px solid #d1d5db',
-      fontSize: 15,
-      lineHeight: 1.1,
+      padding: '8px 4px',
+      border: '1px solid #d1d5db',
+      fontSize: 18,
+      lineHeight: 1.05,
       fontWeight: 400,
       verticalAlign: 'middle',
     };
@@ -807,8 +773,7 @@ export function MonthlyDetailPage() {
   ): Promise<string> {
     return new Promise(
       (resolve, reject) => {
-        const reader =
-          new FileReader();
+        const reader = new FileReader();
 
         reader.onloadend = () => {
           const result =
@@ -866,9 +831,7 @@ export function MonthlyDetailPage() {
       const loadedFont =
         await fontFace.load();
 
-      document.fonts.add(
-        loadedFont
-      );
+      document.fonts.add(loadedFont);
 
       await document.fonts.load(
         `400 24px "${HACEN_FONT_NAME}"`
@@ -892,14 +855,12 @@ export function MonthlyDetailPage() {
 
     await ensureHacenFont();
 
-    await new Promise<void>(
-      (resolve) => {
-        window.setTimeout(
-          () => resolve(),
-          300
-        );
-      }
-    );
+    await new Promise<void>((resolve) => {
+      window.setTimeout(
+        () => resolve(),
+        300
+      );
+    });
 
     const canvas =
       await html2canvas(
@@ -907,39 +868,35 @@ export function MonthlyDetailPage() {
         {
           scale: 2,
           useCORS: true,
-          backgroundColor:
-            '#ffffff',
+          backgroundColor: '#ffffff',
           logging: false,
 
-          onclone:
-            async (
-              clonedDocument
-            ) => {
-              const report =
-                clonedDocument.querySelector(
-                  '.monthly-pdf-report'
-                ) as
-                  | HTMLElement
-                  | null;
+          onclone: async (
+            clonedDocument
+          ) => {
+            const report =
+              clonedDocument.querySelector(
+                '.monthly-pdf-report'
+              ) as HTMLElement | null;
 
-              if (report) {
-                report.style.fontFamily =
-                  `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`;
-              }
+            if (report) {
+              report.style.fontFamily =
+                `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`;
+            }
 
-              try {
-                await clonedDocument.fonts.load(
-                  `400 24px "${HACEN_FONT_NAME}"`
-                );
+            try {
+              await clonedDocument.fonts.load(
+                `400 24px "${HACEN_FONT_NAME}"`
+              );
 
-                await clonedDocument.fonts.ready;
-              } catch (error) {
-                console.error(
-                  'Clone font error:',
-                  error
-                );
-              }
-            },
+              await clonedDocument.fonts.ready;
+            } catch (error) {
+              console.error(
+                'Clone font error:',
+                error
+              );
+            }
+          },
         }
       );
 
@@ -965,19 +922,15 @@ export function MonthlyDetailPage() {
     const margin = 6;
 
     const imageWidth =
-      pageWidth -
-      margin * 2;
+      pageWidth - margin * 2;
 
     const imageHeight =
-      (
-        canvas.height *
-        imageWidth
-      ) /
+      (canvas.height *
+        imageWidth) /
       canvas.width;
 
     const printableHeight =
-      pageHeight -
-      margin * 2;
+      pageHeight - margin * 2;
 
     let position = margin;
 
@@ -994,17 +947,13 @@ export function MonthlyDetailPage() {
       imageHeight -
       printableHeight;
 
-    while (
-      heightLeft > 0
-    ) {
+    while (heightLeft > 0) {
       pdf.addPage();
 
       position =
         margin -
-        (
-          imageHeight -
-          heightLeft
-        );
+        (imageHeight -
+          heightLeft);
 
       pdf.addImage(
         imageData,
@@ -1033,8 +982,7 @@ export function MonthlyDetailPage() {
       await Filesystem.writeFile({
         path: getFileName(),
         data: base64,
-        directory:
-          Directory.Cache,
+        directory: Directory.Cache,
       });
 
     return result.uri;
@@ -1042,9 +990,7 @@ export function MonthlyDetailPage() {
 
   async function handleSavePdf() {
     if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
+      alert('اختر المعدة أولاً');
       return;
     }
 
@@ -1055,14 +1001,11 @@ export function MonthlyDetailPage() {
         await createPdfFile();
 
       await Share.share({
-        title:
-          'حفظ الحساب الشهري',
-
+        title: 'حفظ الحساب الشهري',
         text:
-          `${displayEquipmentName} - ${monthNames[month]} ${year}`,
-
+          `${displayEquipmentName} - ` +
+          `${monthNames[month]} ${year}`,
         url: fileUri,
-
         dialogTitle:
           'حفظ أو مشاركة كشف الحساب',
       });
@@ -1082,9 +1025,7 @@ export function MonthlyDetailPage() {
 
   async function handleShare() {
     if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
+      alert('اختر المعدة أولاً');
       return;
     }
 
@@ -1095,8 +1036,7 @@ export function MonthlyDetailPage() {
         await createPdfFile();
 
       await Share.share({
-        title:
-          'الحساب الشهري',
+        title: 'الحساب الشهري',
 
         text:
           `المعدة: ${displayEquipmentName}\n` +
@@ -1107,7 +1047,6 @@ export function MonthlyDetailPage() {
           `صافي الشهر: ${net.toLocaleString('en-US')} ر.س`,
 
         url: fileUri,
-
         dialogTitle:
           'مشاركة كشف الحساب',
       });
@@ -1127,9 +1066,7 @@ export function MonthlyDetailPage() {
 
   function handleWhatsApp() {
     if (!equipmentId) {
-      alert(
-        'اختر المعدة أولاً'
-      );
+      alert('اختر المعدة أولاً');
       return;
     }
 
@@ -1243,8 +1180,7 @@ export function MonthlyDetailPage() {
               style={selectStyle}
               disabled={
                 equipmentLoading ||
-                equipmentList.length ===
-                  0
+                equipmentList.length === 0
               }
             >
               {equipmentLoading ? (
@@ -1350,9 +1286,7 @@ export function MonthlyDetailPage() {
         >
           <div style={summaryCard}>
             إجمالي المشاوير
-            <h2>
-              {totals.trips}
-            </h2>
+            <h2>{totals.trips}</h2>
           </div>
 
           <div style={summaryCard}>
@@ -1421,8 +1355,7 @@ export function MonthlyDetailPage() {
             <thead>
               <tr
                 style={{
-                  background:
-                    '#101b2e',
+                  background: '#101b2e',
                 }}
               >
                 <th>اليوم</th>
@@ -1458,9 +1391,7 @@ export function MonthlyDetailPage() {
 
                     <td>
                       <input
-                        value={
-                          row.workType
-                        }
+                        value={row.workType}
                         onChange={(e) =>
                           updateTextRow(
                             row.day,
@@ -1474,9 +1405,7 @@ export function MonthlyDetailPage() {
 
                     <td>
                       <input
-                        value={
-                          row.tripType
-                        }
+                        value={row.tripType}
                         onChange={(e) =>
                           updateTextRow(
                             row.day,
@@ -1493,8 +1422,7 @@ export function MonthlyDetailPage() {
                         type="text"
                         inputMode="decimal"
                         value={
-                          row.tripPrice ||
-                          ''
+                          row.tripPrice || ''
                         }
                         onChange={(e) =>
                           updateNumberRow(
@@ -1532,9 +1460,7 @@ export function MonthlyDetailPage() {
                               )
                             }
                             placeholder="مصروف يدوي"
-                            style={
-                              inputStyle
-                            }
+                            style={inputStyle}
                           />
 
                           <input
@@ -1558,48 +1484,37 @@ export function MonthlyDetailPage() {
                           />
                         </div>
 
-                        {linked.length >
-                          0 && (
+                        {linked.length > 0 && (
                           <div
                             style={{
                               background:
                                 'rgba(239,68,68,0.10)',
                               border:
                                 '1px solid rgba(239,68,68,0.25)',
-                              borderRadius:
-                                10,
-                              padding:
-                                '7px 8px',
-                              textAlign:
-                                'right',
+                              borderRadius: 10,
+                              padding: '7px 8px',
+                              textAlign: 'right',
                             }}
                           >
                             <div
                               style={{
-                                fontSize:
-                                  10,
-                                color:
-                                  '#fca5a5',
-                                fontWeight:
-                                  800,
+                                fontSize: 10,
+                                color: '#fca5a5',
+                                fontWeight: 800,
                               }}
                             >
                               مصاريف السواقين والمعدات
                             </div>
 
                             {linked.map(
-                              (
-                                expense
-                              ) => (
+                              (expense) => (
                                 <div
                                   key={
                                     expense.id
                                   }
                                   style={{
-                                    marginTop:
-                                      4,
-                                    fontSize:
-                                      10,
+                                    marginTop: 4,
+                                    fontSize: 10,
                                     color:
                                       '#e2e8f0',
                                   }}
@@ -1620,14 +1535,10 @@ export function MonthlyDetailPage() {
 
                             <div
                               style={{
-                                marginTop:
-                                  5,
-                                fontSize:
-                                  11,
-                                color:
-                                  '#fb7185',
-                                fontWeight:
-                                  900,
+                                marginTop: 5,
+                                fontSize: 11,
+                                color: '#fb7185',
+                                fontWeight: 900,
                               }}
                             >
                               الإجمالي:{' '}
@@ -1703,14 +1614,12 @@ export function MonthlyDetailPage() {
               background: '#16a34a',
             }}
           >
-            <MessageCircle
-              size={18}
-            />
+            <MessageCircle size={18} />
             واتساب
           </button>
         </div>
 
-        {/* التقرير المخفي الخاص بالـ PDF */}
+        {/* PDF */}
         <div
           ref={reportRef}
           className="monthly-pdf-report"
@@ -1724,14 +1633,13 @@ export function MonthlyDetailPage() {
             background: '#ffffff',
             color: '#111827',
             padding: 18,
-            boxSizing:
-              'border-box',
+            boxSizing: 'border-box',
             fontFamily:
               `"${HACEN_FONT_NAME}", Arial, Tahoma, sans-serif`,
             fontWeight: 400,
           }}
         >
-          {/* العنوان - أصغر مثل التصميم المعتمد */}
+          {/* نفس حجم العنوان المعتمد */}
           <div
             style={{
               textAlign: 'center',
@@ -1764,7 +1672,7 @@ export function MonthlyDetailPage() {
 
             <div
               style={{
-                fontSize: 16,
+                fontSize: 18,
                 lineHeight: 1.15,
                 color: '#475569',
                 marginTop: 5,
@@ -1774,7 +1682,7 @@ export function MonthlyDetailPage() {
             </div>
           </div>
 
-          {/* بيانات المعدة والشهر والسنة */}
+          {/* بيانات التقرير */}
           <div
             style={{
               display: 'grid',
@@ -1798,7 +1706,7 @@ export function MonthlyDetailPage() {
               <div
                 style={{
                   color: '#0b3b82',
-                  fontSize: 19,
+                  fontSize: 22,
                   fontWeight: 400,
                 }}
               >
@@ -1807,7 +1715,7 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize: 23,
+                  fontSize: 27,
                   fontWeight: 400,
                   marginTop: 3,
                 }}
@@ -1827,7 +1735,7 @@ export function MonthlyDetailPage() {
               <div
                 style={{
                   color: '#0b3b82',
-                  fontSize: 19,
+                  fontSize: 22,
                   fontWeight: 400,
                 }}
               >
@@ -1836,7 +1744,7 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize: 23,
+                  fontSize: 27,
                   fontWeight: 400,
                   marginTop: 3,
                 }}
@@ -1854,7 +1762,7 @@ export function MonthlyDetailPage() {
               <div
                 style={{
                   color: '#0b3b82',
-                  fontSize: 19,
+                  fontSize: 22,
                   fontWeight: 400,
                 }}
               >
@@ -1863,7 +1771,7 @@ export function MonthlyDetailPage() {
 
               <div
                 style={{
-                  fontSize: 23,
+                  fontSize: 27,
                   fontWeight: 400,
                   marginTop: 3,
                 }}
@@ -1873,78 +1781,48 @@ export function MonthlyDetailPage() {
             </div>
           </div>
 
-          {/* جدول كشف الحساب */}
+          {/* الجدول */}
           <table
             style={{
               width: '100%',
-              borderCollapse:
-                'collapse',
+              borderCollapse: 'collapse',
               tableLayout: 'fixed',
-              fontSize: 14,
+              fontSize: 17,
               textAlign: 'center',
             }}
           >
             <thead>
               <tr
                 style={{
-                  background:
-                    '#073b7a',
+                  background: '#073b7a',
                   color: '#ffffff',
                 }}
               >
-                <th
-                  style={pdfHeaderCell(
-                    '7%'
-                  )}
-                >
+                <th style={pdfHeaderCell('7%')}>
                   اليوم
                 </th>
 
-                <th
-                  style={pdfHeaderCell(
-                    '15%'
-                  )}
-                >
+                <th style={pdfHeaderCell('15%')}>
                   نوع العمل
                 </th>
 
-                <th
-                  style={pdfHeaderCell(
-                    '16%'
-                  )}
-                >
+                <th style={pdfHeaderCell('16%')}>
                   موقع العمل
                 </th>
 
-                <th
-                  style={pdfHeaderCell(
-                    '14%'
-                  )}
-                >
+                <th style={pdfHeaderCell('14%')}>
                   سعر المشوار
                 </th>
 
-                <th
-                  style={pdfHeaderCell(
-                    '18%'
-                  )}
-                >
+                <th style={pdfHeaderCell('18%')}>
                   بيان المصروف
                 </th>
 
-                <th
-                  style={pdfHeaderCell(
-                    '13%'
-                  )}
-                >
+                <th style={pdfHeaderCell('13%')}>
                   المبلغ
                 </th>
 
-                <th
-                  style={pdfHeaderCell(
-                    '17%'
-                  )}
-                >
+                <th style={pdfHeaderCell('17%')}>
                   ملاحظات
                 </th>
               </tr>
@@ -1954,8 +1832,7 @@ export function MonthlyDetailPage() {
               {Array.from(
                 { length: 31 },
                 (_, index) => {
-                  const day =
-                    index + 1;
+                  const day = index + 1;
 
                   const row =
                     rows.find(
@@ -1972,9 +1849,7 @@ export function MonthlyDetailPage() {
                     };
 
                   const linkedTotal =
-                    getDayExternalTotal(
-                      day
-                    );
+                    getDayExternalTotal(day);
 
                   const linkedCategories =
                     getDayExternalCategories(
@@ -1982,9 +1857,7 @@ export function MonthlyDetailPage() {
                     );
 
                   const linkedNotes =
-                    getDayExternalNotes(
-                      day
-                    );
+                    getDayExternalNotes(day);
 
                   const combinedExpense =
                     (Number(
@@ -2013,7 +1886,7 @@ export function MonthlyDetailPage() {
                       <td
                         style={{
                           ...pdfCell,
-                          fontSize: 15,
+                          fontSize: 18,
                         }}
                       >
                         {day}
@@ -2030,11 +1903,10 @@ export function MonthlyDetailPage() {
                       <td
                         style={{
                           ...pdfCell,
-                          fontSize: 14,
+                          fontSize: 17,
                         }}
                       >
-                        {row.tripPrice >
-                        0
+                        {row.tripPrice > 0
                           ? `${row.tripPrice.toLocaleString(
                               'en-US'
                             )} ر.س`
@@ -2048,16 +1920,14 @@ export function MonthlyDetailPage() {
                       <td
                         style={{
                           ...pdfCell,
-                          fontSize: 14,
+                          fontSize: 17,
                           color:
-                            combinedExpense >
-                            0
+                            combinedExpense > 0
                               ? '#dc2626'
                               : '#111827',
                         }}
                       >
-                        {combinedExpense >
-                        0
+                        {combinedExpense > 0
                           ? `${combinedExpense.toLocaleString(
                               'en-US'
                             )} ر.س`
@@ -2067,7 +1937,7 @@ export function MonthlyDetailPage() {
                       <td
                         style={{
                           ...pdfCell,
-                          fontSize: 12,
+                          fontSize: 15,
                         }}
                       >
                         {combinedNotes}
@@ -2137,8 +2007,7 @@ export function MonthlyDetailPage() {
             />
           </div>
 
-          {totals.linkedExpense >
-            0 && (
+          {totals.linkedExpense > 0 && (
             <div
               style={{
                 marginTop: 8,
@@ -2149,7 +2018,7 @@ export function MonthlyDetailPage() {
                 textAlign: 'center',
                 background: '#fff1f2',
                 color: '#dc2626',
-                fontSize: 17,
+                fontSize: 20,
                 lineHeight: 1.1,
                 fontWeight: 400,
               }}
@@ -2170,7 +2039,7 @@ export function MonthlyDetailPage() {
               borderRadius: 5,
               padding: 8,
               textAlign: 'center',
-              fontSize: 15,
+              fontSize: 18,
               lineHeight: 1.1,
               fontWeight: 400,
             }}
@@ -2197,19 +2066,18 @@ function PdfSummary({
   return (
     <div
       style={{
-        border:
-          `1px solid ${border}`,
+        border: `1px solid ${border}`,
         borderRadius: 8,
         padding: '8px 5px',
         textAlign: 'center',
-        minHeight: 54,
+        minHeight: 58,
         boxSizing: 'border-box',
       }}
     >
       <div
         style={{
-          fontSize: 16,
-          lineHeight: 1.1,
+          fontSize: 19,
+          lineHeight: 1.05,
           marginBottom: 4,
           fontWeight: 400,
         }}
@@ -2220,7 +2088,7 @@ function PdfSummary({
       <strong
         style={{
           display: 'block',
-          fontSize: 19,
+          fontSize: 22,
           lineHeight: 1.05,
           color: valueColor,
           fontWeight: 400,
@@ -2230,4 +2098,4 @@ function PdfSummary({
       </strong>
     </div>
   );
-          }
+}
