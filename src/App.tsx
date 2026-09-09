@@ -71,6 +71,10 @@ import {
 } from '@/pages/WorkInvoicePage';
 
 import {
+  RentalInvoicePage,
+} from '@/pages/RentalInvoicePage';
+
+import {
   SettingsPage,
 } from '@/pages/SettingsPage';
 
@@ -482,6 +486,13 @@ function App() {
           path="/work-invoice"
           element={
             <WorkInvoicePage />
+          }
+        />
+
+        <Route
+          path="/rental-invoice"
+          element={
+            <RentalInvoicePage />
           }
         />
 
