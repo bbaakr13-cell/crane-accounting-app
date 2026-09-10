@@ -91,6 +91,10 @@ import {
 } from '@/pages/DriverEquipmentExpensesPage';
 
 import {
+  ExpensesPage,
+} from '@/pages/ExpensesPage';
+
+import {
   CalculatorPage,
 } from '@/pages/CalculatorPage';
 
@@ -451,6 +455,13 @@ function App() {
           path="/operating-expenses"
           element={
             <DriverEquipmentExpensesPage />
+          }
+        />
+
+        <Route
+          path="/expenses"
+          element={
+            <ExpensesPage />
           }
         />
 
