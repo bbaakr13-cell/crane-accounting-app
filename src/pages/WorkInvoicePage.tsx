@@ -168,6 +168,21 @@ function drawEnglish(ctx: CanvasRenderingContext2D, text: string, x: number, y: 
   ctx.restore();
 }
 
+const INVOICE_LAYOUT = {
+  invoiceNo: { x: 166, y: 475, size: 16 },
+  date: { x: 856, y: 475, size: 16 },
+  customer: { x: 490, y: 535 },
+  rowsY: [714, 754, 794, 834],
+  descriptionX: 270,
+  qtyX: 528,
+  unitPriceX: 646,
+  totalX: 858,
+  totalWords: { x: 355, y: 1255 },
+  grandTotal: { x: 888, y: 1255, size: 29 },
+  receivedBy: { x: 165, y: 1382, size: 18 },
+  salesman: { x: 872, y: 1382, size: 18 },
+} as const;
+
 export function WorkInvoicePage() {
   const navigate = useNavigate();
   const invoiceRef = useRef<HTMLDivElement | null>(null);
@@ -222,25 +237,25 @@ export function WorkInvoicePage() {
     ctx.fillStyle = '#fff'; ctx.fillRect(0,0,TEMPLATE_WIDTH,TEMPLATE_HEIGHT);
     ctx.drawImage(template,0,0,TEMPLATE_WIDTH,TEMPLATE_HEIGHT);
 
-    drawEnglish(ctx, data.invoiceNo, 166, 475, 16);
-    drawEnglish(ctx, formatDate(data.date), 856, 475, 16);
+    drawEnglish(ctx, data.invoiceNo, INVOICE_LAYOUT.invoiceNo.x, INVOICE_LAYOUT.invoiceNo.y, INVOICE_LAYOUT.invoiceNo.size);
+    drawEnglish(ctx, formatDate(data.date), INVOICE_LAYOUT.date.x, INVOICE_LAYOUT.date.y, INVOICE_LAYOUT.date.size);
 
     const customerSize = data.customer.length <= 18 ? 30 : data.customer.length <= 28 ? 27 : data.customer.length <= 38 ? 24 : 21;
-    drawArabic(ctx, data.customer, 490, 535, customerSize, {align:'center', maxWidth:520, minSize:18});
+    drawArabic(ctx, data.customer, INVOICE_LAYOUT.customer.x, INVOICE_LAYOUT.customer.y, customerSize, {align:'center', maxWidth:520, minSize:18});
 
-    const rowY = [714,754,794,834];
+    const rowY = INVOICE_LAYOUT.rowsY;
     data.rows.forEach((row,i) => {
-      drawArabic(ctx,row.description,270,rowY[i],24,{maxWidth:390,minSize:17});
-      drawEnglish(ctx,row.qty,528,rowY[i],21);
-      drawEnglish(ctx,formatMoney(toNumber(row.unitPrice)),646,rowY[i],21);
-      drawEnglish(ctx,formatMoney(totals[i]),858,rowY[i],21);
+      drawArabic(ctx,row.description,INVOICE_LAYOUT.descriptionX,rowY[i],24,{maxWidth:390,minSize:17});
+      drawEnglish(ctx,row.qty,INVOICE_LAYOUT.qtyX,rowY[i],21);
+      drawEnglish(ctx,formatMoney(toNumber(row.unitPrice)),INVOICE_LAYOUT.unitPriceX,rowY[i],21);
+      drawEnglish(ctx,formatMoney(totals[i]),INVOICE_LAYOUT.totalX,rowY[i],21);
     });
 
     const wordsSize = totalWords.length <= 38 ? 23 : totalWords.length <= 50 ? 21 : totalWords.length <= 60 ? 19 : 17;
-    drawArabic(ctx,totalWords,355,1255,wordsSize,{maxWidth:500,minSize:16});
-    drawEnglish(ctx,formatMoney(grandTotal),888,1255,29);
-    drawArabic(ctx,data.receivedBy,165,1382,18,{maxWidth:260,minSize:14});
-    drawArabic(ctx,data.salesman,872,1382,18,{maxWidth:260,minSize:14});
+    drawArabic(ctx,totalWords,INVOICE_LAYOUT.totalWords.x,INVOICE_LAYOUT.totalWords.y,wordsSize,{maxWidth:500,minSize:16});
+    drawEnglish(ctx,formatMoney(grandTotal),INVOICE_LAYOUT.grandTotal.x,INVOICE_LAYOUT.grandTotal.y,INVOICE_LAYOUT.grandTotal.size);
+    drawArabic(ctx,data.receivedBy,INVOICE_LAYOUT.receivedBy.x,INVOICE_LAYOUT.receivedBy.y,INVOICE_LAYOUT.receivedBy.size,{maxWidth:260,minSize:14});
+    drawArabic(ctx,data.salesman,INVOICE_LAYOUT.salesman.x,INVOICE_LAYOUT.salesman.y,INVOICE_LAYOUT.salesman.size,{maxWidth:260,minSize:14});
     return canvas;
   }
 
@@ -338,25 +353,25 @@ export function WorkInvoicePage() {
 }
 
 function InvoicePreview({invoiceRef,data,totals,grandTotal,totalWords}:{invoiceRef:React.RefObject<HTMLDivElement|null>;data:InvoiceData;totals:number[];grandTotal:number;totalWords:string}) {
-  const rowY=[714,754,794,834];
+  const rowY=INVOICE_LAYOUT.rowsY;
   const customerFontSize=data.customer.length<=18?30:data.customer.length<=28?27:data.customer.length<=38?24:21;
   const totalWordsFontSize=totalWords.length<=38?23:totalWords.length<=50?21:totalWords.length<=60?19:17;
   return <div className="w-full"><div ref={invoiceRef} className="relative w-full bg-white overflow-hidden" style={{aspectRatio:`${TEMPLATE_WIDTH} / ${TEMPLATE_HEIGHT}`}}>
     <img src={TEMPLATE_URL} alt="فاتورة" draggable={false} className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none"/>
     <svg viewBox={`0 0 ${TEMPLATE_WIDTH} ${TEMPLATE_HEIGHT}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-      <SvgEnglishText x={166} y={470} size={18} weight={900}>{data.invoiceNo}</SvgEnglishText>
-      <SvgEnglishText x={856} y={470} size={18} weight={900}>{formatDate(data.date)}</SvgEnglishText>
-      <text x={490} y={535} fill="#000" fontSize={customerFontSize} fontWeight={400} textAnchor="middle" dominantBaseline="middle" direction="rtl" unicodeBidi="plaintext" style={{fontFamily:`'${ARABIC_FONT_NAME}'`,fontWeight:400,fontStyle:'normal'}}>{data.customer}</text>
+      <SvgEnglishText x={INVOICE_LAYOUT.invoiceNo.x} y={INVOICE_LAYOUT.invoiceNo.y} size={INVOICE_LAYOUT.invoiceNo.size} weight={900}>{data.invoiceNo}</SvgEnglishText>
+      <SvgEnglishText x={INVOICE_LAYOUT.date.x} y={INVOICE_LAYOUT.date.y} size={INVOICE_LAYOUT.date.size} weight={900}>{formatDate(data.date)}</SvgEnglishText>
+      <text x={INVOICE_LAYOUT.customer.x} y={INVOICE_LAYOUT.customer.y} fill="#000" fontSize={customerFontSize} fontWeight={400} textAnchor="middle" dominantBaseline="middle" direction="rtl" unicodeBidi="plaintext" style={{fontFamily:`'${ARABIC_FONT_NAME}'`,fontWeight:400,fontStyle:'normal'}}>{data.customer}</text>
       {data.rows.map((row,i)=><React.Fragment key={i}>
-        <SvgArabicText x={270} y={rowY[i]} size={24}>{row.description}</SvgArabicText>
-        <SvgEnglishText x={528} y={rowY[i]} size={21} weight={900}>{row.qty}</SvgEnglishText>
-        <SvgEnglishText x={646} y={rowY[i]} size={21} weight={900}>{formatMoney(toNumber(row.unitPrice))}</SvgEnglishText>
-        <SvgEnglishText x={858} y={rowY[i]} size={21} weight={900}>{formatMoney(totals[i])}</SvgEnglishText>
+        <SvgArabicText x={INVOICE_LAYOUT.descriptionX} y={rowY[i]} size={24}>{row.description}</SvgArabicText>
+        <SvgEnglishText x={INVOICE_LAYOUT.qtyX} y={rowY[i]} size={21} weight={900}>{row.qty}</SvgEnglishText>
+        <SvgEnglishText x={INVOICE_LAYOUT.unitPriceX} y={rowY[i]} size={21} weight={900}>{formatMoney(toNumber(row.unitPrice))}</SvgEnglishText>
+        <SvgEnglishText x={INVOICE_LAYOUT.totalX} y={rowY[i]} size={21} weight={900}>{formatMoney(totals[i])}</SvgEnglishText>
       </React.Fragment>)}
-      <SvgArabicText x={355} y={1255} size={totalWordsFontSize}>{totalWords}</SvgArabicText>
-      <SvgEnglishText x={888} y={1255} size={29} weight={900}>{formatMoney(grandTotal)}</SvgEnglishText>
-      <SvgArabicText x={165} y={1382} size={18}>{data.receivedBy}</SvgArabicText>
-      <SvgArabicText x={872} y={1382} size={18}>{data.salesman}</SvgArabicText>
+      <SvgArabicText x={INVOICE_LAYOUT.totalWords.x} y={INVOICE_LAYOUT.totalWords.y} size={totalWordsFontSize}>{totalWords}</SvgArabicText>
+      <SvgEnglishText x={INVOICE_LAYOUT.grandTotal.x} y={INVOICE_LAYOUT.grandTotal.y} size={INVOICE_LAYOUT.grandTotal.size} weight={900}>{formatMoney(grandTotal)}</SvgEnglishText>
+      <SvgArabicText x={INVOICE_LAYOUT.receivedBy.x} y={INVOICE_LAYOUT.receivedBy.y} size={INVOICE_LAYOUT.receivedBy.size}>{data.receivedBy}</SvgArabicText>
+      <SvgArabicText x={INVOICE_LAYOUT.salesman.x} y={INVOICE_LAYOUT.salesman.y} size={INVOICE_LAYOUT.salesman.size}>{data.salesman}</SvgArabicText>
     </svg>
   </div></div>;
 }
@@ -374,4 +389,4 @@ function Field({label,value,onChange,placeholder='',dir='rtl',inputMode='text'}:
 }
 function DateField({label,value,onChange}:{label:string;value:string;onChange:(v:string)=>void}) {
   return <label className="block"><span className="block mb-2 text-[12px] font-bold text-slate-400">{label}</span><input type="date" value={value} onChange={e=>onChange(e.target.value)} className="w-full h-12 px-3 rounded-xl bg-[#07111d] border border-white/10 text-white text-sm font-bold outline-none focus:border-blue-500/60"/></label>;
-}
+      }
