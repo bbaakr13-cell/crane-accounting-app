@@ -5,6 +5,8 @@ import {
   Image as ImageIcon, FileDown, Share2, Banknote, Building2, Truck,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import { fetchEquipment, type Equipment } from '@/lib/equipment';
@@ -363,10 +365,24 @@ export function ExpensesPage() {
     try {
       const doc = makePdf();
       const blob = doc.output('blob');
-      downloadBlob(blob,pdfFileName());
+      const base64 = await blobToBase64(blob);
+      const fileName = pdfFileName();
+
+      try {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        alert(`تم حفظ PDF بنجاح\n${fileName}`);
+      } catch (nativeError) {
+        console.warn('Native PDF save fallback:', nativeError);
+        downloadBlob(blob, fileName);
+      }
     } catch (error) {
-      console.error('PDF export error:',error);
-      alert('تعذر حفظ PDF. جرّب زر المشاركة لإرسال الملف مباشرة.');
+      console.error('PDF export error:', error);
+      alert('تعذر حفظ ملف PDF');
     }
   }
 
@@ -374,28 +390,26 @@ export function ExpensesPage() {
     try {
       const doc = makePdf();
       const blob = doc.output('blob');
-      const file = new File([blob],pdfFileName(),{type:'application/pdf'});
+      const base64 = await blobToBase64(blob);
+      const fileName = pdfFileName();
 
-      if (navigator.share) {
-        const shareData:any = {
-          title:'كشف حساب المصاريف',
-          text:`كشف مصاريف ${monthNames[month]} ${year} - الإجمالي ${money(totals.total)}`,
-          files:[file],
-        };
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache,
+        recursive: true,
+      });
 
-        if (!navigator.canShare || navigator.canShare({files:[file]})) {
-          await navigator.share(shareData);
-          return;
-        }
-      }
-
-      downloadBlob(blob,pdfFileName());
-      alert('جهازك لا يدعم مشاركة ملف PDF مباشرة، لذلك تم حفظ الملف أولاً.');
-    } catch (error:any) {
-      if (error?.name === 'AbortError') return;
-      console.error('PDF share error:',error);
-      alert('تعذرت المشاركة. سيتم محاولة حفظ ملف PDF.');
-      await exportPdf();
+      await Share.share({
+        title: 'كشف حساب المصاريف',
+        text: `كشف مصاريف ${monthNames[month]} ${year} - الإجمالي ${money(totals.total)}`,
+        url: result.uri,
+        dialogTitle: 'مشاركة كشف المصاريف',
+      });
+    } catch (error: any) {
+      if (error?.message?.toLowerCase?.().includes('cancel')) return;
+      console.error('PDF share error:', error);
+      alert('تعذرت مشاركة ملف PDF');
     }
   }
 
@@ -622,4 +636,4 @@ function SummaryCard({label,value,icon:Icon,accent}:{label:string;value:string;i
       <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:`${accent}16`}}><Icon className="w-4 h-4" style={{color:accent}}/></div>
     </div>
   </div>;
-        }
+  }
