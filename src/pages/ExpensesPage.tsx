@@ -321,20 +321,14 @@ export function ExpensesPage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return doc;
 
-    const rowsPerPage = 18;
-    const dataRows = monthExpenses.length > 0 ? monthExpenses : [];
-    const pageCount = Math.max(1, Math.ceil(Math.max(dataRows.length, 1) / rowsPerPage));
-
     const navy = '#071827';
     const navy2 = '#0c2740';
     const gold = '#f4b62c';
     const softGold = '#fff4d6';
     const green = '#16a36a';
-    const blue = '#2d7ff9';
     const purple = '#8b5cf6';
-    const light = '#f7f9fc';
     const border = '#d8e1eb';
-    const text = '#0f172a';
+    const textColor = '#0f172a';
     const muted = '#64748b';
 
     const roundRect = (
@@ -368,7 +362,7 @@ export function ExpensesPage() {
       y: number,
       size: number,
       weight: 'normal' | 'bold' = 'normal',
-      color = text,
+      color = textColor,
       align: CanvasTextAlign = 'right'
     ) => {
       ctx.save();
@@ -387,7 +381,7 @@ export function ExpensesPage() {
       y: number,
       size: number,
       weight: 'normal' | 'bold' = 'normal',
-      color = text,
+      color = textColor,
       align: CanvasTextAlign = 'left'
     ) => {
       ctx.save();
@@ -400,24 +394,26 @@ export function ExpensesPage() {
       ctx.restore();
     };
 
-    const fitArabic = (
+    const fitText = (
       value: string,
       x: number,
       y: number,
       maxWidth: number,
       startSize: number,
-      color = text
+      color = textColor
     ) => {
       let size = startSize;
       ctx.save();
       ctx.direction = 'rtl';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      while (size > 14) {
+
+      while (size > 10) {
         ctx.font = `700 ${size}px Arial, sans-serif`;
         if (ctx.measureText(value).width <= maxWidth) break;
         size -= 1;
       }
+
       ctx.fillStyle = color;
       ctx.fillText(value, x, y);
       ctx.restore();
@@ -432,247 +428,255 @@ export function ExpensesPage() {
       accent: string,
       pale: string
     ) => {
-      roundRect(x, y, w, 118, 18, pale, `${accent}33`);
-      roundRect(x + 16, y + 18, 54, 54, 14, `${accent}20`);
-      drawText('●', x + 43, y + 45, 34, 'bold', accent, 'center');
-      drawText(title, x + w - 18, y + 36, 23, 'bold', text);
-      drawEnglish(value.toLocaleString('en-US'), x + w - 18, y + 77, 34, 'bold', accent, 'right');
-      drawText('ر.س', x + w - 18, y + 102, 18, 'bold', muted);
+      roundRect(x, y, w, 105, 16, pale, `${accent}33`);
+      roundRect(x + 14, y + 17, 48, 48, 13, `${accent}20`);
+      drawText('●', x + 38, y + 41, 30, 'bold', accent, 'center');
+      drawText(title, x + w - 16, y + 31, 20, 'bold', textColor);
+      drawEnglish(
+        value.toLocaleString('en-US'),
+        x + w - 16,
+        y + 69,
+        31,
+        'bold',
+        accent,
+        'right'
+      );
+      drawText('ر.س', x + w - 16, y + 92, 15, 'bold', muted);
     };
 
-    const drawFooter = (pageNumber: number, totalPages: number) => {
-      ctx.fillStyle = navy;
-      ctx.fillRect(0, 1572, 1240, 182);
+    // ورقة واحدة للشهر كامل
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      drawEnglish('BAKR PRO', 62, 1620, 31, 'bold', '#ffffff');
-      drawText('إدارة حسابات الكرينات', 62, 1657, 20, 'bold', '#ffffff', 'left');
-      drawText('خميس مشيط - أبها ومنطقة عسير', 618, 1624, 20, 'bold', '#ffffff', 'center');
-      drawEnglish('0558995962', 618, 1664, 30, 'bold', gold, 'center');
-      drawText('معًا نحو إدارة أفضل ومستقبل أعلى', 1172, 1624, 21, 'bold', '#ffffff');
-      drawEnglish(`Page ${pageNumber} / ${totalPages}`, 1172, 1665, 18, 'normal', '#cbd5e1', 'right');
-    };
+    // الهيدر
+    ctx.fillStyle = navy;
+    ctx.fillRect(0, 0, 1240, 260);
 
-    for (let page = 0; page < pageCount; page += 1) {
-      if (page > 0) doc.addPage();
+    // شريط ذهبي صغير فقط حتى لا يقص BAKR PRO
+    ctx.fillStyle = gold;
+    ctx.fillRect(0, 0, 20, 260);
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawEnglish('BAKR PRO', 58, 56, 48, 'bold', '#ffffff', 'left');
+    drawText('إدارة حسابات الكرينات', 58, 108, 23, 'bold', '#ffffff', 'left');
+    drawText('تصميم التطبيق: بكر المسبحي', 58, 145, 19, 'bold', gold, 'left');
+    drawEnglish('CRANES ACCOUNTS MANAGEMENT', 58, 180, 16, 'normal', '#cbd5e1', 'left');
 
-      // Header
-      ctx.fillStyle = navy;
-      ctx.fillRect(0, 0, 1240, 270);
+    drawText('كشف حساب المصاريف الشهري', 1175, 72, 46, 'bold', '#ffffff');
+    drawEnglish('MONTHLY EXPENSES STATEMENT', 1175, 124, 18, 'normal', '#cbd5e1', 'right');
+    drawText('دقة في الحساب .. وضوح في الإدارة .. نجاح في العمل', 1175, 170, 20, 'normal', '#e2e8f0');
 
-      // gold diagonal accent
-      ctx.fillStyle = gold;
+    roundRect(955, 205, 220, 42, 11, '#0f2a43', '#f4b62c66');
+    drawText(`${monthNames[month]} ${year}`, 1156, 226, 22, 'bold', gold);
+
+    // معلومات التقرير
+    drawText('خميس مشيط - أبها ومنطقة عسير', 70, 305, 19, 'bold', textColor, 'left');
+    drawText(`تاريخ الإصدار: ${new Date().toLocaleDateString('en-CA')}`, 1170, 305, 17, 'bold', textColor);
+    drawText(
+      `وقت الإصدار: ${new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`,
+      1170,
+      337,
+      16,
+      'normal',
+      muted
+    );
+
+    // بطاقات الإجماليات
+    const gap = 16;
+    const cardW = (1130 - gap * 3) / 4;
+    const cardsY = 370;
+
+    drawSummaryCard(55, cardsY, cardW, 'إجمالي المصاريف', totals.total, navy2, '#eef5fb');
+    drawSummaryCard(55 + (cardW + gap), cardsY, cardW, 'مصاريف الكرينات', totals.equipment, gold, softGold);
+    drawSummaryCard(55 + (cardW + gap) * 2, cardsY, cardW, 'مصاريف السائقين', totals.drivers, green, '#e9fbf4');
+    drawSummaryCard(55 + (cardW + gap) * 3, cardsY, cardW, 'مصاريف عامة', totals.general, purple, '#f4efff');
+
+    // عنوان الجدول
+    drawText('تفاصيل الشهر كامل', 1170, 505, 23, 'bold', textColor);
+    drawText(
+      `${new Date(year, month + 1, 0).getDate()} يوم • ${totals.count} عملية مسجلة`,
+      1170,
+      534,
+      15,
+      'normal',
+      muted
+    );
+
+    // جدول 30 / 31 يوم في نفس الصفحة
+    const tableX = 55;
+    const tableY = 560;
+    const tableW = 1130;
+    const headerH = 42;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const availableHeight = 880;
+    const rowH = Math.floor(availableHeight / daysInMonth);
+
+    const cols = [
+      { label: '#', w: 55 },
+      { label: 'التاريخ', w: 145 },
+      { label: 'نوع المصروف', w: 170 },
+      { label: 'الكرين / السائق', w: 220 },
+      { label: 'المبلغ', w: 125 },
+      { label: 'الدفع', w: 115 },
+      { label: 'الملاحظات', w: 300 },
+    ];
+
+    const colXs: number[] = [];
+    let cursor = tableX + tableW;
+    cols.forEach((col) => {
+      cursor -= col.w;
+      colXs.push(cursor);
+    });
+
+    roundRect(tableX, tableY, tableW, headerH, 12, navy, navy);
+    cols.forEach((col, i) => {
+      drawText(
+        col.label,
+        colXs[i] + col.w - 10,
+        tableY + headerH / 2,
+        14,
+        'bold',
+        '#ffffff'
+      );
+    });
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const dayItems = monthExpenses
+        .filter((item) => getDateParts(item.date)?.day === day)
+        .sort((a, b) => a.id - b.id);
+
+      const categoriesText =
+        dayItems.length > 0
+          ? Array.from(new Set(dayItems.map((x) => x.category))).join(' + ')
+          : '—';
+
+      const linkedText =
+        dayItems.length > 0
+          ? Array.from(new Set(dayItems.map((x) => linkedLabel(x)))).join(' + ')
+          : '—';
+
+      const dayTotal = dayItems.reduce(
+        (sum, item) => sum + safeNumber(item.amount),
+        0
+      );
+
+      const paymentsText =
+        dayItems.length > 0
+          ? Array.from(
+              new Set(dayItems.map((x) => x.paymentMethod || '—'))
+            ).join(' + ')
+          : '—';
+
+      const notesText =
+        dayItems.length > 0
+          ? dayItems
+              .map((x) => x.notes)
+              .filter(Boolean)
+              .join(' • ') || '—'
+          : '—';
+
+      const y = tableY + headerH + (day - 1) * rowH;
+
+      ctx.fillStyle = day % 2 === 0 ? '#f8fafc' : '#ffffff';
+      ctx.fillRect(tableX, y, tableW, rowH);
+
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(250, 0);
-      ctx.lineTo(175, 270);
-      ctx.lineTo(0, 270);
-      ctx.closePath();
-      ctx.fill();
-
-      // subtle crane-like silhouette
-      ctx.save();
-      ctx.globalAlpha = 0.12;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.moveTo(930, 220);
-      ctx.lineTo(1055, 86);
-      ctx.lineTo(1180, 86);
-      ctx.moveTo(1055, 86);
-      ctx.lineTo(1055, 222);
+      ctx.moveTo(tableX, y + rowH);
+      ctx.lineTo(tableX + tableW, y + rowH);
       ctx.stroke();
-      ctx.restore();
 
-      drawEnglish('BAKR PRO', 46, 60, 48, 'bold', navy, 'left');
-      drawText('إدارة حسابات الكرينات', 46, 114, 24, 'bold', navy, 'left');
-      drawEnglish('CRANES ACCOUNTS MANAGEMENT', 46, 150, 17, 'bold', navy, 'left');
+      const dateText = `${year}/${String(month + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
 
-      drawText('كشف حساب المصاريف الشهري', 1162, 76, 46, 'bold', '#ffffff');
-      drawEnglish('MONTHLY EXPENSES STATEMENT', 1162, 130, 19, 'normal', '#cbd5e1', 'right');
-      drawText('دقة في الحساب .. وضوح في الإدارة .. نجاح في العمل', 1162, 180, 21, 'normal', '#e2e8f0');
-
-      roundRect(946, 205, 216, 48, 12, '#0f2a43', '#f4b62c66');
-      drawText(`${monthNames[month]} ${year}`, 1142, 229, 23, 'bold', gold);
-
-      // Meta
-      drawText('خميس مشيط - أبها ومنطقة عسير', 78, 316, 20, 'bold', text, 'left');
-      drawText(`تاريخ الإصدار: ${new Date().toLocaleDateString('en-CA')}`, 1162, 316, 19, 'bold', text);
-      drawText(`وقت الإصدار: ${new Date().toLocaleTimeString('ar-SA', {hour:'2-digit',minute:'2-digit'})}`, 1162, 350, 18, 'normal', muted);
-
-      // Summary cards
-      const cardGap = 18;
-      const cardW = (1130 - cardGap * 3) / 4;
-      const cardsY = 390;
-      drawSummaryCard(55, cardsY, cardW, 'إجمالي المصاريف', totals.total, navy2, '#eef5fb');
-      drawSummaryCard(55 + (cardW + cardGap), cardsY, cardW, 'مصاريف الكرينات', totals.equipment, gold, softGold);
-      drawSummaryCard(55 + (cardW + cardGap) * 2, cardsY, cardW, 'مصاريف السائقين', totals.drivers, green, '#e9fbf4');
-      drawSummaryCard(55 + (cardW + cardGap) * 3, cardsY, cardW, 'مصاريف عامة', totals.general, purple, '#f4efff');
-
-      // Table title
-      drawText('تفاصيل المصاريف', 1162, 548, 24, 'bold', text);
-      drawText(`عدد العمليات: ${totals.count}`, 1162, 580, 17, 'normal', muted);
-
-      const tableX = 55;
-      const tableY = 610;
-      const tableW = 1130;
-      const headerH = 56;
-      const rowH = 46;
-      const cols = [
-        { key: 'no', label: '#', w: 60 },
-        { key: 'date', label: 'التاريخ', w: 150 },
-        { key: 'category', label: 'نوع المصروف', w: 190 },
-        { key: 'linked', label: 'الكرين / السائق', w: 230 },
-        { key: 'amount', label: 'المبلغ (ر.س)', w: 150 },
-        { key: 'payment', label: 'طريقة الدفع', w: 140 },
-        { key: 'notes', label: 'الملاحظات', w: 210 },
+      const values = [
+        String(day),
+        dateText,
+        categoriesText,
+        linkedText,
+        dayTotal > 0 ? dayTotal.toLocaleString('en-US') : '—',
+        paymentsText,
+        notesText,
       ];
 
-      // RTL columns
-      const colXs: number[] = [];
-      let cursor = tableX + tableW;
-      cols.forEach((col) => {
-        cursor -= col.w;
-        colXs.push(cursor);
+      values.forEach((value, i) => {
+        const maxWidth = cols[i].w - 18;
+        const x = colXs[i] + cols[i].w - 9;
+
+        if (i === 4) {
+          drawEnglish(
+            value,
+            x,
+            y + rowH / 2,
+            13,
+            dayTotal > 0 ? 'bold' : 'normal',
+            dayTotal > 0 ? textColor : muted,
+            'right'
+          );
+        } else {
+          fitText(
+            String(value).slice(0, i === 6 ? 42 : 30),
+            x,
+            y + rowH / 2,
+            maxWidth,
+            13,
+            value === '—' ? muted : textColor
+          );
+        }
       });
-
-      roundRect(tableX, tableY, tableW, headerH, 14, navy, navy);
-      cols.forEach((col, i) => {
-        drawText(col.label, colXs[i] + col.w - 12, tableY + headerH / 2, 17, 'bold', '#ffffff');
-      });
-
-      const rows = dataRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
-      if (rows.length === 0) {
-        roundRect(tableX, tableY + headerH + 4, tableW, rowH * 4, 12, '#ffffff', border);
-        drawText('لا توجد مصاريف مسجلة لهذا الشهر', tableX + tableW / 2, tableY + headerH + rowH * 2, 23, 'bold', muted, 'center');
-      } else {
-        rows.forEach((item, index) => {
-          const y = tableY + headerH + index * rowH;
-          ctx.fillStyle = index % 2 === 0 ? '#ffffff' : '#f8fafc';
-          ctx.fillRect(tableX, y, tableW, rowH);
-          ctx.strokeStyle = border;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(tableX, y, tableW, rowH);
-
-          const values = [
-            String(page * rowsPerPage + index + 1),
-            item.date,
-            item.category || '—',
-            linkedLabel(item),
-            safeNumber(item.amount).toLocaleString('en-US'),
-            item.paymentMethod || '—',
-            item.notes || '—',
-          ];
-
-          values.forEach((value, i) => {
-            if (i === 4) {
-              drawEnglish(value, colXs[i] + cols[i].w - 12, y + rowH / 2, 17, 'bold', text, 'right');
-            } else {
-              fitArabic(String(value).slice(0, i === 6 ? 28 : 24), colXs[i] + cols[i].w - 12, y + rowH / 2, cols[i].w - 24, 16, text);
-            }
-          });
-        });
-      }
-
-      // Only first page gets dashboard widgets
-      if (page === 0) {
-        const bottomY = 610 + headerH + Math.min(rowsPerPage, Math.max(rows.length, 10)) * rowH + 26;
-
-        // Distribution card
-        roundRect(55, bottomY, 530, 220, 18, '#fbfcfe', border);
-        drawText('توزيع المصاريف', 555, bottomY + 34, 23, 'bold', text);
-
-        const total = Math.max(totals.total, 1);
-        const eqPct = totals.equipment / total;
-        const drPct = totals.drivers / total;
-        const gePct = totals.general / total;
-
-        const cx = 160;
-        const cy = bottomY + 126;
-        const r = 70;
-        ctx.lineWidth = 26;
-        let angle = -Math.PI / 2;
-
-        const drawArc = (pct: number, color: string) => {
-          if (pct <= 0) return;
-          ctx.beginPath();
-          ctx.strokeStyle = color;
-          ctx.arc(cx, cy, r, angle, angle + pct * Math.PI * 2);
-          ctx.stroke();
-          angle += pct * Math.PI * 2;
-        };
-
-        drawArc(eqPct, gold);
-        drawArc(drPct, green);
-        drawArc(gePct, purple);
-
-        drawEnglish(totals.total.toLocaleString('en-US'), cx, cy - 2, 30, 'bold', text, 'center');
-        drawText('ر.س', cx, cy + 28, 16, 'bold', muted, 'center');
-
-        drawText(`مصاريف الكرينات  ${totals.equipment.toLocaleString('en-US')} ر.س`, 545, bottomY + 86, 18, 'bold', text);
-        drawText(`مصاريف السائقين  ${totals.drivers.toLocaleString('en-US')} ر.س`, 545, bottomY + 126, 18, 'bold', text);
-        drawText(`مصاريف عامة  ${totals.general.toLocaleString('en-US')} ر.س`, 545, bottomY + 166, 18, 'bold', text);
-
-        // Daily bars
-        roundRect(610, bottomY, 575, 220, 18, '#fbfcfe', border);
-        drawText('المصاريف اليومية', 1150, bottomY + 34, 23, 'bold', text);
-
-        const dailyMap = new Map<number, number>();
-        monthExpenses.forEach((item) => {
-          const day = getDateParts(item.date)?.day || 0;
-          dailyMap.set(day, (dailyMap.get(day) || 0) + safeNumber(item.amount));
-        });
-
-        const dailyEntries = Array.from(dailyMap.entries()).sort((a,b)=>a[0]-b[0]).slice(0, 10);
-        const maxDaily = Math.max(...dailyEntries.map(([,v])=>v), 1);
-        const chartX = 650;
-        const chartY = bottomY + 72;
-        const chartW = 500;
-        const chartH = 112;
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(chartX, chartY + chartH);
-        ctx.lineTo(chartX + chartW, chartY + chartH);
-        ctx.stroke();
-
-        const gap = 10;
-        const barW = dailyEntries.length ? (chartW - gap * (dailyEntries.length - 1)) / dailyEntries.length : 30;
-        dailyEntries.forEach(([day, value], i) => {
-          const h = (value / maxDaily) * 88;
-          const x = chartX + i * (barW + gap);
-          ctx.fillStyle = gold;
-          roundRect(x, chartY + chartH - h, barW, h, 5, gold);
-          drawEnglish(String(day).padStart(2,'0'), x + barW / 2, chartY + chartH + 19, 14, 'bold', muted, 'center');
-        });
-
-        // Notes / approval
-        const infoY = bottomY + 244;
-        roundRect(55, infoY, 730, 150, 18, '#fbfcfe', border);
-        drawText('ملاحظات', 755, infoY + 34, 23, 'bold', text);
-        drawText('• هذا الكشف تم إنشاؤه تلقائيًا من نظام BAKR PRO.', 755, infoY + 72, 17, 'normal', text);
-        drawText('• يشمل جميع المصاريف المسجلة خلال الشهر المحدد.', 755, infoY + 103, 17, 'normal', text);
-        drawText('• يمكن اعتماد الكشف ومشاركته مع الجهات المعنية.', 755, infoY + 132, 17, 'normal', text);
-
-        roundRect(810, infoY, 375, 150, 18, '#fbfcfe', border);
-        drawText('اعتماد الإدارة', 1150, infoY + 34, 23, 'bold', text);
-        drawText('مدير النظام', 1150, infoY + 74, 18, 'normal', muted);
-        drawEnglish('BAKR PRO', 990, infoY + 116, 28, 'bold', navy2, 'center');
-      } else {
-        // continuation note
-        roundRect(55, 1490, 1130, 54, 14, '#f8fafc', border);
-        drawText('تابع كشف حساب المصاريف الشهري', 1160, 1517, 18, 'bold', muted);
-      }
-
-      drawFooter(page + 1, pageCount);
-
-      const imageData = canvas.toDataURL('image/jpeg', 0.92);
-      doc.addImage(imageData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
     }
+
+    // الملخص السفلي
+    const bottomY = tableY + headerH + daysInMonth * rowH + 18;
+
+    roundRect(55, bottomY, 760, 95, 16, '#fbfcfe', border);
+    drawText('ملاحظات الكشف', 785, bottomY + 26, 19, 'bold', textColor);
+    drawText(
+      'هذا الكشف يشمل الشهر كاملًا من اليوم 1 إلى آخر يوم، ويعرض جميع المصاريف المسجلة تلقائيًا.',
+      785,
+      bottomY + 57,
+      14,
+      'normal',
+      textColor
+    );
+    drawText(
+      'يمكن حفظه أو مشاركته مع المؤسسات والشركات والمقاولين.',
+      785,
+      bottomY + 79,
+      14,
+      'normal',
+      muted
+    );
+
+    roundRect(840, bottomY, 345, 95, 16, '#fbfcfe', border);
+    drawText('اعتماد الإدارة', 1155, bottomY + 26, 19, 'bold', textColor);
+    drawText('مدير النظام', 1155, bottomY + 53, 14, 'normal', muted);
+    drawEnglish('BAKR PRO', 1015, bottomY + 76, 22, 'bold', navy2, 'center');
+
+    // الفوتر
+    ctx.fillStyle = navy;
+    ctx.fillRect(0, 1590, 1240, 164);
+
+    drawEnglish('BAKR PRO', 58, 1628, 29, 'bold', '#ffffff', 'left');
+    drawText('إدارة حسابات الكرينات', 58, 1662, 18, 'bold', '#ffffff', 'left');
+    drawText('تصميم التطبيق: بكر المسبحي', 58, 1693, 16, 'bold', gold, 'left');
+
+    drawText('خميس مشيط - أبها ومنطقة عسير', 620, 1630, 18, 'bold', '#ffffff', 'center');
+    drawEnglish('0558995962', 620, 1668, 27, 'bold', gold, 'center');
+
+    drawText('معًا نحو إدارة أفضل ومستقبل أعلى', 1170, 1630, 18, 'bold', '#ffffff');
+    drawEnglish('BAKR PRO', 1170, 1670, 21, 'bold', '#cbd5e1', 'right');
+
+    const imageData = canvas.toDataURL('image/jpeg', 0.94);
+    doc.addImage(
+      imageData,
+      'JPEG',
+      0,
+      0,
+      pageWidth,
+      pageHeight,
+      undefined,
+      'FAST'
+    );
 
     return doc;
   }
@@ -968,4 +972,4 @@ function SummaryCard({label,value,icon:Icon,accent}:{label:string;value:string;i
       <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:`${accent}16`}}><Icon className="w-4 h-4" style={{color:accent}}/></div>
     </div>
   </div>;
-        }
+                          }
