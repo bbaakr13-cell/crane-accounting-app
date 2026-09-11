@@ -443,4 +443,4 @@ function RelationButton({active,label,icon:Icon,onClick}:{active:boolean;label:s
 }
 function SummaryCard({label,value,icon:Icon,accent}:{label:string;value:string;icon:any;accent:string}) {
   return <div className="min-h-[92px] rounded-[18px] p-3" style={{background:'linear-gradient(145deg,rgba(14,29,49,.94),rgba(7,17,31,.98))',border:`1px solid ${accent}33`}}><div className="flex items-start justify-between gap-2"><div><p className="text-[9px] text-slate-500">{label}</p><p className="text-[14px] font-black mt-3" style={{color:accent}}>{value}</p></div><div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:`${accent}16`}}><Icon className="w-4 h-4" style={{color:accent}}/></div></div></div>;
-                                 }
+        }
