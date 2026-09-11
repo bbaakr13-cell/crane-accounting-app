@@ -240,6 +240,25 @@ export function ExpensesPage() {
     }).sort((a,b)=>b.date.localeCompare(a.date) || b.id-a.id);
   },[expenses,year,month,search]);
 
+  const monthlyRows = useMemo(()=>{
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const rows: Array<{ day:number; item:ExpenseRecord | null }> = [];
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const dayItems = monthExpenses
+        .filter(item => getDateParts(item.date)?.day === day)
+        .sort((a,b)=>a.id-b.id);
+
+      if (dayItems.length === 0) {
+        rows.push({day,item:null});
+      } else {
+        dayItems.forEach(item=>rows.push({day,item}));
+      }
+    }
+
+    return rows;
+  },[monthExpenses,year,month]);
+
   const totals = useMemo(()=>{
     let equipment=0, driversTotal=0, general=0;
     monthExpenses.forEach(item=>{
@@ -278,14 +297,14 @@ export function ExpensesPage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return doc;
     const perPage = 15;
-    const pages = Math.max(1,Math.ceil(monthExpenses.length/perPage));
+    const pages = Math.max(1,Math.ceil(monthlyRows.length/perPage));
 
     for (let page=0; page<pages; page++) {
       if (page>0) doc.addPage();
       ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.fillStyle='#071827'; ctx.fillRect(0,0,canvas.width,190);
       ctx.direction='rtl'; ctx.textAlign='right';
-      ctx.fillStyle='#f59e0b'; ctx.font='bold 42px Arial'; ctx.fillText('BAAKR PRO',1510,60);
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 42px Arial'; ctx.fillText('BAKR PRO',1510,60);
       ctx.fillStyle='#fff'; ctx.font='bold 46px Arial'; ctx.fillText('كشف حساب المصاريف الشهري',1510,120);
       ctx.fillStyle='#cbd5e1'; ctx.font='28px Arial'; ctx.fillText(`${monthNames[month]} ${year}`,1510,165);
 
@@ -303,44 +322,80 @@ export function ExpensesPage() {
       ctx.fillStyle='#0f172a'; ctx.font='bold 21px Arial';
       columns.forEach(([x,t])=>ctx.fillText(String(t),Number(x),headerY));
 
-      const rows = monthExpenses.slice(page*perPage,page*perPage+perPage);
-      rows.forEach((item,i)=>{
+      const rows = monthlyRows.slice(page*perPage,page*perPage+perPage);
+      rows.forEach((row,i)=>{
+        const item = row.item;
         const y=headerY+55+i*rowH;
         ctx.strokeStyle='#d9e1ea'; ctx.beginPath(); ctx.moveTo(50,y+13); ctx.lineTo(1550,y+13); ctx.stroke();
         ctx.fillStyle='#111827'; ctx.font='20px Arial';
-        ctx.fillText(item.date,1510,y);
-        ctx.fillText(item.category,1290,y);
-        ctx.fillText(money(item.amount),1050,y);
-        ctx.fillText(linkedLabel(item).slice(0,26),855,y);
-        ctx.fillText(item.paymentMethod || '—',560,y);
-        ctx.fillText((item.notes || '—').slice(0,35),390,y);
+        ctx.fillText(`${String(row.day).padStart(2,'0')} / ${String(month+1).padStart(2,'0')} / ${year}`,1510,y);
+        ctx.fillText(item?.category || '—',1290,y);
+        ctx.fillText(item ? money(item.amount) : '—',1050,y);
+        ctx.fillText(item ? linkedLabel(item).slice(0,26) : '—',855,y);
+        ctx.fillText(item?.paymentMethod || '—',560,y);
+        ctx.fillText((item?.notes || '—').slice(0,35),390,y);
       });
 
       ctx.textAlign='center'; ctx.fillStyle='#64748b'; ctx.font='18px Arial';
-      ctx.fillText(`تم إعداد هذا الكشف بواسطة BAAKR PRO • صفحة ${page+1} من ${pages}`,800,1085);
+      ctx.fillText(`تم إعداد هذا الكشف بواسطة BAKR PRO • صفحة ${page+1} من ${pages}`,800,1085);
       doc.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',0,0,W,H);
     }
     return doc;
   }
 
-  function exportPdf() {
-    makePdf().save(`BAAKR-PRO-Expenses-${year}-${String(month+1).padStart(2,'0')}.pdf`);
+  function pdfFileName() {
+    return `BAKR-PRO-Expenses-${year}-${String(month+1).padStart(2,'0')}.pdf`;
+  }
+
+  function downloadBlob(blob:Blob, fileName:string) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+
+  async function exportPdf() {
+    try {
+      const doc = makePdf();
+      const blob = doc.output('blob');
+      downloadBlob(blob,pdfFileName());
+    } catch (error) {
+      console.error('PDF export error:',error);
+      alert('تعذر حفظ PDF. جرّب زر المشاركة لإرسال الملف مباشرة.');
+    }
   }
 
   async function sharePdf() {
-    const doc = makePdf();
-    const blob = doc.output('blob');
-    const file = new File([blob],`BAAKR-PRO-Expenses-${year}-${String(month+1).padStart(2,'0')}.pdf`,{type:'application/pdf'});
     try {
-      if (navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))) {
-        await navigator.share({
+      const doc = makePdf();
+      const blob = doc.output('blob');
+      const file = new File([blob],pdfFileName(),{type:'application/pdf'});
+
+      if (navigator.share) {
+        const shareData:any = {
           title:'كشف حساب المصاريف',
           text:`كشف مصاريف ${monthNames[month]} ${year} - الإجمالي ${money(totals.total)}`,
-          files:[file]
-        });
-      } else exportPdf();
-    } catch (e:any) {
-      if (e?.name !== 'AbortError') exportPdf();
+          files:[file],
+        };
+
+        if (!navigator.canShare || navigator.canShare({files:[file]})) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+
+      downloadBlob(blob,pdfFileName());
+      alert('جهازك لا يدعم مشاركة ملف PDF مباشرة، لذلك تم حفظ الملف أولاً.');
+    } catch (error:any) {
+      if (error?.name === 'AbortError') return;
+      console.error('PDF share error:',error);
+      alert('تعذرت المشاركة. سيتم محاولة حفظ ملف PDF.');
+      await exportPdf();
     }
   }
 
@@ -479,7 +534,7 @@ export function ExpensesPage() {
           <div className="flex items-end justify-between mb-3 gap-3">
             <div>
               <h2 className="text-[16px] font-black text-white">جدول المصاريف لشهر {monthNames[month]}</h2>
-              <p className="text-[9px] text-slate-500 mt-1">{totals.count} عملية مسجلة</p>
+              <p className="text-[9px] text-slate-500 mt-1">الشهر كامل • {new Date(year, month + 1, 0).getDate()} يوم • {totals.count} عملية مسجلة</p>
             </div>
             <div className="relative flex-1 max-w-[180px]">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"/>
@@ -495,22 +550,22 @@ export function ExpensesPage() {
                 <th className="p-3">الملاحظات</th><th className="p-3">الإيصال</th><th className="p-3">الإجراءات</th>
               </tr></thead>
               <tbody>
-                {monthExpenses.length===0 ? <tr><td colSpan={9} className="p-10 text-center text-xs text-slate-500">لا توجد مصاريف مسجلة لهذا الشهر</td></tr> :
-                monthExpenses.map((item,index)=>{
-                  const Icon=categoryIcon(item.category);
-                  return <tr key={item.id} className="border-t border-white/5 text-[10px] text-slate-300">
-                    <td className="p-3">{index+1}</td>
-                    <td className="p-3 whitespace-nowrap">{item.date}</td>
-                    <td className="p-3"><div className="flex items-center gap-2"><Icon className="w-4 h-4 text-amber-400"/><span className="font-bold text-white">{item.category}</span></div></td>
-                    <td className="p-3 font-black text-amber-300 whitespace-nowrap">{money(item.amount)}</td>
-                    <td className="p-3 whitespace-nowrap">{linkedLabel(item)}</td>
-                    <td className="p-3">{item.paymentMethod || '—'}</td>
-                    <td className="p-3 max-w-[220px]">{item.notes || '—'}</td>
-                    <td className="p-3">{item.receiptImage ? <button onClick={()=>window.open(item.receiptImage,'_blank')} className="px-2.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20">عرض</button> : '—'}</td>
-                    <td className="p-3"><div className="flex items-center gap-1.5">
+                {monthlyRows.map((row,index)=>{
+                  const item = row.item;
+                  const Icon = item ? categoryIcon(item.category) : Receipt;
+                  return <tr key={item ? `expense-${item.id}` : `day-${row.day}`} className="border-t border-white/5 text-[10px] text-slate-300">
+                    <td className="p-3 font-black text-slate-400">{row.day}</td>
+                    <td className="p-3 whitespace-nowrap">{`${year}-${String(month+1).padStart(2,'0')}-${String(row.day).padStart(2,'0')}`}</td>
+                    <td className="p-3">{item ? <div className="flex items-center gap-2"><Icon className="w-4 h-4 text-amber-400"/><span className="font-bold text-white">{item.category}</span></div> : <span className="text-slate-600">—</span>}</td>
+                    <td className="p-3 font-black text-amber-300 whitespace-nowrap">{item ? money(item.amount) : '—'}</td>
+                    <td className="p-3 whitespace-nowrap">{item ? linkedLabel(item) : '—'}</td>
+                    <td className="p-3">{item?.paymentMethod || '—'}</td>
+                    <td className="p-3 max-w-[220px]">{item?.notes || '—'}</td>
+                    <td className="p-3">{item?.receiptImage ? <button onClick={()=>window.open(item.receiptImage,'_blank')} className="px-2.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20">عرض</button> : '—'}</td>
+                    <td className="p-3">{item ? <div className="flex items-center gap-1.5">
                       <button onClick={()=>editExpense(item)} className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center"><Pencil className="w-4 h-4 text-blue-300"/></button>
                       <button onClick={()=>removeExpense(item.id)} className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center"><Trash2 className="w-4 h-4 text-red-300"/></button>
-                    </div></td>
+                    </div> : <span className="text-slate-700">—</span>}</td>
                   </tr>
                 })}
               </tbody>
@@ -567,4 +622,4 @@ function SummaryCard({label,value,icon:Icon,accent}:{label:string;value:string;i
       <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:`${accent}16`}}><Icon className="w-4 h-4" style={{color:accent}}/></div>
     </div>
   </div>;
-}
+        }
