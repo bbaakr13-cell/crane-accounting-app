@@ -624,8 +624,8 @@ export function MonthlyDetailPage() {
     const tableX = 18;
     const tableY = infoY + infoH + 8;
     const tableWidth = PDF_WIDTH - 36;
-    const headerHeight = 28;
-    const rowHeight = 18.6;
+    const headerHeight = 30;
+    const rowHeight = 21.1;
 
     const columns = [
       { key: 'day', label: '#', ratio: 0.07 },
@@ -702,7 +702,7 @@ export function MonthlyDetailPage() {
     }
 
     // ===== الملخص السفلي فقط =====
-    const summaryY = tableY + headerHeight + 31 * rowHeight + 10;
+    const summaryY = tableY + headerHeight + 31 * rowHeight + 8;
     const sumGap = 9;
     const sumWidth = (PDF_WIDTH - 36 - sumGap * 3) / 4;
     const summaryItems = [
@@ -714,18 +714,18 @@ export function MonthlyDetailPage() {
 
     summaryItems.forEach((item, index) => {
       const x = 18 + index * (sumWidth + sumGap);
-      roundedRect(ctx, x, summaryY, sumWidth, 58, 8);
+      roundedRect(ctx, x, summaryY, sumWidth, 56, 8);
       ctx.fillStyle = item.bg;
       ctx.fill();
       ctx.strokeStyle = `${item.color}55`;
       ctx.lineWidth = 1;
       ctx.stroke();
-      drawArabic(ctx, item.label, x + sumWidth / 2, summaryY + 20, 12.5, TEXT);
-      drawArabic(ctx, item.value, x + sumWidth / 2, summaryY + 42, 15, item.color);
+      drawArabic(ctx, item.label, x + sumWidth / 2, summaryY + 19, 12.5, TEXT);
+      drawArabic(ctx, item.value, x + sumWidth / 2, summaryY + 40, 15, item.color);
     });
 
     // ===== فوتر نحيف كما في النموذج المعتمد =====
-    const footerY = summaryY + 68;
+    const footerY = summaryY + 64;
     ctx.fillStyle = NAVY;
     ctx.fillRect(0, footerY, PDF_WIDTH, PDF_HEIGHT - footerY);
 
