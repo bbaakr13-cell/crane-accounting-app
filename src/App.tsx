@@ -99,10 +99,6 @@ import {
 } from '@/pages/CalculatorPage';
 
 import {
-  MonthlyRentalPage,
-} from '@/pages/MonthlyRentalPage';
-
-import {
   DriversPage,
 } from '@/pages/DriversPage-1';
 
@@ -462,13 +458,6 @@ function App() {
           path="/expenses"
           element={
             <ExpensesPage />
-          }
-        />
-
-        <Route
-          path="/monthly-rental"
-          element={
-            <MonthlyRentalPage />
           }
         />
 
