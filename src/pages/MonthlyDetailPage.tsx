@@ -494,7 +494,7 @@ export function MonthlyDetailPage() {
     const tableX = 18;
     const tableY = infoY + infoH + 8;
     const tableWidth = PDF_WIDTH - 36;
-    const tableHeaderH = 34;
+    const tableHeaderH = 42;
     const rowHeight = 20.2;
 
     const columns = [
@@ -515,14 +515,14 @@ export function MonthlyDetailPage() {
 
     columnRects.forEach((column) => {
       const gradient = ctx.createLinearGradient(column.x, tableY, column.x, tableY + tableHeaderH);
-      gradient.addColorStop(0, '#0c4b93');
+      gradient.addColorStop(0, '#0f5fb7');
       gradient.addColorStop(1, '#063a78');
       ctx.fillStyle = gradient;
       ctx.fillRect(column.x, tableY, column.width, tableHeaderH);
       ctx.strokeStyle = '#ffffff55';
       ctx.lineWidth = 0.7;
       ctx.strokeRect(column.x, tableY, column.width, tableHeaderH);
-      const size = fitFontSize(ctx, column.label, column.width - 8, 13, 9, HACEN_FONT_NAME);
+      const size = fitFontSize(ctx, column.label, column.width - 10, 17, 12, HACEN_FONT_NAME);
       drawArabic(ctx, column.label, column.x + column.width / 2, tableY + tableHeaderH / 2, size, '#ffffff');
     });
 
@@ -738,16 +738,16 @@ export function MonthlyDetailPage() {
           <div style={summaryCard}>صافي الشهر<h2 style={{ color: net >= 0 ? '#3b82f6' : '#ef4444' }}>{net.toLocaleString('en-US')} ر.س</h2></div>
         </div>
 
-        <div style={{ overflowX: 'auto', border: '1px solid #1d2d47', borderRadius: 18 }}>
+        <div style={{ overflowX: 'auto', border: '1px solid #2b5b92', borderRadius: 18, boxShadow: '0 10px 30px rgba(2, 12, 27, 0.18)' }}>
           <table style={{ width: '100%', minWidth: 1050, borderCollapse: 'collapse', textAlign: 'center' }}>
             <thead>
-              <tr style={{ background: '#101b2e' }}>
-                <th>اليوم</th>
-                <th>نوع العمل</th>
-                <th>موقع العمل</th>
-                <th>سعر المشوار</th>
-                <th>مصاريف أخرى</th>
-                <th>المبلغ</th>
+              <tr style={{ background: 'linear-gradient(180deg, #0f5fb7 0%, #063a78 100%)' }}>
+                <th style={{ padding: '15px 10px', fontSize: 16, fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap' }}>اليوم</th>
+                <th style={{ padding: '15px 10px', fontSize: 17, fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap' }}>نوع العمل</th>
+                <th style={{ padding: '15px 10px', fontSize: 17, fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap' }}>موقع العمل</th>
+                <th style={{ padding: '15px 10px', fontSize: 17, fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap' }}>سعر المشوار</th>
+                <th style={{ padding: '15px 10px', fontSize: 17, fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap' }}>مصاريف أخرى</th>
+                <th style={{ padding: '15px 10px', fontSize: 17, fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap' }}>المبلغ</th>
               </tr>
             </thead>
             <tbody>
@@ -755,7 +755,7 @@ export function MonthlyDetailPage() {
                 const linked = getDayExternalExpenses(row.day);
                 const linkedTotal = getDayExternalTotal(row.day);
                 return (
-                  <tr key={row.day} style={{ borderTop: '1px solid #1d2d47' }}>
+                  <tr key={row.day} style={{ borderTop: '1px solid #1d2d47', background: row.day % 2 === 0 ? 'rgba(30, 64, 175, 0.05)' : 'transparent' }}>
                     <td>{row.day}</td>
                     <td><input value={row.workType} onChange={(e) => updateTextRow(row.day, 'workType', e.target.value)} style={inputStyle} /></td>
                     <td><input value={row.tripType} onChange={(e) => updateTextRow(row.day, 'tripType', e.target.value)} style={inputStyle} /></td>
