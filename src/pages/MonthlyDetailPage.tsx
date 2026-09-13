@@ -1,32 +1,14 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+// Updated MonthlyDetailPage.tsx
+// NOTE: Replace your current file with this one.
 
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-
-import {
-  Download,
-  Share2,
-  MessageCircle,
-} from 'lucide-react';
-
+import { Download, Share2, MessageCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
-
-import {
-  Filesystem,
-  Directory,
-} from '@capacitor/filesystem';
-
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-
 import { AppLayout } from '@/components/layout/AppLayout';
-
-import {
-  fetchEquipment,
-  type Equipment,
-} from '@/lib/equipment';
+import { fetchEquipment, type Equipment } from '@/lib/equipment';
 
 type DayRow = {
   day: number;
@@ -54,41 +36,22 @@ type ExternalExpenseRecord = {
   updatedAt: string;
 };
 
-const EXPENSE_STORAGE_KEY =
-  'crane_accounting_driver_equipment_expenses_v1';
-
+const EXPENSE_STORAGE_KEY = 'crane_accounting_driver_equipment_expenses_v1';
 const HACEN_FONT_NAME = 'HacenEgypt';
 const HACEN_FONT_URL = '/hacen-egypt.ttf';
-
 const PDF_WIDTH = 794;
 const PDF_HEIGHT = 1123;
-
-// دقة عالية جداً للحفظ والطباعة
 const PDF_SCALE = 4;
 
 const monthNames = [
-  'يناير',
-  'فبراير',
-  'مارس',
-  'أبريل',
-  'مايو',
-  'يونيو',
-  'يوليو',
-  'أغسطس',
-  'سبتمبر',
-  'أكتوبر',
-  'نوفمبر',
-  'ديسمبر',
+  'يناير','فبراير','مارس','أبريل','مايو','يونيو',
+  'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر',
 ];
 
 function normalizeArabicNumbers(value: string) {
   return value
-    .replace(/[٠-٩]/g, (digit) =>
-      String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
-    )
-    .replace(/[۰-۹]/g, (digit) =>
-      String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))
-    )
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
     .replace(/٬/g, '')
     .replace(/,/g, '');
 }
@@ -105,32 +68,15 @@ function formatEquipmentName(value: string) {
 
 function getDateParts(dateValue: string) {
   const parts = String(dateValue || '').split('-');
-
   if (parts.length < 3) return null;
-
   const year = Number(parts[0]);
   const month = Number(parts[1]);
   const day = Number(parts[2]);
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day)
-  ) {
-    return null;
-  }
-
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
   return { year, month, day };
 }
 
-function roundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number
-) {
+function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   const r = Math.min(radius, width / 2, height / 2);
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -145,15 +91,7 @@ function roundedRect(
   ctx.closePath();
 }
 
-function fitFontSize(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  startSize: number,
-  minSize: number,
-  family: string,
-  weight = 400
-) {
+function fitFontSize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, startSize: number, minSize: number, family: string, weight = 400) {
   let size = startSize;
   while (size > minSize) {
     ctx.font = `${weight} ${size}px "${family}"`;
@@ -184,13 +122,9 @@ export function MonthlyDetailPage() {
         const list = await fetchEquipment();
         if (cancelled) return;
         setEquipmentList(list);
-        if (id && list.some((item) => String(item.id) === String(id))) {
-          setEquipmentId(String(id));
-        } else if (list.length > 0) {
-          setEquipmentId(String(list[0].id));
-        } else {
-          setEquipmentId('');
-        }
+        if (id && list.some((item) => String(item.id) === String(id))) setEquipmentId(String(id));
+        else if (list.length > 0) setEquipmentId(String(list[0].id));
+        else setEquipmentId('');
       } catch (error) {
         console.error('تعذر تحميل المعدات:', error);
         if (!cancelled) {
@@ -202,9 +136,7 @@ export function MonthlyDetailPage() {
       }
     }
     loadEquipment();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [id]);
 
   const selectedEquipment = useMemo(() => {
@@ -214,9 +146,7 @@ export function MonthlyDetailPage() {
   const equipmentName = selectedEquipment?.name || 'لا توجد معدة محددة';
   const displayEquipmentName = formatEquipmentName(equipmentName);
 
-  const daysInMonth = useMemo(() => {
-    return new Date(year, month + 1, 0).getDate();
-  }, [year, month]);
+  const daysInMonth = useMemo(() => new Date(year, month + 1, 0).getDate(), [year, month]);
 
   const storageKey = equipmentId
     ? `monthly-ledger-v3-${equipmentId}-${year}-${month}`
@@ -339,31 +269,11 @@ export function MonthlyDetailPage() {
     return Array.from(new Set(records.map((expense) => expense.category).filter(Boolean))).join(' + ');
   }
 
-  function getDayExternalNotes(day: number) {
-    const records = getDayExternalExpenses(day);
-    return records.map((expense) => {
-      const parts = [
-        expense.driverName ? `السائق: ${expense.driverName}` : '',
-        expense.location ? `الموقع: ${expense.location}` : '',
-        expense.notes || '',
-      ].filter(Boolean);
-      return parts.join(' - ');
-    }).filter(Boolean).join(' | ');
-  }
-
-  function updateTextRow(
-    day: number,
-    field: 'workType' | 'tripType' | 'expenseType' | 'notes',
-    value: string
-  ) {
+  function updateTextRow(day: number, field: 'workType' | 'tripType' | 'expenseType' | 'notes', value: string) {
     setRows((oldRows) => oldRows.map((row) => row.day === day ? { ...row, [field]: value } : row));
   }
 
-  function updateNumberRow(
-    day: number,
-    field: 'tripPrice' | 'expenseAmount',
-    value: string
-  ) {
+  function updateNumberRow(day: number, field: 'tripPrice' | 'expenseAmount', value: string) {
     const normalized = normalizeArabicNumbers(value);
     const numberValue = normalized.trim() === '' ? 0 : Number(normalized);
     setRows((oldRows) => oldRows.map((row) => row.day === day ? {
@@ -436,7 +346,6 @@ export function MonthlyDetailPage() {
       await document.fonts.load(`400 30px "${HACEN_FONT_NAME}"`);
       if (document.fonts.check(`400 30px "${HACEN_FONT_NAME}"`)) return;
     } catch {}
-
     const response = await fetch(HACEN_FONT_URL, { cache: 'no-store' });
     if (!response.ok) throw new Error('تعذر تحميل خط Hacen Egypt');
     const buffer = await response.arrayBuffer();
@@ -460,14 +369,7 @@ export function MonthlyDetailPage() {
     ctx.textBaseline = 'middle';
   }
 
-  function drawArabic(
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    x: number,
-    y: number,
-    size: number,
-    color = '#111827'
-  ) {
+  function drawArabic(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color = '#111827') {
     const value = String(text || '');
     setArabicFont(ctx, size);
     const metrics = ctx.measureText(value);
@@ -479,39 +381,22 @@ export function MonthlyDetailPage() {
     ctx.fillText(value, x, baselineY);
   }
 
-  function drawEnglish(
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    x: number,
-    y: number,
-    size: number,
-    color = '#111827',
-    weight = 900
-  ) {
+  function drawEnglish(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color = '#111827', weight = 900) {
     setEnglishFont(ctx, size, weight);
     ctx.fillStyle = color;
     ctx.fillText(text, x, y);
   }
 
-  function drawInfoBox(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    label: string,
-    value: string
-  ) {
-    roundedRect(ctx, x, y, width, height, 9);
+  function drawInfoBox(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, label: string, value: string) {
+    roundedRect(ctx, x, y, width, height, 8);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
-    ctx.strokeStyle = '#d7e1eb';
+    ctx.strokeStyle = '#c9def2';
     ctx.lineWidth = 1;
     ctx.stroke();
-
-    drawArabic(ctx, label, x + width / 2, y + 19, 20, '#0b3b82');
-    const valueSize = fitFontSize(ctx, value, width - 14, 24, 14, HACEN_FONT_NAME);
-    drawArabic(ctx, value, x + width / 2, y + 46, valueSize, '#111827');
+    drawArabic(ctx, label, x + width / 2, y + 16, 13, '#0b3b82');
+    const valueSize = fitFontSize(ctx, value, width - 14, 18, 11, HACEN_FONT_NAME);
+    drawArabic(ctx, value, x + width / 2, y + 38, valueSize, '#111827');
   }
 
   function getPdfRow(day: number): DayRow {
@@ -521,43 +406,12 @@ export function MonthlyDetailPage() {
     };
   }
 
-  function drawMoneyCard(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    title: string,
-    value: string,
-    accent: string,
-    bg: string
-  ) {
-    roundedRect(ctx, x, y, width, 72, 11);
-    ctx.fillStyle = bg;
-    ctx.fill();
-    ctx.strokeStyle = `${accent}55`;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    roundedRect(ctx, x + 10, y + 13, 44, 44, 10);
-    ctx.fillStyle = `${accent}1f`;
-    ctx.fill();
-
-    ctx.fillStyle = accent;
-    ctx.beginPath();
-    ctx.arc(x + 32, y + 35, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    drawArabic(ctx, title, x + width - 12, y + 23, 17, '#102f61');
-    drawArabic(ctx, value, x + width - 12, y + 51, 23, accent);
-  }
-
   async function createPdfCanvas() {
     await ensureHacenFont();
 
     const canvas = document.createElement('canvas');
     canvas.width = PDF_WIDTH * PDF_SCALE;
     canvas.height = PDF_HEIGHT * PDF_SCALE;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('تعذر إنشاء Canvas');
 
@@ -565,91 +419,91 @@ export function MonthlyDetailPage() {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    const NAVY = '#061827';
-    const NAVY_2 = '#0b2742';
-    const GOLD = '#f4b62c';
-    const BLUE = '#0b3b82';
-    const GREEN = '#15803d';
-    const RED = '#dc2626';
-    const BORDER = '#cfe0ef';
+    const NAVY = '#082c5f';
+    const NAVY_DARK = '#041b3d';
+    const BLUE = '#0d6efd';
+    const CYAN = '#38bdf8';
+    const GREEN = '#129c70';
+    const RED = '#d32f2f';
+    const BORDER = '#bcd4ea';
     const TEXT = '#0f172a';
 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, PDF_WIDTH, PDF_HEIGHT);
 
-    // ===== الهيدر المعتمد بالصورة =====
-    // نحافظ على نفس صورة الهيدر، ونصغّر ارتفاعها قليلاً لزيادة مساحة الجدول.
-    const heroH = 145;
-    try {
-      const headerImage = new Image();
-      headerImage.src = '/crane-header.png';
-      await new Promise<void>((resolve, reject) => {
-        headerImage.onload = () => resolve();
-        headerImage.onerror = () => reject(new Error('تعذر تحميل صورة الهيدر'));
-      });
-      ctx.drawImage(headerImage, 0, 0, PDF_WIDTH, heroH);
-    } catch (error) {
-      console.warn('تعذر تحميل crane-header.png، تم استخدام خلفية بديلة', error);
-      ctx.fillStyle = NAVY;
-      ctx.fillRect(0, 0, PDF_WIDTH, heroH);
-      drawEnglish(ctx, 'BAKR PRO', PDF_WIDTH / 2, 40, 31, GOLD, 900);
-      drawArabic(ctx, 'إدارة حسابات الكرينات', PDF_WIDTH / 2, 72, 20.5, '#ffffff');
-      drawEnglish(ctx, 'CRANE ACCOUNTING MANAGEMENT', PDF_WIDTH / 2, 99, 10.5, '#dbe7f2', 700);
-    }
+    // Header
+    const headerH = 146;
+    const headerGradient = ctx.createLinearGradient(0, 0, PDF_WIDTH, 0);
+    headerGradient.addColorStop(0, '#f9fcff');
+    headerGradient.addColorStop(0.56, '#eef7ff');
+    headerGradient.addColorStop(1, '#082c5f');
+    ctx.fillStyle = headerGradient;
+    ctx.fillRect(0, 0, PDF_WIDTH, headerH);
 
-    // ===== شريط الحساب الشهري =====
-    // شريط أزرق فقط: بدون شريط أبيض وبدون زخارف ذهبية زائدة.
-    const titleY = heroH + 5;
-    const titleH = 34;
-    roundedRect(ctx, 18, titleY, PDF_WIDTH - 36, titleH, 7);
-    ctx.fillStyle = '#0b3761';
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = BLUE;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(170, 0); ctx.lineTo(115, 146); ctx.lineTo(0, 146); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = CYAN;
+    ctx.beginPath();
+    ctx.moveTo(520, 0); ctx.lineTo(625, 0); ctx.lineTo(560, 146); ctx.lineTo(455, 146); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    drawEnglish(ctx, 'BAKR PRO', 170, 43, 36, NAVY_DARK, 900);
+    drawEnglish(ctx, 'HEAVY EQUIPMENT MANAGEMENT', 170, 72, 13, NAVY, 700);
+    drawArabic(ctx, 'إدارة معداتك .. نحو نجاح أكبر', 170, 100, 17, NAVY);
+
+    drawArabic(ctx, 'دقة في الحسابات', 590, 31, 18, '#ffffff');
+    drawArabic(ctx, 'سهولة في الإدارة', 590, 59, 18, '#ffffff');
+    drawArabic(ctx, 'نمو في أعمالك', 590, 87, 18, '#ffffff');
+    drawEnglish(ctx, 'PLAN  •  TRACK  •  MANAGE  •  GROW', 592, 118, 10, '#d8ebff', 700);
+
+    // Title
+    const titleY = headerH + 6;
+    const titleH = 54;
+    roundedRect(ctx, 18, titleY, PDF_WIDTH - 36, titleH, 12);
+    const titleGradient = ctx.createLinearGradient(18, titleY, PDF_WIDTH - 18, titleY);
+    titleGradient.addColorStop(0, '#0c4b93');
+    titleGradient.addColorStop(1, '#062c5a');
+    ctx.fillStyle = titleGradient;
     ctx.fill();
 
-    drawArabic(
-      ctx,
-      'ملف الحساب الشهري',
-      PDF_WIDTH / 2 + 48,
-      titleY + titleH / 2,
-      21,
-      '#ffffff'
-    );
+    drawArabic(ctx, 'ملف الحساب الشهري', PDF_WIDTH / 2, titleY + 20, 27, '#ffffff');
+    drawEnglish(ctx, 'MONTHLY ACCOUNT STATEMENT', PDF_WIDTH / 2, titleY + 42, 12, '#dbeafe', 700);
 
-    drawEnglish(
-      ctx,
-      'MONTHLY ACCOUNT SUMMARY',
-      126,
-      titleY + titleH / 2,
-      10.8,
-      '#ffffff',
-      800
-    );
+    roundedRect(ctx, PDF_WIDTH - 180, titleY + 8, 150, 38, 8);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    drawArabic(ctx, 'الشهر', PDF_WIDTH - 145, titleY + 18, 10, NAVY);
+    drawArabic(ctx, monthNames[month], PDF_WIDTH - 145, titleY + 34, 13, TEXT);
+    drawArabic(ctx, 'السنة', PDF_WIDTH - 70, titleY + 18, 10, NAVY);
+    drawEnglish(ctx, String(year), PDF_WIDTH - 70, titleY + 34, 12, TEXT, 800);
 
-    // ===== معلومات الشهر =====
-    const infoY = titleY + titleH + 7;
-    const infoGap = 7;
+    // Info
+    const infoY = titleY + titleH + 8;
+    const infoGap = 8;
     const infoWidth = (PDF_WIDTH - 36 - infoGap * 3) / 4;
-    const infoH = 46;
+    const infoH = 50;
+    drawInfoBox(ctx, 18, infoY, infoWidth, infoH, 'المعدة / الآلة', displayEquipmentName);
+    drawInfoBox(ctx, 18 + (infoWidth + infoGap), infoY, infoWidth, infoH, 'موقع العمل الرئيسي', 'خميس مشيط - أبها');
+    drawInfoBox(ctx, 18 + (infoWidth + infoGap) * 2, infoY, infoWidth, infoH, 'السائق / المشغل', '');
+    drawInfoBox(ctx, 18 + (infoWidth + infoGap) * 3, infoY, infoWidth, infoH, 'ملاحظات عامة', '');
 
-    drawInfoBox(ctx, 18, infoY, infoWidth, infoH, 'المعدة', displayEquipmentName);
-    drawInfoBox(ctx, 18 + (infoWidth + infoGap), infoY, infoWidth, infoH, 'الشهر', monthNames[month]);
-    drawInfoBox(ctx, 18 + (infoWidth + infoGap) * 2, infoY, infoWidth, infoH, 'السنة', String(year));
-    drawInfoBox(ctx, 18 + (infoWidth + infoGap) * 3, infoY, infoWidth, infoH, 'الموقع', 'خميس مشيط - أبها');
-
-    // ===== الجدول الكبير 31 يوم =====
+    // Table RTL: اليوم | نوع العمل | موقع العمل | سعر المشوار | مصاريف أخرى | المبلغ
     const tableX = 18;
-    const tableY = infoY + infoH + 7;
+    const tableY = infoY + infoH + 8;
     const tableWidth = PDF_WIDTH - 36;
-    const headerHeight = 29;
-    const rowHeight = 21.0;
+    const tableHeaderH = 34;
+    const rowHeight = 20.2;
 
     const columns = [
-      { key: 'day', label: '#', ratio: 0.07 },
-      { key: 'date', label: 'التاريخ', ratio: 0.16 },
-      { key: 'work', label: 'نوع العمل', ratio: 0.18 },
-      { key: 'location', label: 'موقع العمل', ratio: 0.18 },
-      { key: 'trip', label: 'سعر المشوار', ratio: 0.15 },
-      { key: 'expense', label: 'بيان الصرف', ratio: 0.15 },
-      { key: 'amount', label: 'المبلغ', ratio: 0.11 },
+      { key: 'day', label: 'اليوم', ratio: 0.07 },
+      { key: 'work', label: 'نوع العمل', ratio: 0.20 },
+      { key: 'location', label: 'موقع العمل', ratio: 0.20 },
+      { key: 'trip', label: 'سعر المشوار', ratio: 0.18 },
+      { key: 'expense', label: 'مصاريف أخرى', ratio: 0.20 },
+      { key: 'amount', label: 'المبلغ', ratio: 0.15 },
     ];
 
     let cursorX = tableX + tableWidth;
@@ -660,190 +514,115 @@ export function MonthlyDetailPage() {
     });
 
     columnRects.forEach((column) => {
-      ctx.fillStyle = NAVY;
-      ctx.fillRect(column.x, tableY, column.width, headerHeight);
-      ctx.strokeStyle = '#ffffff33';
+      const gradient = ctx.createLinearGradient(column.x, tableY, column.x, tableY + tableHeaderH);
+      gradient.addColorStop(0, '#0c4b93');
+      gradient.addColorStop(1, '#063a78');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(column.x, tableY, column.width, tableHeaderH);
+      ctx.strokeStyle = '#ffffff55';
       ctx.lineWidth = 0.7;
-      ctx.strokeRect(column.x, tableY, column.width, headerHeight);
-      const size = fitFontSize(ctx, column.label, column.width - 6, 12.5, 9, HACEN_FONT_NAME);
-      drawArabic(ctx, column.label, column.x + column.width / 2, tableY + headerHeight / 2, size, '#ffffff');
+      ctx.strokeRect(column.x, tableY, column.width, tableHeaderH);
+      const size = fitFontSize(ctx, column.label, column.width - 8, 13, 9, HACEN_FONT_NAME);
+      drawArabic(ctx, column.label, column.x + column.width / 2, tableY + tableHeaderH / 2, size, '#ffffff');
     });
 
     for (let day = 1; day <= 31; day += 1) {
       const row = getPdfRow(day);
-      const rowY = tableY + headerHeight + (day - 1) * rowHeight;
+      const rowY = tableY + tableHeaderH + (day - 1) * rowHeight;
       const linkedTotal = getDayExternalTotal(day);
       const linkedCategories = getDayExternalCategories(day);
-
-      const combinedExpense = (Number(row.expenseAmount) || 0) + linkedTotal;
-      const expenseDescription = [row.expenseType, linkedCategories].filter(Boolean).join(' + ');
-      const dateText = day <= daysInMonth
-        ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-        : '';
+      const manualExpense = Number(row.expenseAmount) || 0;
+      const combinedExpense = manualExpense + linkedTotal;
+      const expenseText = [row.expenseType, linkedCategories].filter(Boolean).join(' + ');
 
       const values: Record<string, string> = {
         day: String(day),
-        date: dateText,
         work: row.workType,
         location: row.tripType,
         trip: row.tripPrice > 0 ? row.tripPrice.toLocaleString('en-US') : '',
-        expense: expenseDescription,
+        expense: expenseText,
         amount: combinedExpense > 0 ? combinedExpense.toLocaleString('en-US') : '',
       };
 
       columnRects.forEach((column) => {
-        ctx.fillStyle = day % 2 === 0 ? '#edf7ff' : '#ffffff';
+        ctx.fillStyle = day % 2 === 0 ? '#eef7ff' : '#ffffff';
         ctx.fillRect(column.x, rowY, column.width, rowHeight);
         ctx.strokeStyle = BORDER;
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 0.55;
         ctx.strokeRect(column.x, rowY, column.width, rowHeight);
 
         const text = values[column.key] || '';
-        if (!text) {
-          drawArabic(ctx, '—', column.x + column.width / 2, rowY + rowHeight / 2, 7.2, '#94a3b8');
-          return;
-        }
+        if (!text) return;
 
-        const size = fitFontSize(ctx, text, column.width - 6, 9.3, 6.1, HACEN_FONT_NAME);
-        drawArabic(
-          ctx,
-          text,
-          column.x + column.width / 2,
-          rowY + rowHeight / 2,
-          size,
-          column.key === 'amount' && combinedExpense > 0 ? RED : TEXT
-        );
+        const size = fitFontSize(ctx, text, column.width - 6, 9, 6.1, HACEN_FONT_NAME);
+        let color = TEXT;
+        if (column.key === 'amount' && combinedExpense > 0) color = RED;
+        if (column.key === 'trip' && row.tripPrice > 0) color = GREEN;
+
+        drawArabic(ctx, text, column.x + column.width / 2, rowY + rowHeight / 2, size, color);
       });
     }
 
-    // ===== الملخص السفلي فقط =====
-    const summaryY = tableY + headerHeight + 31 * rowHeight + 8;
-    const sumGap = 9;
+    // Summary
+    const summaryY = tableY + tableHeaderH + 31 * rowHeight + 8;
+    const sumGap = 8;
     const sumWidth = (PDF_WIDTH - 36 - sumGap * 3) / 4;
     const summaryItems = [
-      { label: 'إجمالي الدخل', value: `${totals.income.toLocaleString('en-US')} ر.س`, color: GREEN, bg: '#effcf5' },
-      { label: 'إجمالي المصروفات', value: `${totalExpense.toLocaleString('en-US')} ر.س`, color: RED, bg: '#fff4f4' },
-      { label: 'صافي الشهر', value: `${net.toLocaleString('en-US')} ر.س`, color: net >= 0 ? BLUE : RED, bg: '#eef6ff' },
-      { label: 'عدد المشاوير', value: String(totals.trips), color: NAVY_2, bg: '#fff9e9' },
+      { label: 'إجمالي الدخل', value: `${totals.income.toLocaleString('en-US')} ر.س`, color: GREEN, bg: '#effcf7' },
+      { label: 'إجمالي المصروفات', value: `${totalExpense.toLocaleString('en-US')} ر.س`, color: RED, bg: '#fff2f2' },
+      { label: 'عدد المشاوير', value: String(totals.trips), color: BLUE, bg: '#eef6ff' },
+      { label: 'صافي الشهر', value: `${net.toLocaleString('en-US')} ر.س`, color: net >= 0 ? NAVY : RED, bg: '#f1f7ff' },
     ];
 
     summaryItems.forEach((item, index) => {
       const x = 18 + index * (sumWidth + sumGap);
-      roundedRect(ctx, x, summaryY, sumWidth, 56, 8);
+      roundedRect(ctx, x, summaryY, sumWidth, 58, 10);
       ctx.fillStyle = item.bg;
       ctx.fill();
-      ctx.strokeStyle = `${item.color}44`;
-      ctx.lineWidth = 0.9;
+      ctx.strokeStyle = `${item.color}55`;
+      ctx.lineWidth = 1;
       ctx.stroke();
-      drawArabic(ctx, item.label, x + sumWidth / 2, summaryY + 18, 12, TEXT);
-      drawArabic(ctx, item.value, x + sumWidth / 2, summaryY + 40, 15, item.color);
+      drawArabic(ctx, item.label, x + sumWidth / 2, summaryY + 19, 12, '#123761');
+      drawArabic(ctx, item.value, x + sumWidth / 2, summaryY + 42, 15, item.color);
     });
 
-    // ===== الفوتر: صغير ونظيف مثل التصميم المعتمد =====
-    const footerY = summaryY + 63;
+    // Footer
+    const footerY = summaryY + 66;
     const footerH = PDF_HEIGHT - footerY;
-
-    ctx.fillStyle = NAVY;
+    const footerGradient = ctx.createLinearGradient(0, footerY, PDF_WIDTH, footerY);
+    footerGradient.addColorStop(0, '#0a4d91');
+    footerGradient.addColorStop(1, '#041f48');
+    ctx.fillStyle = footerGradient;
     ctx.fillRect(0, footerY, PDF_WIDTH, footerH);
 
-    // خط ذهبي رفيع فقط أعلى الفوتر
-    ctx.fillStyle = GOLD;
-    ctx.fillRect(0, footerY, PDF_WIDTH, 2);
-
-    // يسار: هوية المصمم بالإنجليزية بخط واقعي
-    ctx.save();
-    ctx.direction = 'ltr';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    ctx.font = 'italic 23px Georgia, serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('Bakr Almasbhi', 46, footerY + 30);
-
-    ctx.font = '700 7px Arial, sans-serif';
-    ctx.fillStyle = '#dbe7f2';
-    ctx.fillText('CRANE ACCOUNTING MANAGEMENT', 46, footerY + 49);
-    ctx.restore();
-
-    // الوسط: رقم صغير + خط أصفر + الموقع صغير
-    drawEnglish(ctx, '0558995962', PDF_WIDTH / 2, footerY + 24, 12.5, '#ffffff', 800);
-
-    ctx.fillStyle = GOLD;
-    ctx.fillRect(PDF_WIDTH / 2 - 92, footerY + 36, 184, 1.2);
-
-    drawEnglish(
-      ctx,
-      'KHAMIS MUSHAIT, SAUDI ARABIA',
-      PDF_WIDTH / 2,
-      footerY + 49,
-      7.5,
-      '#dbe7f2',
-      700
-    );
-
-    // يمين: حقوق التصميم
-    drawEnglish(ctx, 'DESIGNED BY', PDF_WIDTH - 90, footerY + 18, 7, '#dbe7f2', 700);
-    drawEnglish(ctx, 'BAKR ALMASBHI', PDF_WIDTH - 90, footerY + 36, 11.5, GOLD, 900);
-    drawEnglish(
-      ctx,
-      '© 2026 — All Rights Reserved.',
-      PDF_WIDTH - 90,
-      footerY + 52,
-      6.5,
-      '#dbe7f2',
-      600
-    );
+    drawArabic(ctx, 'خميس مشيط - أبها', 110, footerY + 24, 12, '#ffffff');
+    drawEnglish(ctx, '0558995962', PDF_WIDTH / 2, footerY + 26, 18, '#ffffff', 900);
+    drawEnglish(ctx, 'BAKR ALMASBHI', PDF_WIDTH - 115, footerY + 20, 13, '#ffffff', 800);
+    drawEnglish(ctx, '© 2026 — All Rights Reserved.', PDF_WIDTH - 115, footerY + 40, 8, '#cfe6ff', 700);
+    drawArabic(ctx, 'معك في كل مشروع', PDF_WIDTH / 2, footerY + 52, 11, '#dbeafe');
 
     return canvas;
   }
 
   async function createPdfBlob() {
     const canvas = await createPdfCanvas();
-
-    // PNG للحفاظ على حدة النصوص والجداول
     const imageData = canvas.toDataURL('image/png');
-
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-      compress: false,
-    });
-
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: false });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-
-    // بدون ضغط سريع حتى تبقى الجودة عالية جداً
-    pdf.addImage(
-      imageData,
-      'PNG',
-      0,
-      0,
-      pageWidth,
-      pageHeight,
-      undefined,
-      'NONE'
-    );
-
+    pdf.addImage(imageData, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
     return pdf.output('blob');
   }
 
   async function createPdfFile() {
     const blob = await createPdfBlob();
     const base64 = await blobToBase64(blob);
-    const result = await Filesystem.writeFile({
-      path: getFileName(),
-      data: base64,
-      directory: Directory.Cache,
-    });
+    const result = await Filesystem.writeFile({ path: getFileName(), data: base64, directory: Directory.Cache });
     return result.uri;
   }
 
   async function handleSavePdf() {
-    if (!equipmentId) {
-      alert('اختر المعدة أولاً');
-      return;
-    }
+    if (!equipmentId) { alert('اختر المعدة أولاً'); return; }
     try {
       setCreatingPdf(true);
       const fileUri = await createPdfFile();
@@ -862,10 +641,7 @@ export function MonthlyDetailPage() {
   }
 
   async function handleShare() {
-    if (!equipmentId) {
-      alert('اختر المعدة أولاً');
-      return;
-    }
+    if (!equipmentId) { alert('اختر المعدة أولاً'); return; }
     try {
       setCreatingPdf(true);
       const fileUri = await createPdfFile();
@@ -890,11 +666,7 @@ export function MonthlyDetailPage() {
   }
 
   function handleWhatsApp() {
-    if (!equipmentId) {
-      alert('اختر المعدة أولاً');
-      return;
-    }
-
+    if (!equipmentId) { alert('اختر المعدة أولاً'); return; }
     const text =
       `📊 BAKR PRO\n` +
       `الحساب الشهري\n\n` +
@@ -906,53 +678,26 @@ export function MonthlyDetailPage() {
       `👷 مصاريف السواقين والمعدات: ${totals.linkedExpense.toLocaleString('en-US')} ر.س\n` +
       `✅ صافي الشهر: ${net.toLocaleString('en-US')} ر.س\n` +
       `📝 أيام مسجلة: ${totals.registeredDays}`;
-
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   }
 
   return (
     <AppLayout>
-      <style>
-        {`
-          @font-face {
-            font-family: '${HACEN_FONT_NAME}';
-            src: url('${HACEN_FONT_URL}') format('truetype');
-            font-style: normal;
-            font-weight: 400;
-            font-display: block;
-          }
-        `}
-      </style>
+      <style>{`
+        @font-face {
+          font-family: '${HACEN_FONT_NAME}';
+          src: url('${HACEN_FONT_URL}') format('truetype');
+          font-style: normal;
+          font-weight: 400;
+          font-display: block;
+        }
+      `}</style>
 
-      <div
-        dir="rtl"
-        style={{
-          padding: 18,
-          paddingBottom: 110,
-          maxWidth: 1100,
-          margin: 'auto',
-          color: '#ffffff',
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 27, fontWeight: 800 }}>
-          الحساب الشهري
-        </h1>
+      <div dir="rtl" style={{ padding: 18, paddingBottom: 110, maxWidth: 1100, margin: 'auto', color: '#ffffff' }}>
+        <h1 style={{ margin: 0, fontSize: 27, fontWeight: 800 }}>الحساب الشهري</h1>
+        <p style={{ color: '#94a3b8', marginTop: 7 }}>سجل أعمال ومشاوير ومصاريف {displayEquipmentName}</p>
 
-        <p style={{ color: '#94a3b8', marginTop: 7 }}>
-          سجل أعمال ومشاوير ومصاريف {displayEquipmentName}
-        </p>
-
-        <div
-          style={{
-            background: '#0b1527',
-            border: '1px solid #1d2d47',
-            borderRadius: 18,
-            padding: 14,
-            marginBottom: 18,
-            display: 'grid',
-            gap: 10,
-          }}
-        >
+        <div style={{ background: '#0b1527', border: '1px solid #1d2d47', borderRadius: 18, padding: 14, marginBottom: 18, display: 'grid', gap: 10 }}>
           <label>
             <small style={{ color: '#94a3b8' }}>المعدة</small>
             <select
@@ -967,9 +712,7 @@ export function MonthlyDetailPage() {
                 <option value="">لا توجد معدات</option>
               ) : (
                 equipmentList.map((item) => (
-                  <option key={item.id} value={String(item.id)}>
-                    {formatEquipmentName(item.name)}
-                  </option>
+                  <option key={item.id} value={String(item.id)}>{formatEquipmentName(item.name)}</option>
                 ))
               )}
             </select>
@@ -977,11 +720,8 @@ export function MonthlyDetailPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <select value={month} onChange={(e) => setMonth(Number(e.target.value))} style={selectStyle}>
-              {monthNames.map((name, index) => (
-                <option key={name} value={index}>{name}</option>
-              ))}
+              {monthNames.map((name, index) => <option key={name} value={index}>{name}</option>)}
             </select>
-
             <select value={year} onChange={(e) => setYear(Number(e.target.value))} style={selectStyle}>
               {Array.from({ length: 7 }, (_, index) => {
                 const y = now.getFullYear() - 2 + index;
@@ -1007,15 +747,13 @@ export function MonthlyDetailPage() {
                 <th>موقع العمل</th>
                 <th>سعر المشوار</th>
                 <th>مصاريف أخرى</th>
-                <th>ملاحظات</th>
+                <th>المبلغ</th>
               </tr>
             </thead>
-
             <tbody>
               {rows.map((row) => {
                 const linked = getDayExternalExpenses(row.day);
                 const linkedTotal = getDayExternalTotal(row.day);
-
                 return (
                   <tr key={row.day} style={{ borderTop: '1px solid #1d2d47' }}>
                     <td>{row.day}</td>
@@ -1024,11 +762,7 @@ export function MonthlyDetailPage() {
                     <td><input type="text" inputMode="decimal" value={row.tripPrice || ''} onChange={(e) => updateNumberRow(row.day, 'tripPrice', e.target.value)} style={inputStyle} /></td>
                     <td>
                       <div style={{ display: 'grid', gap: 6 }}>
-                        <div style={{ display: 'flex', gap: 5 }}>
-                          <input value={row.expenseType} onChange={(e) => updateTextRow(row.day, 'expenseType', e.target.value)} placeholder="مصروف يدوي" style={inputStyle} />
-                          <input type="text" inputMode="decimal" value={row.expenseAmount || ''} onChange={(e) => updateNumberRow(row.day, 'expenseAmount', e.target.value)} style={{ ...inputStyle, minWidth: 80 }} />
-                        </div>
-
+                        <input value={row.expenseType} onChange={(e) => updateTextRow(row.day, 'expenseType', e.target.value)} placeholder="مثال: ديزل" style={inputStyle} />
                         {linked.length > 0 && (
                           <div style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '7px 8px', textAlign: 'right' }}>
                             <div style={{ fontSize: 10, color: '#fca5a5', fontWeight: 800 }}>مصاريف السواقين والمعدات</div>
@@ -1037,14 +771,20 @@ export function MonthlyDetailPage() {
                                 {expense.category || 'مصروف'} — {Number(expense.amount || 0).toLocaleString('en-US')} ر.س
                               </div>
                             ))}
-                            <div style={{ marginTop: 5, fontSize: 11, color: '#fb7185', fontWeight: 900 }}>
-                              الإجمالي: {linkedTotal.toLocaleString('en-US')} ر.س
-                            </div>
                           </div>
                         )}
                       </div>
                     </td>
-                    <td><input value={row.notes} onChange={(e) => updateTextRow(row.day, 'notes', e.target.value)} style={inputStyle} /></td>
+                    <td>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={row.expenseAmount || ''}
+                        onChange={(e) => updateNumberRow(row.day, 'expenseAmount', e.target.value)}
+                        placeholder={linkedTotal > 0 ? `مرتبط: ${linkedTotal.toLocaleString('en-US')}` : '0'}
+                        style={{ ...inputStyle, minWidth: 90 }}
+                      />
+                    </td>
                   </tr>
                 );
               })}
