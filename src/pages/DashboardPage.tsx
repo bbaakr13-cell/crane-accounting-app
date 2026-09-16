@@ -3,16 +3,9 @@ import {
   TrendingDown,
   Wallet,
   Clock,
-  Users,
   Truck,
-  CalendarClock,
-  FileBarChart,
-  FileText,
   Plus,
   Receipt,
-  Settings,
-  Calculator,
-  ShieldCheck,
   Image as ImageIcon,
   ChevronLeft,
   Bot,
@@ -173,6 +166,16 @@ function detectCategory(key: string) {
   }
 
   if (
+    k.includes('partner') ||
+    k.includes('شريك')
+  ) {
+    return {
+      category: 'حساب الشركاء',
+      path: '/partners-account',
+    };
+  }
+
+  if (
     k.includes('equipment') ||
     k.includes('crane') ||
     k.includes('truck') ||
@@ -277,6 +280,7 @@ function buildLocalSearchItems(): SearchResult[] {
               'name',
               'customerName',
               'clientName',
+              'partnerName',
               'driverName',
               'operatorName',
               'equipmentName',
@@ -663,6 +667,15 @@ export function DashboardPage() {
       path: '/monthly',
       tone: 'orange',
     },
+
+    // حساب الشركاء الجديد
+    {
+      label: 'حساب الشركاء',
+      image: '/icons/partners.png',
+      path: '/partners-account',
+      tone: 'blue',
+    },
+
     {
       label: 'التأجير الشهري',
       image: '/icons/monthly-rental.png',
@@ -738,6 +751,7 @@ export function DashboardPage() {
   return (
     <AppLayout>
       <div dir="rtl" className="w-full">
+
         {/* صورة الواجهة */}
         <section className="mb-4">
           <div
@@ -870,15 +884,6 @@ export function DashboardPage() {
                 '0 12px 30px rgba(88,28,135,0.20)',
             }}
           >
-            <div
-              className="absolute -left-8 -top-8 w-28 h-28 rounded-full"
-              style={{
-                background:
-                  'rgba(168,85,247,0.16)',
-                filter: 'blur(8px)',
-              }}
-            />
-
             <div className="relative flex items-center gap-3">
               <div
                 className="w-14 h-14 shrink-0 rounded-[18px] flex items-center justify-center"
@@ -910,9 +915,7 @@ export function DashboardPage() {
                 </p>
               </div>
 
-              <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">
-                <ChevronLeft className="w-5 h-5 text-purple-300" />
-              </div>
+              <ChevronLeft className="w-5 h-5 text-purple-300" />
             </div>
           </button>
         </section>
@@ -932,9 +935,7 @@ export function DashboardPage() {
           <div className="grid grid-cols-2 gap-3">
             <MoneyCard
               label="إجمالي الدخل"
-              value={formatSAR(
-                totals.totalIncome
-              )}
+              value={formatSAR(totals.totalIncome)}
               icon={TrendingUp}
               color="#4ade80"
               bg="rgba(34,197,94,0.10)"
@@ -946,9 +947,7 @@ export function DashboardPage() {
 
             <MoneyCard
               label="إجمالي المصروفات"
-              value={formatSAR(
-                totals.totalExpenses
-              )}
+              value={formatSAR(totals.totalExpenses)}
               icon={TrendingDown}
               color="#fb7185"
               bg="rgba(239,68,68,0.10)"
@@ -960,9 +959,7 @@ export function DashboardPage() {
 
             <MoneyCard
               label="صافي الربح"
-              value={formatSAR(
-                totals.netProfit
-              )}
+              value={formatSAR(totals.netProfit)}
               icon={Wallet}
               color="#60a5fa"
               bg="rgba(59,130,246,0.10)"
@@ -974,9 +971,7 @@ export function DashboardPage() {
 
             <MoneyCard
               label="المستحقات"
-              value={formatSAR(
-                totals.receivables
-              )}
+              value={formatSAR(totals.receivables)}
               icon={Clock}
               color="#fb923c"
               bg="rgba(249,115,22,0.10)"
@@ -988,11 +983,9 @@ export function DashboardPage() {
           </div>
         </section>
 
-        {/* الزران الرئيسيان 3D */}
+        {/* الزران الرئيسيان */}
         <section className="mt-5">
           <div className="grid grid-cols-2 gap-3">
-
-            {/* مشاوير يومية */}
             <button
               type="button"
               onClick={() =>
@@ -1003,8 +996,6 @@ export function DashboardPage() {
                 aspectRatio: '2.25 / 1',
                 border:
                   '1px solid rgba(34,197,94,0.30)',
-                boxShadow:
-                  '0 10px 25px rgba(0,0,0,0.38), 0 0 18px rgba(34,197,94,0.14)',
                 background: '#07131f',
               }}
             >
@@ -1014,31 +1005,18 @@ export function DashboardPage() {
                 className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}
               />
-
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  boxShadow:
-                    'inset 0 1px 0 rgba(255,255,255,0.16)',
-                }}
-              />
             </button>
 
-            {/* مصاريف السواقين والمعدات */}
             <button
               type="button"
               onClick={() =>
-                navigate(
-                  '/operating-expenses'
-                )
+                navigate('/operating-expenses')
               }
               className="relative w-full overflow-hidden rounded-[20px] active:scale-[0.97] transition-transform"
               style={{
                 aspectRatio: '2.25 / 1',
                 border:
                   '1px solid rgba(239,68,68,0.32)',
-                boxShadow:
-                  '0 10px 25px rgba(0,0,0,0.38), 0 0 18px rgba(239,68,68,0.14)',
                 background: '#07131f',
               }}
             >
@@ -1048,20 +1026,11 @@ export function DashboardPage() {
                 className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}
               />
-
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  boxShadow:
-                    'inset 0 1px 0 rgba(255,255,255,0.16)',
-                }}
-              />
             </button>
-
           </div>
         </section>
 
-        {/* الاختصارات السريعة */}
+        {/* الاختصارات */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[16px] font-black text-white">
@@ -1109,8 +1078,6 @@ export function DashboardPage() {
                           item.path === '/ai'
                             ? '1px solid rgba(192,132,252,0.18)'
                             : '1px solid rgba(255,255,255,0.055)',
-                        boxShadow:
-                          'inset 0 1px 0 rgba(255,255,255,0.035), 0 7px 16px rgba(0,0,0,0.16)',
                       }}
                     >
                       <div
@@ -1120,10 +1087,6 @@ export function DashboardPage() {
                             tone.background,
                           border:
                             `1px solid ${tone.color}35`,
-                          boxShadow: `
-                            0 10px 22px rgba(0,0,0,0.42),
-                            0 0 16px ${tone.color}18
-                          `,
                         }}
                       >
                         <img
@@ -1164,15 +1127,7 @@ export function DashboardPage() {
           </div>
 
           {loading ? (
-            <div
-              className="rounded-[22px] p-7 text-center"
-              style={{
-                background:
-                  'rgba(255,255,255,0.025)',
-                border:
-                  '1px solid rgba(255,255,255,0.06)',
-              }}
-            >
+            <div className="rounded-[22px] p-7 text-center">
               <div className="w-9 h-9 mx-auto rounded-full border-2 border-white/10 border-t-amber-400 animate-spin" />
 
               <p className="text-[11px] text-slate-500 mt-3">
@@ -1180,25 +1135,13 @@ export function DashboardPage() {
               </p>
             </div>
           ) : recentTxs.length === 0 ? (
-            <div
-              className="rounded-[24px] p-7 text-center"
-              style={{
-                background:
-                  'rgba(255,255,255,0.025)',
-                border:
-                  '1px solid rgba(255,255,255,0.06)',
-              }}
-            >
+            <div className="rounded-[24px] p-7 text-center">
               <div className="w-14 h-14 rounded-[18px] bg-amber-500/10 flex items-center justify-center mx-auto">
                 <Receipt className="w-7 h-7 text-amber-400" />
               </div>
 
               <p className="text-sm font-bold text-white mt-4">
                 لا توجد حركات حتى الآن
-              </p>
-
-              <p className="text-[11px] text-slate-500 mt-1">
-                ابدأ بإضافة أول حركة مالية
               </p>
 
               <button
@@ -1260,29 +1203,13 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={closeSearch}
-                  className="w-10 h-10 rounded-[13px] flex items-center justify-center"
-                  style={{
-                    background:
-                      'rgba(255,255,255,0.05)',
-                    border:
-                      '1px solid rgba(255,255,255,0.08)',
-                  }}
+                  className="w-10 h-10 rounded-[13px] flex items-center justify-center bg-white/5"
                 >
                   <X className="w-5 h-5 text-slate-300" />
                 </button>
               </div>
 
-              <div
-                className="h-[58px] rounded-[18px] px-4 flex items-center gap-3"
-                style={{
-                  background:
-                    'linear-gradient(145deg,#101d30,#07111e)',
-                  border:
-                    '1px solid rgba(245,158,11,0.27)',
-                  boxShadow:
-                    '0 10px 30px rgba(0,0,0,0.25)',
-                }}
-              >
+              <div className="h-[58px] rounded-[18px] px-4 flex items-center gap-3 bg-slate-900">
                 <Search className="w-5 h-5 text-amber-400 shrink-0" />
 
                 <input
@@ -1294,7 +1221,7 @@ export function DashboardPage() {
                     )
                   }
                   placeholder="اسم، جوال، فاتورة، كرين، مبلغ..."
-                  className="flex-1 bg-transparent outline-none text-white text-[13px] placeholder:text-slate-600"
+                  className="flex-1 bg-transparent outline-none text-white text-[13px]"
                 />
 
                 {searchQuery && (
@@ -1303,59 +1230,19 @@ export function DashboardPage() {
                     onClick={() =>
                       setSearchQuery('')
                     }
-                    className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center"
                   >
                     <X className="w-4 h-4 text-slate-500" />
                   </button>
                 )}
               </div>
 
-              {!searchQuery && (
-                <div className="mt-6">
-                  <p className="text-[11px] text-slate-500 mb-3">
-                    يمكنك البحث عن
-                  </p>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      'اسم العميل',
-                      'رقم الجوال',
-                      'رقم الفاتورة',
-                      'اسم الكرين',
-                      'السائق',
-                      'المبلغ',
-                    ].map((text) => (
-                      <button
-                        type="button"
-                        key={text}
-                        className="rounded-[13px] py-3 px-2 text-[9px] text-slate-400"
-                        style={{
-                          background:
-                            'rgba(255,255,255,0.025)',
-                          border:
-                            '1px solid rgba(255,255,255,0.055)',
-                        }}
-                      >
-                        {text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {searchQuery &&
                 searchResults.length === 0 && (
                   <div className="mt-16 text-center">
-                    <div className="w-16 h-16 rounded-[20px] bg-amber-500/8 flex items-center justify-center mx-auto">
-                      <Search className="w-7 h-7 text-amber-400/50" />
-                    </div>
+                    <Search className="w-8 h-8 text-amber-400/50 mx-auto" />
 
                     <p className="text-[14px] font-bold text-white mt-4">
                       لا توجد نتائج
-                    </p>
-
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      جرّب الاسم أو رقم الجوال أو رقم الفاتورة
                     </p>
                   </div>
                 )}
@@ -1363,17 +1250,6 @@ export function DashboardPage() {
               {searchQuery &&
                 searchResults.length > 0 && (
                   <div className="mt-5 space-y-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">
-                        النتائج
-                      </span>
-
-                      <span className="text-[10px] text-amber-400">
-                        {searchResults.length}{' '}
-                        نتيجة
-                      </span>
-                    </div>
-
                     {Object.entries(
                       groupedSearchResults
                     ).map(
@@ -1394,17 +1270,9 @@ export function DashboardPage() {
                                       item
                                     )
                                   }
-                                  className="w-full rounded-[16px] p-3.5 flex items-center gap-3 text-right active:scale-[0.99]"
-                                  style={{
-                                    background:
-                                      'linear-gradient(145deg,rgba(15,28,47,0.96),rgba(8,17,30,0.98))',
-                                    border:
-                                      '1px solid rgba(255,255,255,0.055)',
-                                  }}
+                                  className="w-full rounded-[16px] p-3.5 flex items-center gap-3 text-right bg-slate-900"
                                 >
-                                  <div className="w-10 h-10 rounded-[13px] bg-amber-500/10 flex items-center justify-center shrink-0">
-                                    <Search className="w-4 h-4 text-amber-400" />
-                                  </div>
+                                  <Search className="w-4 h-4 text-amber-400" />
 
                                   <div className="flex-1 min-w-0">
                                     <p className="text-[12px] font-bold text-white truncate">
@@ -1419,7 +1287,7 @@ export function DashboardPage() {
                                   </div>
 
                                   {item.path !== '/' && (
-                                    <ChevronLeft className="w-4 h-4 text-slate-600 shrink-0" />
+                                    <ChevronLeft className="w-4 h-4 text-slate-600" />
                                   )}
                                 </button>
                               )
@@ -1483,9 +1351,7 @@ function MoneyCard({
         >
           <Icon
             className="w-5 h-5"
-            style={{
-              color,
-            }}
+            style={{ color }}
             strokeWidth={2.1}
           />
         </div>
@@ -1493,12 +1359,10 @@ function MoneyCard({
 
       <p
         className="text-[15px] font-black mt-4 leading-tight"
-        style={{
-          color,
-        }}
+        style={{ color }}
       >
         {value}
       </p>
     </button>
   );
-}
+    }
