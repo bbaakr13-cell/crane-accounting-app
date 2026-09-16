@@ -106,6 +106,10 @@ import {
   QuotationPage,
 } from '@/pages/QuotationPage';
 
+import {
+  PartnersPage,
+} from '@/pages/PartnersPage';
+
 import AboutPage from '@/pages/AboutPage';
 
 import {
@@ -437,6 +441,14 @@ function App() {
           path="/monthly/:id"
           element={
             <MonthlyDetailPage />
+          }
+        />
+
+        {/* حساب الشركاء */}
+        <Route
+          path="/partners"
+          element={
+            <PartnersPage />
           }
         />
 
