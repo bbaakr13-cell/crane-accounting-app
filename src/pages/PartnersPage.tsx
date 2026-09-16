@@ -14,7 +14,13 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  Equal,
+  FileText,
+  Share2,
+  FolderOpen,
+  X,
+  Pencil,
+  Download,
+  CheckCircle2,
 } from 'lucide-react';
 
 import {
@@ -26,9 +32,20 @@ import {
   type Equipment,
 } from '@/lib/equipment';
 
-/* =========================
+import jsPDF from 'jspdf';
+
+import {
+  Share,
+} from '@capacitor/share';
+
+import {
+  Filesystem,
+  Directory,
+} from '@capacitor/filesystem';
+
+/* =========================================================
    الأنواع
-========================= */
+========================================================= */
 
 type Partner = {
   id: string;
@@ -60,6 +77,7 @@ type ExternalExpenseRecord = {
 type SavedSettlement = {
   id: string;
   createdAt: string;
+  updatedAt?: string;
 
   equipmentId: string;
   equipmentName: string;
@@ -68,7 +86,7 @@ type SavedSettlement = {
   month: number;
 
   monthlyIncome: number;
-  monthlyExpenses: number;
+  monthlyManualExpenses: number;
   linkedExpenses: number;
   additionalExpenses: number;
 
@@ -78,9 +96,9 @@ type SavedSettlement = {
   partners: Partner[];
 };
 
-/* =========================
-   التخزين
-========================= */
+/* =========================================================
+   مفاتيح التخزين
+========================================================= */
 
 const STORAGE_KEY =
   'bakr_pro_partner_settlements_v2';
@@ -88,9 +106,9 @@ const STORAGE_KEY =
 const EXTERNAL_EXPENSE_KEY =
   'crane_accounting_driver_equipment_expenses_v1';
 
-/* =========================
+/* =========================================================
    الأشهر
-========================= */
+========================================================= */
 
 const monthNames = [
   'يناير',
@@ -107,9 +125,9 @@ const monthNames = [
   'ديسمبر',
 ];
 
-/* =========================
+/* =========================================================
    أدوات
-========================= */
+========================================================= */
 
 function money(value: number) {
   return `${(
@@ -175,9 +193,17 @@ function getDateParts(
   };
 }
 
-/* =========================
+function safeFileName(
+  value: string
+) {
+  return value
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .replace(/\s+/g, '-');
+}
+
+/* =========================================================
    الصفحة
-========================= */
+========================================================= */
 
 export function PartnersPage() {
   const now =
@@ -186,99 +212,93 @@ export function PartnersPage() {
   const [
     equipmentList,
     setEquipmentList,
-  ] =
-    useState<Equipment[]>([]);
+  ] = useState<Equipment[]>([]);
 
   const [
     equipmentId,
     setEquipmentId,
-  ] =
-    useState('');
+  ] = useState('');
 
   const [
     equipmentLoading,
     setEquipmentLoading,
-  ] =
-    useState(true);
+  ] = useState(true);
 
   const [
     year,
     setYear,
-  ] =
-    useState(
-      now.getFullYear()
-    );
+  ] = useState(
+    now.getFullYear()
+  );
 
   const [
     month,
     setMonth,
-  ] =
-    useState(
-      now.getMonth()
-    );
-
-  /*
-    دخل الحساب الشهري
-  */
+  ] = useState(
+    now.getMonth()
+  );
 
   const [
     monthlyIncome,
     setMonthlyIncome,
-  ] =
-    useState(0);
-
-  /*
-    المصاريف الموجودة
-    داخل الحساب الشهري
-  */
+  ] = useState(0);
 
   const [
     monthlyManualExpenses,
     setMonthlyManualExpenses,
-  ] =
-    useState(0);
-
-  /*
-    مصاريف السواقين
-    والمعدات المرتبطة
-  */
+  ] = useState(0);
 
   const [
     linkedExpenses,
     setLinkedExpenses,
-  ] =
-    useState(0);
-
-  /*
-    مصاريف إضافية
-    خاصة بالشراكة
-  */
+  ] = useState(0);
 
   const [
     additionalExpenses,
     setAdditionalExpenses,
-  ] =
-    useState(0);
+  ] = useState(0);
 
   const [
     partners,
     setPartners,
-  ] =
-    useState<Partner[]>([
-      makePartner(),
-      makePartner(),
-      makePartner(),
-    ]);
+  ] = useState<Partner[]>([
+    makePartner(),
+    makePartner(),
+    makePartner(),
+  ]);
 
   const [
     loadingAccount,
     setLoadingAccount,
-  ] =
-    useState(false);
+  ] = useState(false);
 
-  /* =========================
+  const [
+    savedSettlements,
+    setSavedSettlements,
+  ] = useState<
+    SavedSettlement[]
+  >([]);
+
+  const [
+    historyOpen,
+    setHistoryOpen,
+  ] = useState(false);
+
+  const [
+    editingId,
+    setEditingId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    savingPdf,
+    setSavingPdf,
+  ] = useState(false);
+
+  /* =========================================================
      تحميل المعدات
-  ========================= */
+  ========================================================= */
 
   useEffect(() => {
     let cancelled =
@@ -286,9 +306,7 @@ export function PartnersPage() {
 
     async function loadEquipment() {
       try {
-        setEquipmentLoading(
-          true
-        );
+        setEquipmentLoading(true);
 
         const result =
           await fetchEquipment();
@@ -302,17 +320,11 @@ export function PartnersPage() {
             ? result
             : [];
 
-        setEquipmentList(
-          list
-        );
+        setEquipmentList(list);
 
-        if (
-          list.length > 0
-        ) {
+        if (list.length > 0) {
           setEquipmentId(
-            String(
-              list[0].id
-            )
+            String(list[0].id)
           );
         }
       } catch (error) {
@@ -336,9 +348,52 @@ export function PartnersPage() {
     };
   }, []);
 
-  /* =========================
+  /* =========================================================
+     تحميل السجلات المحفوظة
+  ========================================================= */
+
+  function loadSavedSettlements() {
+    try {
+      const raw =
+        localStorage.getItem(
+          STORAGE_KEY
+        );
+
+      if (!raw) {
+        setSavedSettlements(
+          []
+        );
+
+        return;
+      }
+
+      const parsed =
+        JSON.parse(raw);
+
+      setSavedSettlements(
+        Array.isArray(parsed)
+          ? parsed
+          : []
+      );
+    } catch (error) {
+      console.error(
+        'Partner history:',
+        error
+      );
+
+      setSavedSettlements(
+        []
+      );
+    }
+  }
+
+  useEffect(() => {
+    loadSavedSettlements();
+  }, []);
+
+  /* =========================================================
      المعدة المختارة
-  ========================= */
+  ========================================================= */
 
   const selectedEquipment =
     useMemo(
@@ -358,32 +413,23 @@ export function PartnersPage() {
     selectedEquipment?.name ||
     '';
 
-  /* =========================
+  /* =========================================================
      تحميل الحساب الشهري
-  ========================= */
+  ========================================================= */
 
   function loadMonthlyAccount() {
     if (!equipmentId) {
       setMonthlyIncome(0);
-
       setMonthlyManualExpenses(
         0
       );
-
       setLinkedExpenses(0);
 
       return;
     }
 
     try {
-      setLoadingAccount(
-        true
-      );
-
-      /*
-        نفس المفتاح المستخدم
-        في الحساب الشهري
-      */
+      setLoadingAccount(true);
 
       const monthlyKey =
         `monthly-ledger-v3-${equipmentId}-${year}-${month}`;
@@ -414,10 +460,6 @@ export function PartnersPage() {
         }
       }
 
-      /*
-        إجمالي الدخل
-      */
-
       const income =
         rows.reduce(
           (sum, row) =>
@@ -429,11 +471,6 @@ export function PartnersPage() {
           0
         );
 
-      /*
-        المصاريف اليدوية
-        في الحساب الشهري
-      */
-
       const manual =
         rows.reduce(
           (sum, row) =>
@@ -444,11 +481,6 @@ export function PartnersPage() {
             ),
           0
         );
-
-      /*
-        المصاريف المرتبطة
-        بالسواقين والمعدات
-      */
 
       let external:
         ExternalExpenseRecord[] =
@@ -467,12 +499,9 @@ export function PartnersPage() {
             );
 
           if (
-            Array.isArray(
-              parsed
-            )
+            Array.isArray(parsed)
           ) {
-            external =
-              parsed;
+            external = parsed;
           }
         }
       } catch (error) {
@@ -484,18 +513,13 @@ export function PartnersPage() {
 
       const linked =
         external.reduce(
-          (
-            sum,
-            expense
-          ) => {
+          (sum, expense) => {
             if (
               String(
                 expense.equipmentId ||
                   ''
               ) !==
-              String(
-                equipmentId
-              )
+              String(equipmentId)
             ) {
               return sum;
             }
@@ -547,23 +571,14 @@ export function PartnersPage() {
       );
 
       setMonthlyIncome(0);
-
       setMonthlyManualExpenses(
         0
       );
-
       setLinkedExpenses(0);
     } finally {
-      setLoadingAccount(
-        false
-      );
+      setLoadingAccount(false);
     }
   }
-
-  /*
-    تحديث عند تغيير
-    الكرين أو الشهر أو السنة
-  */
 
   useEffect(() => {
     loadMonthlyAccount();
@@ -573,15 +588,11 @@ export function PartnersPage() {
     month,
   ]);
 
-  /*
-    تحديث عند الرجوع
-    إلى التطبيق
-  */
-
   useEffect(() => {
     const handleFocus =
       () => {
         loadMonthlyAccount();
+        loadSavedSettlements();
       };
 
     window.addEventListener(
@@ -601,19 +612,14 @@ export function PartnersPage() {
     month,
   ]);
 
-  /* =========================
+  /* =========================================================
      الحسابات
-  ========================= */
+  ========================================================= */
 
   const totalExpenses =
     monthlyManualExpenses +
     linkedExpenses +
     additionalExpenses;
-
-  /*
-    صافي المبلغ
-    القابل للتوزيع
-  */
 
   const distributable =
     monthlyIncome -
@@ -623,10 +629,7 @@ export function PartnersPage() {
     useMemo(
       () =>
         partners.reduce(
-          (
-            sum,
-            partner
-          ) =>
+          (sum, partner) =>
             sum +
             n(
               partner.percentage
@@ -640,17 +643,13 @@ export function PartnersPage() {
     useMemo(
       () =>
         partners.reduce(
-          (
-            sum,
-            partner
-          ) =>
+          (sum, partner) =>
             sum +
             distributable *
               (
                 n(
                   partner.percentage
-                ) /
-                100
+                ) / 100
               ),
           0
         ),
@@ -664,9 +663,9 @@ export function PartnersPage() {
     distributable -
     distributed;
 
-  /* =========================
-     تحديث بيانات الشريك
-  ========================= */
+  /* =========================================================
+     تحديث الشريك
+  ========================================================= */
 
   function updatePartner(
     id: string,
@@ -703,9 +702,9 @@ export function PartnersPage() {
     );
   }
 
-  /* =========================
-     توزيع النسب بالتساوي
-  ========================= */
+  /* =========================================================
+     توزيع متساوي
+  ========================================================= */
 
   function distributeEqually() {
     if (
@@ -714,98 +713,53 @@ export function PartnersPage() {
       return;
     }
 
-    const equal =
-      100 /
-      partners.length;
-
-    /*
-      نحافظ على المجموع
-      100% حتى مع الكسور
-    */
+    const base =
+      Number(
+        (
+          100 /
+          partners.length
+        ).toFixed(4)
+      );
 
     let used = 0;
 
-    setPartners(
-      (old) =>
-        old.map(
-          (
-            partner,
-            index
-          ) => {
-            let percentage =
-              Number(
-                equal.toFixed(
-                  4
-                )
-              );
-
-            if (
-              index ===
-              old.length - 1
-            ) {
-              percentage =
-                Number(
+    const next =
+      partners.map(
+        (partner, index) => {
+          const percentage =
+            index ===
+            partners.length - 1
+              ? Number(
                   (
                     100 -
                     used
-                  ).toFixed(
-                    4
-                  )
-                );
-            }
+                  ).toFixed(4)
+                )
+              : base;
 
-            used +=
-              percentage;
+          used += percentage;
 
-            return {
-              ...partner,
-              percentage,
-            };
-          }
-        )
-    );
-  }
-
-  /* =========================
-     إضافة شريك
-  ========================= */
-
-  function addPartner() {
-    setPartners(
-      (old) => [
-        ...old,
-        makePartner(),
-      ]
-    );
-  }
-
-  /* =========================
-     حذف شريك
-  ========================= */
-
-  function removePartner(
-    id: string
-  ) {
-    setPartners(
-      (old) =>
-        old.filter(
-          (partner) =>
-            partner.id !== id
-        )
-    );
-  }
-
-  /* =========================
-     الحفظ
-  ========================= */
-
-  function saveSettlement() {
-    if (!equipmentId) {
-      alert(
-        'اختر الكرين أو المعدة'
+          return {
+            ...partner,
+            percentage,
+          };
+        }
       );
 
-      return;
+    setPartners(next);
+  }
+
+  /* =========================================================
+     التحقق
+  ========================================================= */
+
+  function validateAccount() {
+    if (!equipmentId) {
+      alert(
+        'اختر المعدة أو الكرين'
+      );
+
+      return false;
     }
 
     if (
@@ -815,7 +769,7 @@ export function PartnersPage() {
         'أضف شريكاً واحداً على الأقل'
       );
 
-      return;
+      return false;
     }
 
     if (
@@ -828,7 +782,7 @@ export function PartnersPage() {
         'أدخل أسماء جميع الشركاء'
       );
 
-      return;
+      return false;
     }
 
     if (
@@ -838,17 +792,24 @@ export function PartnersPage() {
       ) > 0.01
     ) {
       alert(
-        `مجموع نسب الشركاء يجب أن يكون 100% — المجموع الحالي ${percentageTotal.toFixed(
-          2
-        )}%`
+        `مجموع نسب الشركاء يجب أن يكون 100%.\nالمجموع الحالي: ${percentageTotal}%`
       );
 
-      return;
+      return false;
     }
 
-    const record:
-      SavedSettlement = {
+    return true;
+  }
+
+  /* =========================================================
+     إنشاء السجل الحالي
+  ========================================================= */
+
+  function createRecord():
+  SavedSettlement {
+    return {
       id:
+        editingId ||
         String(
           Date.now()
         ),
@@ -857,10 +818,11 @@ export function PartnersPage() {
         new Date()
           .toISOString(),
 
-      equipmentId:
-        String(
-          equipmentId
-        ),
+      updatedAt:
+        new Date()
+          .toISOString(),
+
+      equipmentId,
 
       equipmentName,
 
@@ -870,8 +832,7 @@ export function PartnersPage() {
 
       monthlyIncome,
 
-      monthlyExpenses:
-        monthlyManualExpenses,
+      monthlyManualExpenses,
 
       linkedExpenses,
 
@@ -888,16 +849,31 @@ export function PartnersPage() {
           })
         ),
     };
+  }
+
+  /* =========================================================
+     حفظ الحساب
+  ========================================================= */
+
+  function saveSettlement() {
+    if (
+      !validateAccount()
+    ) {
+      return;
+    }
 
     try {
+      const record =
+        createRecord();
+
+      let list:
+        SavedSettlement[] =
+        [];
+
       const raw =
         localStorage.getItem(
           STORAGE_KEY
         );
-
-      let old:
-        SavedSettlement[] =
-        [];
 
       if (raw) {
         try {
@@ -905,55 +881,54 @@ export function PartnersPage() {
             JSON.parse(raw);
 
           if (
-            Array.isArray(
-              parsed
-            )
+            Array.isArray(parsed)
           ) {
-            old = parsed;
+            list = parsed;
           }
         } catch {
-          old = [];
+          list = [];
         }
       }
 
-      /*
-        إذا حفظنا نفس الكرين
-        ونفس الشهر والسنة
-        نستبدل التسوية القديمة
-        بدلاً من تكرارها
-      */
+      if (editingId) {
+        list =
+          list.map(
+            (item) =>
+              item.id ===
+              editingId
+                ? {
+                    ...record,
 
-      const withoutSameMonth =
-        old.filter(
-          (item) =>
-            !(
-              String(
-                item.equipmentId
-              ) ===
-                String(
-                  equipmentId
-                ) &&
-              item.year ===
-                year &&
-              item.month ===
-                month
-            )
-        );
+                    createdAt:
+                      item.createdAt ||
+                      record.createdAt,
+                  }
+                : item
+          );
+      } else {
+        list = [
+          record,
+          ...list,
+        ];
+      }
 
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify([
-          record,
-          ...withoutSameMonth,
-        ])
+        JSON.stringify(list)
       );
+
+      setEditingId(
+        record.id
+      );
+
+      loadSavedSettlements();
 
       alert(
         'تم حفظ حساب الشركاء بنجاح'
       );
     } catch (error) {
       console.error(
-        'Save partners settlement:',
+        'Save partners:',
         error
       );
 
@@ -963,40 +938,752 @@ export function PartnersPage() {
     }
   }
 
-  /* =========================
-     التنسيقات
-  ========================= */
+  /* =========================================================
+     فتح حساب محفوظ
+  ========================================================= */
+
+  function openSettlement(
+    item: SavedSettlement
+  ) {
+    setEditingId(
+      item.id
+    );
+
+    setEquipmentId(
+      String(
+        item.equipmentId
+      )
+    );
+
+    setYear(
+      item.year
+    );
+
+    setMonth(
+      item.month
+    );
+
+    setMonthlyIncome(
+      n(
+        item.monthlyIncome
+      )
+    );
+
+    setMonthlyManualExpenses(
+      n(
+        item.monthlyManualExpenses
+      )
+    );
+
+    setLinkedExpenses(
+      n(
+        item.linkedExpenses
+      )
+    );
+
+    setAdditionalExpenses(
+      n(
+        item.additionalExpenses
+      )
+    );
+
+    setPartners(
+      Array.isArray(
+        item.partners
+      )
+        ? item.partners.map(
+            (partner) => ({
+              ...partner,
+
+              id:
+                partner.id ||
+                `${Date.now()}-${Math.random()}`,
+            })
+          )
+        : []
+    );
+
+    setHistoryOpen(
+      false
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }
+
+  /* =========================================================
+     حذف حساب محفوظ
+  ========================================================= */
+
+  function deleteSettlement(
+    id: string
+  ) {
+    const ok =
+      window.confirm(
+        'هل تريد حذف حساب الشركاء المحفوظ؟'
+      );
+
+    if (!ok) {
+      return;
+    }
+
+    try {
+      const next =
+        savedSettlements.filter(
+          (item) =>
+            item.id !== id
+        );
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(next)
+      );
+
+      setSavedSettlements(
+        next
+      );
+
+      if (
+        editingId === id
+      ) {
+        setEditingId(
+          null
+        );
+      }
+    } catch (error) {
+      console.error(
+        'Delete settlement:',
+        error
+      );
+    }
+  }
+
+  /* =========================================================
+     حساب جديد
+  ========================================================= */
+
+  function newSettlement() {
+    setEditingId(null);
+
+    setAdditionalExpenses(
+      0
+    );
+
+    setPartners([
+      makePartner(),
+      makePartner(),
+      makePartner(),
+    ]);
+
+    loadMonthlyAccount();
+  }
+
+  /* =========================================================
+     إنشاء PDF
+  ========================================================= */
+
+  function buildPdf() {
+    if (
+      !validateAccount()
+    ) {
+      return null;
+    }
+
+    const doc =
+      new jsPDF({
+        orientation:
+          'portrait',
+
+        unit: 'mm',
+
+        format: 'a4',
+      });
+
+    const pageWidth =
+      doc.internal
+        .pageSize
+        .getWidth();
+
+    /*
+      رأس التقرير
+    */
+
+    doc.setFillColor(
+      8,
+      21,
+      38
+    );
+
+    doc.rect(
+      0,
+      0,
+      pageWidth,
+      38,
+      'F'
+    );
+
+    doc.setTextColor(
+      245,
+      158,
+      11
+    );
+
+    doc.setFontSize(20);
+
+    doc.text(
+      'BAKR PRO',
+      pageWidth / 2,
+      14,
+      {
+        align: 'center',
+      }
+    );
+
+    doc.setTextColor(
+      255,
+      255,
+      255
+    );
+
+    doc.setFontSize(12);
+
+    doc.text(
+      'PARTNERS ACCOUNT',
+      pageWidth / 2,
+      23,
+      {
+        align: 'center',
+      }
+    );
+
+    doc.setFontSize(9);
+
+    doc.text(
+      `${equipmentName} - ${monthNames[month]} ${year}`,
+      pageWidth / 2,
+      31,
+      {
+        align: 'center',
+      }
+    );
+
+    let y = 49;
+
+    /*
+      ملخص الحساب
+    */
+
+    doc.setTextColor(
+      30,
+      41,
+      59
+    );
+
+    doc.setFontSize(11);
+
+    const summary = [
+      [
+        'Monthly Income',
+        monthlyIncome,
+      ],
+
+      [
+        'Monthly Expenses',
+        monthlyManualExpenses,
+      ],
+
+      [
+        'Driver / Equipment Expenses',
+        linkedExpenses,
+      ],
+
+      [
+        'Additional Expenses',
+        additionalExpenses,
+      ],
+
+      [
+        'Total Expenses',
+        totalExpenses,
+      ],
+
+      [
+        'Net Distribution',
+        distributable,
+      ],
+    ];
+
+    summary.forEach(
+      ([label, value]) => {
+        doc.setFillColor(
+          245,
+          247,
+          250
+        );
+
+        doc.roundedRect(
+          15,
+          y,
+          180,
+          10,
+          2,
+          2,
+          'F'
+        );
+
+        doc.text(
+          String(label),
+          20,
+          y + 6.5
+        );
+
+        doc.text(
+          `${Number(
+            value
+          ).toLocaleString(
+            'en-US',
+            {
+              maximumFractionDigits:
+                2,
+            }
+          )} SAR`,
+          190,
+          y + 6.5,
+          {
+            align: 'right',
+          }
+        );
+
+        y += 12;
+      }
+    );
+
+    y += 5;
+
+    /*
+      عنوان الشركاء
+    */
+
+    doc.setFillColor(
+      15,
+      95,
+      183
+    );
+
+    doc.rect(
+      15,
+      y,
+      180,
+      10,
+      'F'
+    );
+
+    doc.setTextColor(
+      255,
+      255,
+      255
+    );
+
+    doc.setFontSize(10);
+
+    doc.text(
+      'PARTNERS DISTRIBUTION',
+      105,
+      y + 6.5,
+      {
+        align: 'center',
+      }
+    );
+
+    y += 13;
+
+    /*
+      رؤوس الجدول
+    */
+
+    doc.setFillColor(
+      226,
+      232,
+      240
+    );
+
+    doc.rect(
+      15,
+      y,
+      180,
+      9,
+      'F'
+    );
+
+    doc.setTextColor(
+      30,
+      41,
+      59
+    );
+
+    doc.setFontSize(8);
+
+    doc.text(
+      'Partner',
+      18,
+      y + 6
+    );
+
+    doc.text(
+      '%',
+      83,
+      y + 6
+    );
+
+    doc.text(
+      'Due',
+      105,
+      y + 6
+    );
+
+    doc.text(
+      'Paid',
+      140,
+      y + 6
+    );
+
+    doc.text(
+      'Remaining',
+      190,
+      y + 6,
+      {
+        align: 'right',
+      }
+    );
+
+    y += 9;
+
+    partners.forEach(
+      (partner) => {
+        if (y > 270) {
+          doc.addPage();
+
+          y = 20;
+        }
+
+        const due =
+          distributable *
+          (
+            n(
+              partner.percentage
+            ) / 100
+          );
+
+        const remaining =
+          due -
+          n(
+            partner.paid
+          );
+
+        doc.setDrawColor(
+          226,
+          232,
+          240
+        );
+
+        doc.rect(
+          15,
+          y,
+          180,
+          11
+        );
+
+        doc.setTextColor(
+          30,
+          41,
+          59
+        );
+
+        doc.text(
+          partner.name ||
+            '-',
+          18,
+          y + 7
+        );
+
+        doc.text(
+          `${partner.percentage}%`,
+          83,
+          y + 7
+        );
+
+        doc.text(
+          Number(
+            due
+          ).toLocaleString(
+            'en-US',
+            {
+              maximumFractionDigits:
+                2,
+            }
+          ),
+          105,
+          y + 7
+        );
+
+        doc.text(
+          Number(
+            partner.paid
+          ).toLocaleString(
+            'en-US',
+            {
+              maximumFractionDigits:
+                2,
+            }
+          ),
+          140,
+          y + 7
+        );
+
+        doc.text(
+          Number(
+            remaining
+          ).toLocaleString(
+            'en-US',
+            {
+              maximumFractionDigits:
+                2,
+            }
+          ),
+          190,
+          y + 7,
+          {
+            align: 'right',
+          }
+        );
+
+        y += 11;
+      }
+    );
+
+    y += 10;
+
+    doc.setTextColor(
+      100,
+      116,
+      139
+    );
+
+    doc.setFontSize(8);
+
+    doc.text(
+      `Generated by BAKR PRO - ${new Date().toLocaleDateString('en-GB')}`,
+      pageWidth / 2,
+      Math.min(
+        y,
+        285
+      ),
+      {
+        align: 'center',
+      }
+    );
+
+    return doc;
+  }
+
+  /* =========================================================
+     حفظ PDF
+  ========================================================= */
+
+  async function savePdf() {
+    const doc =
+      buildPdf();
+
+    if (!doc) {
+      return;
+    }
+
+    try {
+      setSavingPdf(true);
+
+      const fileName =
+        safeFileName(
+          `BAKR-PRO-Partners-${equipmentName}-${monthNames[month]}-${year}.pdf`
+        );
+
+      /*
+        على الويب يتم تنزيله مباشرة
+      */
+
+      if (
+        !(
+          window as any
+        ).Capacitor
+      ) {
+        doc.save(
+          fileName
+        );
+
+        return;
+      }
+
+      const dataUri =
+        doc.output(
+          'datauristring'
+        );
+
+      const base64 =
+        dataUri.split(
+          ','
+        )[1];
+
+      await Filesystem.writeFile({
+        path:
+          `BAKR_PRO/${fileName}`,
+
+        data: base64,
+
+        directory:
+          Directory.Documents,
+
+        recursive: true,
+      });
+
+      alert(
+        'تم حفظ ملف PDF في المستندات'
+      );
+    } catch (error) {
+      console.error(
+        'Save PDF:',
+        error
+      );
+
+      /*
+        محاولة تنزيل عادية
+        إذا فشل Filesystem
+      */
+
+      try {
+        const fallback =
+          buildPdf();
+
+        fallback?.save(
+          `BAKR-PRO-Partners-${year}-${month + 1}.pdf`
+        );
+      } catch {
+        alert(
+          'تعذر حفظ ملف PDF'
+        );
+      }
+    } finally {
+      setSavingPdf(
+        false
+      );
+    }
+  }
+
+  /* =========================================================
+     مشاركة PDF
+  ========================================================= */
+
+  async function sharePdf() {
+    const doc =
+      buildPdf();
+
+    if (!doc) {
+      return;
+    }
+
+    try {
+      setSavingPdf(true);
+
+      const fileName =
+        safeFileName(
+          `BAKR-PRO-Partners-${equipmentName}-${monthNames[month]}-${year}.pdf`
+        );
+
+      const dataUri =
+        doc.output(
+          'datauristring'
+        );
+
+      const base64 =
+        dataUri.split(
+          ','
+        )[1];
+
+      const result =
+        await Filesystem.writeFile({
+          path:
+            `BAKR_PRO/${fileName}`,
+
+          data: base64,
+
+          directory:
+            Directory.Cache,
+
+          recursive: true,
+        });
+
+      await Share.share({
+        title:
+          'حساب الشركاء - BAKR PRO',
+
+        text:
+          `حساب الشركاء - ${equipmentName} - ${monthNames[month]} ${year}`,
+
+        url:
+          result.uri,
+
+        dialogTitle:
+          'مشاركة حساب الشركاء',
+      });
+    } catch (error) {
+      console.error(
+        'Share PDF:',
+        error
+      );
+
+      alert(
+        'تعذر فتح المشاركة. يمكنك استخدام زر حفظ PDF.'
+      );
+    } finally {
+      setSavingPdf(
+        false
+      );
+    }
+  }
+
+  /* =========================================================
+     التصميم
+  ========================================================= */
 
   const inputStyle:
     React.CSSProperties = {
-    width: '100%',
-    boxSizing: 'border-box',
-    padding: 12,
-    borderRadius: 12,
-    border:
-      '1px solid #263b58',
-    background: '#081526',
-    color: '#ffffff',
-    outline: 'none',
-    fontSize: 13,
-  };
+      width: '100%',
+      boxSizing:
+        'border-box',
+      padding: 12,
+      borderRadius: 12,
+      border:
+        '1px solid #263b58',
+      background:
+        '#081526',
+      color: '#ffffff',
+      outline: 'none',
+      fontSize: 13,
+    };
 
   const cardStyle:
     React.CSSProperties = {
-    background:
-      'linear-gradient(145deg,#0d1b2f,#07111f)',
+      background:
+        'linear-gradient(145deg,#0d1b2f,#07111f)',
+      border:
+        '1px solid rgba(255,255,255,.08)',
+      borderRadius: 20,
+      padding: 14,
+    };
 
-    border:
-      '1px solid rgba(255,255,255,.08)',
-
-    borderRadius: 20,
-
-    padding: 14,
-  };
-
-  /* =========================
+  /* =========================================================
      الواجهة
-  ========================= */
+  ========================================================= */
 
   return (
     <AppLayout>
@@ -1004,15 +1691,111 @@ export function PartnersPage() {
         dir="rtl"
         style={{
           padding: 16,
-          paddingBottom: 110,
+          paddingBottom: 120,
           color: '#ffffff',
         }}
       >
-        {/* العنوان */}
+        {/* الرأس */}
 
         <div
           style={{
-            marginBottom: 16,
+            display: 'flex',
+            alignItems:
+              'center',
+            justifyContent:
+              'space-between',
+            gap: 12,
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 26,
+                fontWeight: 900,
+              }}
+            >
+              حساب الشركاء
+            </h1>
+
+            <p
+              style={{
+                color:
+                  '#94a3b8',
+                fontSize: 11,
+                marginTop: 5,
+              }}
+            >
+              توزيع صافي حساب الكرين على الشركاء
+            </p>
+          </div>
+
+          <div
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: 16,
+              background:
+                'rgba(59,130,246,.12)',
+              display: 'flex',
+              alignItems:
+                'center',
+              justifyContent:
+                'center',
+            }}
+          >
+            <Users
+              size={25}
+              color="#60a5fa"
+            />
+          </div>
+        </div>
+
+        {/* السجلات المحفوظة */}
+
+        <button
+          type="button"
+          onClick={() => {
+            loadSavedSettlements();
+            setHistoryOpen(true);
+          }}
+          style={{
+            width: '100%',
+            marginTop: 15,
+            padding: 13,
+            borderRadius: 15,
+            border:
+              '1px solid rgba(96,165,250,.25)',
+            background:
+              'rgba(59,130,246,.08)',
+            color:
+              '#93c5fd',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems:
+              'center',
+            justifyContent:
+              'center',
+            gap: 8,
+          }}
+        >
+          <FolderOpen
+            size={18}
+          />
+
+          الحسابات المحفوظة
+
+          <span>
+            ({savedSettlements.length})
+          </span>
+        </button>
+
+        {/* المعدة */}
+
+        <section
+          style={{
+            ...cardStyle,
+            marginTop: 14,
           }}
         >
           <div
@@ -1020,75 +1803,8 @@ export function PartnersPage() {
               display: 'flex',
               alignItems:
                 'center',
-              gap: 10,
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 16,
-                display: 'flex',
-                alignItems:
-                  'center',
-                justifyContent:
-                  'center',
-
-                background:
-                  'rgba(59,130,246,.12)',
-
-                border:
-                  '1px solid rgba(96,165,250,.20)',
-              }}
-            >
-              <Users
-                size={25}
-                color="#60a5fa"
-              />
-            </div>
-
-            <div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: 25,
-                  fontWeight: 900,
-                }}
-              >
-                حساب الشركاء
-              </h1>
-
-              <p
-                style={{
-                  margin:
-                    '4px 0 0',
-                  color:
-                    '#94a3b8',
-                  fontSize: 11,
-                }}
-              >
-                توزيع صافي دخل
-                الكرين على
-                الشركاء
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* اختيار الكرين */}
-
-        <section
-          style={
-            cardStyle
-          }
-        >
-          <div
-            style={{
-              display: 'flex',
               gap: 8,
-              alignItems:
-                'center',
-              marginBottom: 9,
+              marginBottom: 10,
             }}
           >
             <Truck
@@ -1096,12 +1812,8 @@ export function PartnersPage() {
               color="#fbbf24"
             />
 
-            <strong
-              style={{
-                fontSize: 14,
-              }}
-            >
-              الكرين / المعدة
+            <strong>
+              المعدة / الكرين
             </strong>
           </div>
 
@@ -1109,48 +1821,37 @@ export function PartnersPage() {
             value={
               equipmentId
             }
+            onChange={(e) =>
+              setEquipmentId(
+                e.target.value
+              )
+            }
             disabled={
               equipmentLoading
-            }
-            onChange={(
-              event
-            ) =>
-              setEquipmentId(
-                event.target
-                  .value
-              )
             }
             style={
               inputStyle
             }
           >
-            {equipmentLoading ? (
-              <option value="">
-                جاري تحميل
-                المعدات...
-              </option>
-            ) : equipmentList.length ===
-              0 ? (
+            {equipmentList.length ===
+              0 && (
               <option value="">
                 لا توجد معدات
-                مسجلة
               </option>
-            ) : (
-              equipmentList.map(
-                (equipment) => (
-                  <option
-                    key={
-                      equipment.id
-                    }
-                    value={
-                      equipment.id
-                    }
-                  >
-                    {
-                      equipment.name
-                    }
-                  </option>
-                )
+            )}
+
+            {equipmentList.map(
+              (item) => (
+                <option
+                  key={
+                    item.id
+                  }
+                  value={
+                    item.id
+                  }
+                >
+                  {item.name}
+                </option>
               )
             )}
           </select>
@@ -1162,98 +1863,59 @@ export function PartnersPage() {
               display: 'grid',
               gridTemplateColumns:
                 '1fr 1fr',
-              gap: 9,
+              gap: 8,
               marginTop: 9,
             }}
           >
-            <div>
-              <label
-                style={{
-                  display:
-                    'block',
-                  fontSize: 10,
-                  color:
-                    '#94a3b8',
-                  marginBottom: 5,
-                }}
-              >
-                الشهر
-              </label>
-
-              <select
-                value={month}
-                onChange={(
-                  event
-                ) =>
-                  setMonth(
-                    Number(
-                      event
-                        .target
-                        .value
-                    )
+            <select
+              value={month}
+              onChange={(e) =>
+                setMonth(
+                  Number(
+                    e.target
+                      .value
                   )
-                }
-                style={
-                  inputStyle
-                }
-              >
-                {monthNames.map(
-                  (
-                    name,
-                    index
-                  ) => (
-                    <option
-                      key={
-                        name
-                      }
-                      value={
-                        index
-                      }
-                    >
-                      {name}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
+                )
+              }
+              style={
+                inputStyle
+              }
+            >
+              {monthNames.map(
+                (
+                  name,
+                  index
+                ) => (
+                  <option
+                    key={
+                      name
+                    }
+                    value={
+                      index
+                    }
+                  >
+                    {name}
+                  </option>
+                )
+              )}
+            </select>
 
-            <div>
-              <label
-                style={{
-                  display:
-                    'block',
-                  fontSize: 10,
-                  color:
-                    '#94a3b8',
-                  marginBottom: 5,
-                }}
-              >
-                السنة
-              </label>
-
-              <input
-                type="number"
-                inputMode="numeric"
-                value={year}
-                onChange={(
-                  event
-                ) =>
-                  setYear(
-                    n(
-                      event
-                        .target
-                        .value
-                    )
+            <input
+              type="number"
+              value={year}
+              onChange={(e) =>
+                setYear(
+                  n(
+                    e.target
+                      .value
                   )
-                }
-                style={
-                  inputStyle
-                }
-              />
-            </div>
+                )
+              }
+              style={
+                inputStyle
+              }
+            />
           </div>
-
-          {/* تحديث */}
 
           <button
             type="button"
@@ -1276,15 +1938,15 @@ export function PartnersPage() {
                 '#93c5fd',
               fontWeight: 800,
               display: 'flex',
-              justifyContent:
-                'center',
               alignItems:
+                'center',
+              justifyContent:
                 'center',
               gap: 7,
             }}
           >
             <RefreshCw
-              size={17}
+              size={16}
             />
 
             {loadingAccount
@@ -1293,7 +1955,7 @@ export function PartnersPage() {
           </button>
         </section>
 
-        {/* أرقام الحساب */}
+        {/* ملخص الدخل والمصاريف */}
 
         <div
           style={{
@@ -1305,24 +1967,28 @@ export function PartnersPage() {
           }}
         >
           <Summary
-            label="دخل الشهر"
+            label="إجمالي الدخل"
             value={money(
               monthlyIncome
             )}
             color="#4ade80"
             icon={
-              TrendingUp
+              <TrendingUp
+                size={18}
+              />
             }
           />
 
           <Summary
-            label="مصاريف الشهر"
+            label="مصاريف الحساب الشهري"
             value={money(
               monthlyManualExpenses
             )}
             color="#fb7185"
             icon={
-              TrendingDown
+              <TrendingDown
+                size={18}
+              />
             }
           />
 
@@ -1332,24 +1998,18 @@ export function PartnersPage() {
               linkedExpenses
             )}
             color="#fb923c"
-            icon={
-              TrendingDown
-            }
           />
 
           <Summary
-            label="صافي قبل المصاريف الإضافية"
+            label="إجمالي المصاريف"
             value={money(
-              monthlyIncome -
-                monthlyManualExpenses -
-                linkedExpenses
+              totalExpenses
             )}
-            color="#60a5fa"
-            icon={Wallet}
+            color="#f87171"
           />
         </div>
 
-        {/* المصاريف الإضافية */}
+        {/* مصاريف إضافية */}
 
         <section
           style={{
@@ -1366,8 +2026,7 @@ export function PartnersPage() {
               marginBottom: 7,
             }}
           >
-            مصاريف إضافية
-            خاصة بالشراكة
+            مصاريف إضافية خاصة بالشراكة
           </label>
 
           <input
@@ -1377,12 +2036,10 @@ export function PartnersPage() {
               additionalExpenses ||
               ''
             }
-            onChange={(
-              event
-            ) =>
+            onChange={(e) =>
               setAdditionalExpenses(
                 n(
-                  event.target
+                  e.target
                     .value
                 )
               )
@@ -1394,38 +2051,53 @@ export function PartnersPage() {
           />
         </section>
 
-        {/* ملخص */}
+        {/* صافي التوزيع */}
 
-        <div
+        <section
           style={{
-            display: 'grid',
-            gridTemplateColumns:
-              '1fr 1fr',
-            gap: 10,
+            ...cardStyle,
             marginTop: 12,
+            textAlign:
+              'center',
           }}
         >
-          <Summary
-            label="إجمالي المصاريف"
-            value={money(
-              totalExpenses
-            )}
-            color="#fb7185"
+          <Wallet
+            size={27}
+            color="#60a5fa"
+            style={{
+              margin:
+                '0 auto 7px',
+            }}
           />
 
-          <Summary
-            label="صافي التوزيع"
-            value={money(
+          <div
+            style={{
+              color:
+                '#94a3b8',
+              fontSize: 11,
+            }}
+          >
+            صافي المبلغ القابل للتوزيع
+          </div>
+
+          <div
+            style={{
+              color:
+                distributable >=
+                0
+                  ? '#4ade80'
+                  : '#fb7185',
+
+              fontSize: 25,
+              fontWeight: 900,
+              marginTop: 6,
+            }}
+          >
+            {money(
               distributable
             )}
-            color={
-              distributable >=
-              0
-                ? '#4ade80'
-                : '#fb7185'
-            }
-          />
-        </div>
+          </div>
+        </section>
 
         {/* الشركاء */}
 
@@ -1460,8 +2132,7 @@ export function PartnersPage() {
                     Math.abs(
                       percentageTotal -
                         100
-                    ) <
-                    0.01
+                    ) < 0.01
                       ? '#4ade80'
                       : '#fbbf24',
 
@@ -1477,53 +2148,28 @@ export function PartnersPage() {
               </div>
             </div>
 
-            <Users
-              color="#60a5fa"
-            />
+            <button
+              type="button"
+              onClick={
+                distributeEqually
+              }
+              style={{
+                border:
+                  '1px solid rgba(96,165,250,.25)',
+                borderRadius: 11,
+                padding:
+                  '8px 10px',
+                background:
+                  'rgba(59,130,246,.08)',
+                color:
+                  '#93c5fd',
+                fontWeight: 700,
+                fontSize: 10,
+              }}
+            >
+              توزيع متساوي
+            </button>
           </div>
-
-          {/* توزيع متساوي */}
-
-          <button
-            type="button"
-            onClick={
-              distributeEqually
-            }
-            style={{
-              width: '100%',
-              marginBottom: 12,
-              padding: 11,
-              borderRadius: 12,
-
-              border:
-                '1px solid rgba(245,158,11,.30)',
-
-              background:
-                'rgba(245,158,11,.08)',
-
-              color:
-                '#fbbf24',
-
-              fontWeight: 800,
-
-              display: 'flex',
-
-              alignItems:
-                'center',
-
-              justifyContent:
-                'center',
-
-              gap: 7,
-            }}
-          >
-            <Equal
-              size={17}
-            />
-
-            توزيع النسب
-            بالتساوي
-          </button>
 
           <div
             style={{
@@ -1539,17 +2185,13 @@ export function PartnersPage() {
                 const due =
                   distributable *
                   (
-                    n(
-                      partner.percentage
-                    ) /
+                    partner.percentage /
                     100
                   );
 
                 const remaining =
                   due -
-                  n(
-                    partner.paid
-                  );
+                  partner.paid;
 
                 return (
                   <div
@@ -1559,28 +2201,20 @@ export function PartnersPage() {
                     style={{
                       background:
                         'rgba(255,255,255,.025)',
-
                       border:
                         '1px solid rgba(255,255,255,.07)',
-
                       borderRadius: 16,
-
                       padding: 12,
                     }}
                   >
-                    {/* عنوان الشريك */}
-
                     <div
                       style={{
                         display:
                           'flex',
-
                         justifyContent:
                           'space-between',
-
                         alignItems:
                           'center',
-
                         marginBottom: 9,
                       }}
                     >
@@ -1595,18 +2229,26 @@ export function PartnersPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            removePartner(
-                              partner.id
+                            setPartners(
+                              (
+                                old
+                              ) =>
+                                old.filter(
+                                  (
+                                    item
+                                  ) =>
+                                    item.id !==
+                                    partner.id
+                                )
                             )
                           }
                           style={{
-                            border: 0,
+                            border:
+                              0,
                             borderRadius: 10,
                             padding: 8,
-
                             background:
                               'rgba(239,68,68,.12)',
-
                             color:
                               '#fb7185',
                           }}
@@ -1620,21 +2262,18 @@ export function PartnersPage() {
                       )}
                     </div>
 
-                    {/* الاسم */}
-
                     <input
                       placeholder="اسم الشريك"
                       value={
                         partner.name
                       }
                       onChange={(
-                        event
+                        e
                       ) =>
                         updatePartner(
                           partner.id,
                           'name',
-                          event
-                            .target
+                          e.target
                             .value
                         )
                       }
@@ -1643,123 +2282,77 @@ export function PartnersPage() {
                       }
                     />
 
-                    {/* النسبة والسحوبات */}
-
                     <div
                       style={{
                         display:
                           'grid',
-
                         gridTemplateColumns:
                           '1fr 1fr',
-
                         gap: 8,
-
                         marginTop: 8,
                       }}
                     >
-                      <div>
-                        <label
-                          style={{
-                            display:
-                              'block',
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        placeholder="النسبة %"
+                        value={
+                          partner.percentage ||
+                          ''
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updatePartner(
+                            partner.id,
+                            'percentage',
+                            e
+                              .target
+                              .value
+                          )
+                        }
+                        style={
+                          inputStyle
+                        }
+                      />
 
-                            color:
-                              '#94a3b8',
-
-                            fontSize: 9,
-
-                            marginBottom: 4,
-                          }}
-                        >
-                          نسبة
-                          الشريك %
-                        </label>
-
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          placeholder="0"
-                          value={
-                            partner.percentage ||
-                            ''
-                          }
-                          onChange={(
-                            event
-                          ) =>
-                            updatePartner(
-                              partner.id,
-                              'percentage',
-                              event
-                                .target
-                                .value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          style={{
-                            display:
-                              'block',
-
-                            color:
-                              '#94a3b8',
-
-                            fontSize: 9,
-
-                            marginBottom: 4,
-                          }}
-                        >
-                          المدفوع /
-                          السحوبات
-                        </label>
-
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          placeholder="0"
-                          value={
-                            partner.paid ||
-                            ''
-                          }
-                          onChange={(
-                            event
-                          ) =>
-                            updatePartner(
-                              partner.id,
-                              'paid',
-                              event
-                                .target
-                                .value
-                            )
-                          }
-                          style={
-                            inputStyle
-                          }
-                        />
-                      </div>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        placeholder="السحوبات / المدفوع"
+                        value={
+                          partner.paid ||
+                          ''
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updatePartner(
+                            partner.id,
+                            'paid',
+                            e
+                              .target
+                              .value
+                          )
+                        }
+                        style={
+                          inputStyle
+                        }
+                      />
                     </div>
 
-                    {/* ملاحظات */}
-
                     <input
-                      placeholder="ملاحظات الشريك"
+                      placeholder="ملاحظات"
                       value={
                         partner.notes
                       }
                       onChange={(
-                        event
+                        e
                       ) =>
                         updatePartner(
                           partner.id,
                           'notes',
-                          event
-                            .target
+                          e.target
                             .value
                         )
                       }
@@ -1769,19 +2362,14 @@ export function PartnersPage() {
                       }}
                     />
 
-                    {/* حساب الشريك */}
-
                     <div
                       style={{
                         display:
                           'grid',
-
                         gridTemplateColumns:
                           '1fr 1fr',
-
                         gap: 8,
-
-                        marginTop: 10,
+                        marginTop: 9,
                       }}
                     >
                       <Summary
@@ -1813,38 +2401,32 @@ export function PartnersPage() {
             )}
           </div>
 
-          {/* إضافة شريك */}
-
           <button
             type="button"
-            onClick={
-              addPartner
+            onClick={() =>
+              setPartners(
+                (old) => [
+                  ...old,
+                  makePartner(),
+                ]
+              )
             }
             style={{
               width: '100%',
               marginTop: 12,
               padding: 13,
-
               borderRadius: 13,
-
               border:
                 '1px dashed rgba(96,165,250,.55)',
-
               background:
                 'rgba(59,130,246,.08)',
-
               color:
                 '#93c5fd',
-
               fontWeight: 800,
-
               display: 'flex',
-
               gap: 6,
-
               justifyContent:
                 'center',
-
               alignItems:
                 'center',
             }}
@@ -1859,12 +2441,68 @@ export function PartnersPage() {
 
         {/* الفارق */}
 
-        <section
+        <div
           style={{
-            ...cardStyle,
             marginTop: 12,
           }}
         >
+          <Summary
+            label="فارق التوزيع"
+            value={money(
+              difference
+            )}
+            color={
+              Math.abs(
+                difference
+              ) < 0.01
+                ? '#4ade80'
+                : '#fbbf24'
+            }
+          />
+        </div>
+
+        {/* الأزرار */}
+
+        <div
+          style={{
+            display: 'grid',
+            gap: 10,
+            marginTop: 15,
+          }}
+        >
+          <button
+            type="button"
+            onClick={
+              saveSettlement
+            }
+            style={{
+              width: '100%',
+              padding: 16,
+              border: 0,
+              borderRadius: 16,
+              background:
+                'linear-gradient(135deg,#0f5fb7,#063a78)',
+              color:
+                '#ffffff',
+              fontWeight: 900,
+              fontSize: 14,
+              display: 'flex',
+              gap: 8,
+              justifyContent:
+                'center',
+              alignItems:
+                'center',
+            }}
+          >
+            <Save
+              size={19}
+            />
+
+            {editingId
+              ? 'حفظ التعديلات'
+              : 'حفظ حساب الشركاء'}
+          </button>
+
           <div
             style={{
               display: 'grid',
@@ -1873,168 +2511,424 @@ export function PartnersPage() {
               gap: 9,
             }}
           >
-            <Summary
-              label="المبلغ الموزع"
-              value={money(
-                distributed
-              )}
-              color="#60a5fa"
-              small
-            />
-
-            <Summary
-              label="الفارق"
-              value={money(
-                difference
-              )}
-              color={
-                Math.abs(
-                  difference
-                ) < 0.01
-                  ? '#4ade80'
-                  : '#fbbf24'
+            <button
+              type="button"
+              onClick={
+                savePdf
               }
-              small
-            />
+              disabled={
+                savingPdf
+              }
+              style={{
+                padding: 14,
+                borderRadius: 15,
+                border:
+                  '1px solid rgba(34,197,94,.30)',
+                background:
+                  'rgba(34,197,94,.10)',
+                color:
+                  '#4ade80',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems:
+                  'center',
+                justifyContent:
+                  'center',
+                gap: 7,
+              }}
+            >
+              <FileText
+                size={18}
+              />
+
+              حفظ PDF
+            </button>
+
+            <button
+              type="button"
+              onClick={
+                sharePdf
+              }
+              disabled={
+                savingPdf
+              }
+              style={{
+                padding: 14,
+                borderRadius: 15,
+                border:
+                  '1px solid rgba(168,85,247,.30)',
+                background:
+                  'rgba(168,85,247,.10)',
+                color:
+                  '#c084fc',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems:
+                  'center',
+                justifyContent:
+                  'center',
+                gap: 7,
+              }}
+            >
+              <Share2
+                size={18}
+              />
+
+              مشاركة PDF
+            </button>
           </div>
-        </section>
 
-        {/* حفظ */}
+          <button
+            type="button"
+            onClick={
+              newSettlement
+            }
+            style={{
+              padding: 13,
+              borderRadius: 14,
+              border:
+                '1px solid rgba(255,255,255,.10)',
+              background:
+                'rgba(255,255,255,.035)',
+              color:
+                '#cbd5e1',
+              fontWeight: 800,
+            }}
+          >
+            + حساب شراكة جديد
+          </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={
-            saveSettlement
-          }
-          style={{
-            width: '100%',
-            marginTop: 14,
-            padding: 16,
+        {/* نافذة الحسابات المحفوظة */}
 
-            border: 0,
+        {historyOpen && (
+          <div
+            style={{
+              position:
+                'fixed',
+              inset: 0,
+              zIndex: 99999,
+              background:
+                'rgba(2,6,15,.95)',
+              overflowY:
+                'auto',
+            }}
+          >
+            <div
+              dir="rtl"
+              style={{
+                width: '100%',
+                maxWidth: 430,
+                minHeight:
+                  '100dvh',
+                margin:
+                  '0 auto',
+                padding:
+                  '20px 16px 40px',
+                boxSizing:
+                  'border-box',
+              }}
+            >
+              <div
+                style={{
+                  display:
+                    'flex',
+                  alignItems:
+                    'center',
+                  justifyContent:
+                    'space-between',
+                  marginBottom: 18,
+                }}
+              >
+                <div>
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: 21,
+                    }}
+                  >
+                    الحسابات المحفوظة
+                  </h2>
 
-            borderRadius: 16,
+                  <p
+                    style={{
+                      margin:
+                        '4px 0 0',
+                      color:
+                        '#64748b',
+                      fontSize: 10,
+                    }}
+                  >
+                    {savedSettlements.length}{' '}
+                    حساب محفوظ
+                  </p>
+                </div>
 
-            background:
-              'linear-gradient(135deg,#0f5fb7,#063a78)',
+                <button
+                  type="button"
+                  onClick={() =>
+                    setHistoryOpen(
+                      false
+                    )
+                  }
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 13,
+                    border:
+                      '1px solid rgba(255,255,255,.08)',
+                    background:
+                      'rgba(255,255,255,.05)',
+                    color:
+                      '#ffffff',
+                    display:
+                      'flex',
+                    alignItems:
+                      'center',
+                    justifyContent:
+                      'center',
+                  }}
+                >
+                  <X
+                    size={20}
+                  />
+                </button>
+              </div>
 
-            color:
-              '#ffffff',
+              {savedSettlements.length ===
+              0 ? (
+                <div
+                  style={{
+                    marginTop: 80,
+                    textAlign:
+                      'center',
+                    color:
+                      '#64748b',
+                  }}
+                >
+                  <FolderOpen
+                    size={42}
+                    style={{
+                      margin:
+                        '0 auto 12px',
+                    }}
+                  />
 
-            fontWeight: 900,
+                  لا توجد حسابات محفوظة حتى الآن
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display:
+                      'grid',
+                    gap: 10,
+                  }}
+                >
+                  {savedSettlements.map(
+                    (item) => (
+                      <div
+                        key={
+                          item.id
+                        }
+                        style={{
+                          ...cardStyle,
+                          padding: 13,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display:
+                              'flex',
+                            justifyContent:
+                              'space-between',
+                            gap: 10,
+                          }}
+                        >
+                          <div>
+                            <strong
+                              style={{
+                                fontSize: 14,
+                              }}
+                            >
+                              {item.equipmentName ||
+                                'كرين'}
+                            </strong>
 
-            fontSize: 15,
+                            <div
+                              style={{
+                                color:
+                                  '#94a3b8',
+                                fontSize: 10,
+                                marginTop: 4,
+                              }}
+                            >
+                              {monthNames[
+                                item
+                                  .month
+                              ]}{' '}
+                              {
+                                item.year
+                              }
+                            </div>
+                          </div>
 
-            display: 'flex',
+                          <div
+                            style={{
+                              color:
+                                item.distributable >=
+                                0
+                                  ? '#4ade80'
+                                  : '#fb7185',
+                              fontWeight: 900,
+                              fontSize: 13,
+                            }}
+                          >
+                            {money(
+                              item.distributable
+                            )}
+                          </div>
+                        </div>
 
-            gap: 7,
+                        <div
+                          style={{
+                            display:
+                              'grid',
+                            gridTemplateColumns:
+                              '1fr 1fr',
+                            gap: 7,
+                            marginTop: 11,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openSettlement(
+                                item
+                              )
+                            }
+                            style={{
+                              padding: 10,
+                              borderRadius: 11,
+                              border:
+                                '1px solid rgba(96,165,250,.25)',
+                              background:
+                                'rgba(59,130,246,.08)',
+                              color:
+                                '#93c5fd',
+                              fontWeight: 800,
+                              display:
+                                'flex',
+                              alignItems:
+                                'center',
+                              justifyContent:
+                                'center',
+                              gap: 5,
+                            }}
+                          >
+                            <Pencil
+                              size={
+                                15
+                              }
+                            />
 
-            justifyContent:
-              'center',
+                            فتح وتعديل
+                          </button>
 
-            alignItems:
-              'center',
+                          <button
+                            type="button"
+                            onClick={() =>
+                              deleteSettlement(
+                                item.id
+                              )
+                            }
+                            style={{
+                              padding: 10,
+                              borderRadius: 11,
+                              border:
+                                '1px solid rgba(239,68,68,.25)',
+                              background:
+                                'rgba(239,68,68,.08)',
+                              color:
+                                '#fb7185',
+                              fontWeight: 800,
+                              display:
+                                'flex',
+                              alignItems:
+                                'center',
+                              justifyContent:
+                                'center',
+                              gap: 5,
+                            }}
+                          >
+                            <Trash2
+                              size={
+                                15
+                              }
+                            />
 
-            boxShadow:
-              '0 12px 30px rgba(15,95,183,.22)',
-          }}
-        >
-          <Save
-            size={19}
-          />
-
-          حفظ حساب الشركاء
-        </button>
-
-        <p
-          style={{
-            textAlign:
-              'center',
-
-            color:
-              '#64748b',
-
-            fontSize: 9,
-
-            marginTop: 12,
-          }}
-        >
-          BAKR PRO • حساب
-          الشركاء
-        </p>
+                            حذف
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
 }
 
-/* =========================
-   بطاقة الملخص
-========================= */
-
-type SummaryProps = {
-  label: string;
-  value: string;
-  color: string;
-  small?: boolean;
-  icon?: any;
-};
+/* =========================================================
+   صندوق الملخص
+========================================================= */
 
 function Summary({
   label,
   value,
   color,
   small = false,
-  icon: Icon,
-}: SummaryProps) {
+  icon,
+}: {
+  label: string;
+  value: string;
+  color: string;
+  small?: boolean;
+  icon?: React.ReactNode;
+}) {
   return (
     <div
       style={{
         background:
           'linear-gradient(145deg,#0d1b2f,#07111f)',
-
         border:
           '1px solid rgba(255,255,255,.07)',
-
         borderRadius:
           small
             ? 12
             : 17,
-
         padding:
           small
             ? 9
             : 12,
-
         textAlign:
           'center',
       }}
     >
-      {Icon && (
+      {icon && (
         <div
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 10,
-
-            margin:
-              '0 auto 7px',
-
+            color,
+            marginBottom: 5,
             display: 'flex',
-
-            alignItems:
-              'center',
-
             justifyContent:
               'center',
-
-            background:
-              `${color}15`,
           }}
         >
-          <Icon
-            size={16}
-            color={color}
-          />
+          {icon}
         </div>
       )}
 
@@ -2042,13 +2936,10 @@ function Summary({
         style={{
           color:
             '#94a3b8',
-
           fontSize:
             small
               ? 9
               : 10,
-
-          lineHeight: 1.4,
         }}
       >
         {label}
@@ -2057,14 +2948,11 @@ function Summary({
       <div
         style={{
           color,
-
           fontWeight: 900,
-
           fontSize:
             small
               ? 12
               : 15,
-
           marginTop: 5,
         }}
       >
