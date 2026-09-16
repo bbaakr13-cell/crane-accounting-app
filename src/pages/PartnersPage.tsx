@@ -19,6 +19,9 @@ import {
   FolderOpen,
   X,
   Pencil,
+  Calculator,
+  Keyboard,
+  CheckCircle2,
 } from 'lucide-react';
 
 import {
@@ -35,6 +38,10 @@ import jsPDF from 'jspdf';
 /* =========================================================
    الأنواع
 ========================================================= */
+
+type IncomeMode =
+  | 'automatic'
+  | 'manual';
 
 type Partner = {
   id: string;
@@ -74,7 +81,26 @@ type SavedSettlement = {
   year: number;
   month: number;
 
+  /*
+    مصدر الدخل
+  */
+  incomeMode?: IncomeMode;
+
+  /*
+    الدخل القادم من الحساب الشهري
+  */
   monthlyIncome: number;
+
+  /*
+    المبلغ الذي أدخله المستخدم يدويًا
+  */
+  manualIncome?: number;
+
+  /*
+    المبلغ الفعلي المستخدم في التوزيع
+  */
+  effectiveIncome?: number;
+
   monthlyManualExpenses: number;
   linkedExpenses: number;
   additionalExpenses: number;
@@ -90,6 +116,9 @@ type SavedSettlement = {
 ========================================================= */
 
 const STORAGE_KEY =
+  'bakr_pro_partner_settlements_v3';
+
+const OLD_STORAGE_KEY =
   'bakr_pro_partner_settlements_v2';
 
 const EXTERNAL_EXPENSE_KEY =
@@ -118,31 +147,48 @@ const monthNames = [
    أدوات
 ========================================================= */
 
-function money(value: number) {
+function money(
+  value: number
+) {
   return `${(
     Number(value) || 0
-  ).toLocaleString('en-US', {
-    maximumFractionDigits: 2,
-  })} ر.س`;
+  ).toLocaleString(
+    'en-US',
+    {
+      maximumFractionDigits: 2,
+    }
+  )} ر.س`;
 }
 
 function n(
-  value: string | number
+  value:
+    | string
+    | number
+    | undefined
+    | null
 ) {
   const parsed =
     Number(value);
 
-  return Number.isFinite(parsed)
+  return Number.isFinite(
+    parsed
+  )
     ? parsed
     : 0;
 }
 
-function makePartner(): Partner {
+function makePartner():
+Partner {
   return {
-    id: `${Date.now()}-${Math.random()}`,
+    id:
+      `${Date.now()}-${Math.random()}`,
+
     name: '',
+
     percentage: 0,
+
     paid: 0,
+
     notes: '',
   };
 }
@@ -151,26 +197,41 @@ function getDateParts(
   value: string
 ) {
   const parts =
-    String(value || '')
-      .split('-');
+    String(
+      value || ''
+    ).split('-');
 
-  if (parts.length < 3) {
+  if (
+    parts.length < 3
+  ) {
     return null;
   }
 
   const year =
-    Number(parts[0]);
+    Number(
+      parts[0]
+    );
 
   const month =
-    Number(parts[1]);
+    Number(
+      parts[1]
+    );
 
   const day =
-    Number(parts[2]);
+    Number(
+      parts[2]
+    );
 
   if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day)
+    !Number.isFinite(
+      year
+    ) ||
+    !Number.isFinite(
+      month
+    ) ||
+    !Number.isFinite(
+      day
+    )
   ) {
     return null;
   }
@@ -186,8 +247,14 @@ function safeFileName(
   value: string
 ) {
   return value
-    .replace(/[\\/:*?"<>|]/g, '-')
-    .replace(/\s+/g, '-');
+    .replace(
+      /[\\/:*?"<>|]/g,
+      '-'
+    )
+    .replace(
+      /\s+/g,
+      '-'
+    );
 }
 
 /* =========================================================
@@ -201,7 +268,9 @@ export function PartnersPage() {
   const [
     equipmentList,
     setEquipmentList,
-  ] = useState<Equipment[]>([]);
+  ] = useState<
+    Equipment[]
+  >([]);
 
   const [
     equipmentId,
@@ -227,10 +296,41 @@ export function PartnersPage() {
     now.getMonth()
   );
 
+  /*
+    ================================
+    وضع الدخل
+    ================================
+  */
+
+  const [
+    incomeMode,
+    setIncomeMode,
+  ] =
+    useState<IncomeMode>(
+      'automatic'
+    );
+
+  /*
+    الدخل من الحساب الشهري
+  */
+
   const [
     monthlyIncome,
     setMonthlyIncome,
   ] = useState(0);
+
+  /*
+    الدخل اليدوي
+  */
+
+  const [
+    manualIncome,
+    setManualIncome,
+  ] = useState(0);
+
+  /*
+    المصاريف
+  */
 
   const [
     monthlyManualExpenses,
@@ -247,10 +347,16 @@ export function PartnersPage() {
     setAdditionalExpenses,
   ] = useState(0);
 
+  /*
+    الشركاء
+  */
+
   const [
     partners,
     setPartners,
-  ] = useState<Partner[]>([
+  ] = useState<
+    Partner[]
+  >([
     makePartner(),
     makePartner(),
     makePartner(),
@@ -264,7 +370,9 @@ export function PartnersPage() {
   const [
     savedSettlements,
     setSavedSettlements,
-  ] = useState<SavedSettlement[]>([]);
+  ] = useState<
+    SavedSettlement[]
+  >([]);
 
   const [
     historyOpen,
@@ -274,9 +382,10 @@ export function PartnersPage() {
   const [
     editingId,
     setEditingId,
-  ] = useState<string | null>(
-    null
-  );
+  ] =
+    useState<
+      string | null
+    >(null);
 
   const [
     savingPdf,
@@ -288,7 +397,8 @@ export function PartnersPage() {
   ========================================================= */
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled =
+      false;
 
     async function loadEquipment() {
       try {
@@ -304,7 +414,9 @@ export function PartnersPage() {
         }
 
         const list =
-          Array.isArray(result)
+          Array.isArray(
+            result
+          )
             ? result
             : [];
 
@@ -312,20 +424,26 @@ export function PartnersPage() {
           list
         );
 
-        if (list.length > 0) {
+        if (
+          list.length > 0
+        ) {
           setEquipmentId(
             String(
               list[0].id
             )
           );
         }
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.error(
           'Partners equipment:',
           error
         );
       } finally {
-        if (!cancelled) {
+        if (
+          !cancelled
+        ) {
           setEquipmentLoading(
             false
           );
@@ -346,10 +464,26 @@ export function PartnersPage() {
 
   function loadSavedSettlements() {
     try {
-      const raw =
+      /*
+        نحاول أولاً قراءة النسخة الجديدة
+      */
+
+      let raw =
         localStorage.getItem(
           STORAGE_KEY
         );
+
+      /*
+        إذا لم توجد، نقرأ الحسابات القديمة
+        حتى لا تضيع الحسابات السابقة.
+      */
+
+      if (!raw) {
+        raw =
+          localStorage.getItem(
+            OLD_STORAGE_KEY
+          );
+      }
 
       if (!raw) {
         setSavedSettlements(
@@ -362,12 +496,19 @@ export function PartnersPage() {
       const parsed =
         JSON.parse(raw);
 
-      setSavedSettlements(
-        Array.isArray(parsed)
+      const list =
+        Array.isArray(
+          parsed
+        )
           ? parsed
-          : []
+          : [];
+
+      setSavedSettlements(
+        list
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         'Partner history:',
         error
@@ -392,8 +533,12 @@ export function PartnersPage() {
       () =>
         equipmentList.find(
           (item) =>
-            String(item.id) ===
-            String(equipmentId)
+            String(
+              item.id
+            ) ===
+            String(
+              equipmentId
+            )
         ) || null,
       [
         equipmentList,
@@ -402,22 +547,28 @@ export function PartnersPage() {
     );
 
   const equipmentName =
-    selectedEquipment?.name ||
-    '';
+    selectedEquipment
+      ?.name || '';
 
   /* =========================================================
      تحميل الحساب الشهري
   ========================================================= */
 
   function loadMonthlyAccount() {
-    if (!equipmentId) {
-      setMonthlyIncome(0);
+    if (
+      !equipmentId
+    ) {
+      setMonthlyIncome(
+        0
+      );
 
       setMonthlyManualExpenses(
         0
       );
 
-      setLinkedExpenses(0);
+      setLinkedExpenses(
+        0
+      );
 
       return;
     }
@@ -427,6 +578,11 @@ export function PartnersPage() {
         true
       );
 
+      /*
+        نفس مفتاح الحساب الشهري
+        الموجود في تطبيقك
+      */
+
       const monthlyKey =
         `monthly-ledger-v3-${equipmentId}-${year}-${month}`;
 
@@ -435,21 +591,27 @@ export function PartnersPage() {
           monthlyKey
         );
 
-      let rows: DayRow[] =
-        [];
+      let rows:
+        DayRow[] = [];
 
       if (raw) {
         try {
           const parsed =
-            JSON.parse(raw);
+            JSON.parse(
+              raw
+            );
 
           if (
-            Array.isArray(parsed)
+            Array.isArray(
+              parsed
+            )
           ) {
             rows =
               parsed;
           }
-        } catch (error) {
+        } catch (
+          error
+        ) {
           console.error(
             'Monthly ledger parse:',
             error
@@ -457,27 +619,44 @@ export function PartnersPage() {
         }
       }
 
+      /*
+        إجمالي دخل الشهر
+      */
+
       const income =
         rows.reduce(
-          (sum, row) =>
+          (
+            sum,
+            row
+          ) =>
             sum +
             n(
-              row.tripPrice ||
-                0
+              row.tripPrice
             ),
           0
         );
 
-      const manual =
+      /*
+        المصاريف المكتوبة
+        داخل الحساب الشهري
+      */
+
+      const manualExpenses =
         rows.reduce(
-          (sum, row) =>
+          (
+            sum,
+            row
+          ) =>
             sum +
             n(
-              row.expenseAmount ||
-                0
+              row.expenseAmount
             ),
           0
         );
+
+      /*
+        مصاريف السواقين والمعدات
+      */
 
       let external:
         ExternalExpenseRecord[] =
@@ -489,20 +668,26 @@ export function PartnersPage() {
             EXTERNAL_EXPENSE_KEY
           );
 
-        if (expenseRaw) {
+        if (
+          expenseRaw
+        ) {
           const parsed =
             JSON.parse(
               expenseRaw
             );
 
           if (
-            Array.isArray(parsed)
+            Array.isArray(
+              parsed
+            )
           ) {
             external =
               parsed;
           }
         }
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.error(
           'External expenses:',
           error
@@ -517,7 +702,8 @@ export function PartnersPage() {
           ) => {
             if (
               String(
-                expense.equipmentId ||
+                expense
+                  .equipmentId ||
                   ''
               ) !==
               String(
@@ -549,8 +735,7 @@ export function PartnersPage() {
             return (
               sum +
               n(
-                expense.amount ||
-                  0
+                expense.amount
               )
             );
           },
@@ -562,31 +747,48 @@ export function PartnersPage() {
       );
 
       setMonthlyManualExpenses(
-        manual
+        manualExpenses
       );
 
       setLinkedExpenses(
         linked
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         'Partners monthly account:',
         error
       );
 
-      setMonthlyIncome(0);
+      setMonthlyIncome(
+        0
+      );
 
       setMonthlyManualExpenses(
         0
       );
 
-      setLinkedExpenses(0);
+      setLinkedExpenses(
+        0
+      );
     } finally {
       setLoadingAccount(
         false
       );
     }
   }
+
+  /* =========================================================
+     التحديث التلقائي
+
+     عند تغيير:
+     - الكرين
+     - الشهر
+     - السنة
+
+     يتم جلب الحساب الشهري مباشرة.
+  ========================================================= */
 
   useEffect(() => {
     loadMonthlyAccount();
@@ -596,10 +798,16 @@ export function PartnersPage() {
     month,
   ]);
 
+  /*
+    عندما يرجع المستخدم للتطبيق
+    نحدث الحساب تلقائياً.
+  */
+
   useEffect(() => {
     const handleFocus =
       () => {
         loadMonthlyAccount();
+
         loadSavedSettlements();
       };
 
@@ -620,6 +828,47 @@ export function PartnersPage() {
     month,
   ]);
 
+  /*
+    كذلك إذا تغير localStorage
+    من صفحة أخرى.
+  */
+
+  useEffect(() => {
+    const handleStorage =
+      () => {
+        loadMonthlyAccount();
+      };
+
+    window.addEventListener(
+      'storage',
+      handleStorage
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        handleStorage
+      );
+    };
+  }, [
+    equipmentId,
+    year,
+    month,
+  ]);
+
+  /* =========================================================
+     الدخل الفعلي
+
+     تلقائي = دخل الحساب الشهري
+     يدوي = الرقم الذي يكتبه المستخدم
+  ========================================================= */
+
+  const effectiveIncome =
+    incomeMode ===
+    'manual'
+      ? manualIncome
+      : monthlyIncome;
+
   /* =========================================================
      الحسابات
   ========================================================= */
@@ -630,7 +879,7 @@ export function PartnersPage() {
     additionalExpenses;
 
   const distributable =
-    monthlyIncome -
+    effectiveIncome -
     totalExpenses;
 
   const percentageTotal =
@@ -643,7 +892,8 @@ export function PartnersPage() {
           ) =>
             sum +
             n(
-              partner.percentage
+              partner
+                .percentage
             ),
           0
         ),
@@ -662,7 +912,8 @@ export function PartnersPage() {
             distributable *
               (
                 n(
-                  partner.percentage
+                  partner
+                    .percentage
                 ) /
                 100
               ),
@@ -677,6 +928,12 @@ export function PartnersPage() {
   const difference =
     distributable -
     distributed;
+
+  const percentagesValid =
+    Math.abs(
+      percentageTotal -
+        100
+    ) < 0.01;
 
   /* =========================================================
      تعديل بيانات شريك
@@ -694,7 +951,9 @@ export function PartnersPage() {
     setPartners(
       (old) =>
         old.map(
-          (partner) => {
+          (
+            partner
+          ) => {
             if (
               partner.id !==
               id
@@ -710,7 +969,9 @@ export function PartnersPage() {
                   'percentage' ||
                 field ===
                   'paid'
-                  ? n(value)
+                  ? n(
+                      value
+                    )
                   : value,
             };
           }
@@ -719,12 +980,15 @@ export function PartnersPage() {
   }
 
   /* =========================================================
-     توزيع متساوي
+     توزيع متساوي اختياري
+
+     المستخدم ليس مجبراً عليه.
   ========================================================= */
 
   function distributeEqually() {
     if (
-      partners.length === 0
+      partners.length ===
+      0
     ) {
       return;
     }
@@ -734,7 +998,9 @@ export function PartnersPage() {
         (
           100 /
           partners.length
-        ).toFixed(4)
+        ).toFixed(
+          4
+        )
       );
 
     let used = 0;
@@ -747,7 +1013,8 @@ export function PartnersPage() {
         ) => {
           const percentage =
             index ===
-            partners.length - 1
+            partners.length -
+              1
               ? Number(
                   (
                     100 -
@@ -778,9 +1045,23 @@ export function PartnersPage() {
   ========================================================= */
 
   function validateAccount() {
-    if (!equipmentId) {
+    if (
+      !equipmentId
+    ) {
       alert(
         'اختر المعدة أو الكرين'
+      );
+
+      return false;
+    }
+
+    if (
+      incomeMode ===
+        'manual' &&
+      manualIncome < 0
+    ) {
+      alert(
+        'أدخل مبلغ دخل صحيح'
       );
 
       return false;
@@ -811,10 +1092,7 @@ export function PartnersPage() {
     }
 
     if (
-      Math.abs(
-        percentageTotal -
-          100
-      ) > 0.01
+      !percentagesValid
     ) {
       alert(
         `مجموع نسب الشركاء يجب أن يكون 100%.\nالمجموع الحالي: ${percentageTotal.toFixed(
@@ -849,7 +1127,8 @@ export function PartnersPage() {
         ),
 
       createdAt:
-        current?.createdAt ||
+        current
+          ?.createdAt ||
         new Date()
           .toISOString(),
 
@@ -865,7 +1144,13 @@ export function PartnersPage() {
 
       month,
 
+      incomeMode,
+
       monthlyIncome,
+
+      manualIncome,
+
+      effectiveIncome,
 
       monthlyManualExpenses,
 
@@ -879,7 +1164,9 @@ export function PartnersPage() {
 
       partners:
         partners.map(
-          (partner) => ({
+          (
+            partner
+          ) => ({
             ...partner,
           })
         ),
@@ -913,7 +1200,9 @@ export function PartnersPage() {
       if (raw) {
         try {
           const parsed =
-            JSON.parse(raw);
+            JSON.parse(
+              raw
+            );
 
           if (
             Array.isArray(
@@ -926,9 +1215,43 @@ export function PartnersPage() {
         } catch {
           list = [];
         }
+      } else {
+        /*
+          أول حفظ بعد التحديث:
+          ننقل الحسابات القديمة.
+        */
+
+        const oldRaw =
+          localStorage.getItem(
+            OLD_STORAGE_KEY
+          );
+
+        if (
+          oldRaw
+        ) {
+          try {
+            const parsed =
+              JSON.parse(
+                oldRaw
+              );
+
+            if (
+              Array.isArray(
+                parsed
+              )
+            ) {
+              list =
+                parsed;
+            }
+          } catch {
+            list = [];
+          }
+        }
       }
 
-      if (editingId) {
+      if (
+        editingId
+      ) {
         const exists =
           list.some(
             (item) =>
@@ -936,7 +1259,9 @@ export function PartnersPage() {
               editingId
           );
 
-        if (exists) {
+        if (
+          exists
+        ) {
           list =
             list.map(
               (item) =>
@@ -976,7 +1301,9 @@ export function PartnersPage() {
       alert(
         'تم حفظ حساب الشركاء بنجاح'
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         'Save partners:',
         error
@@ -993,7 +1320,8 @@ export function PartnersPage() {
   ========================================================= */
 
   function openSettlement(
-    item: SavedSettlement
+    item:
+      SavedSettlement
   ) {
     setEditingId(
       item.id
@@ -1013,9 +1341,25 @@ export function PartnersPage() {
       item.month
     );
 
+    /*
+      الحسابات القديمة التي لم يكن فيها
+      incomeMode تعتبر تلقائية.
+    */
+
+    setIncomeMode(
+      item.incomeMode ||
+        'automatic'
+    );
+
     setMonthlyIncome(
       n(
         item.monthlyIncome
+      )
+    );
+
+    setManualIncome(
+      n(
+        item.manualIncome
       )
     );
 
@@ -1042,7 +1386,9 @@ export function PartnersPage() {
         item.partners
       )
         ? item.partners.map(
-            (partner) => ({
+            (
+              partner
+            ) => ({
               ...partner,
 
               id:
@@ -1084,7 +1430,8 @@ export function PartnersPage() {
       const next =
         savedSettlements.filter(
           (item) =>
-            item.id !== id
+            item.id !==
+            id
         );
 
       localStorage.setItem(
@@ -1099,13 +1446,16 @@ export function PartnersPage() {
       );
 
       if (
-        editingId === id
+        editingId ===
+        id
       ) {
         setEditingId(
           null
         );
       }
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         'Delete settlement:',
         error
@@ -1120,6 +1470,14 @@ export function PartnersPage() {
   function newSettlement() {
     setEditingId(
       null
+    );
+
+    setIncomeMode(
+      'automatic'
+    );
+
+    setManualIncome(
+      0
     );
 
     setAdditionalExpenses(
@@ -1156,12 +1514,18 @@ export function PartnersPage() {
       new jsPDF({
         orientation:
           'portrait',
-        unit: 'mm',
-        format: 'a4',
+
+        unit:
+          'mm',
+
+        format:
+          'a4',
       });
 
     const pageWidth =
-      doc.internal.pageSize.getWidth();
+      doc.internal
+        .pageSize
+        .getWidth();
 
     doc.setFillColor(
       8,
@@ -1237,25 +1601,34 @@ export function PartnersPage() {
       [string, number][] =
       [
         [
-          'Monthly Income',
-          monthlyIncome,
+          incomeMode ===
+          'automatic'
+            ? 'Monthly Income'
+            : 'Manual Income',
+
+          effectiveIncome,
         ],
+
         [
           'Monthly Expenses',
           monthlyManualExpenses,
         ],
+
         [
           'Driver / Equipment Expenses',
           linkedExpenses,
         ],
+
         [
           'Additional Expenses',
           additionalExpenses,
         ],
+
         [
           'Total Expenses',
           totalExpenses,
         ],
+
         [
           'Net Distribution',
           distributable,
@@ -1420,7 +1793,10 @@ export function PartnersPage() {
     y += 9;
 
     partners.forEach(
-      (partner) => {
+      (
+        partner,
+        index
+      ) => {
         if (
           y > 270
         ) {
@@ -1433,7 +1809,8 @@ export function PartnersPage() {
           distributable *
           (
             n(
-              partner.percentage
+              partner
+                .percentage
             ) /
             100
           );
@@ -1463,28 +1840,16 @@ export function PartnersPage() {
           59
         );
 
-        /*
-          نستخدم Partner 1/2...
-          في PDF حتى لا تتكسر العربية
-          بسبب خط jsPDF الافتراضي.
-        */
-
-        const partnerIndex =
-          partners.findIndex(
-            (item) =>
-              item.id ===
-              partner.id
-          ) + 1;
-
         doc.text(
-          `Partner ${partnerIndex}`,
+          `Partner ${index + 1}`,
           18,
           y + 7
         );
 
         doc.text(
           `${Number(
-            partner.percentage
+            partner
+              .percentage
           ).toLocaleString(
             'en-US',
             {
@@ -1552,6 +1917,7 @@ export function PartnersPage() {
       y > 285
     ) {
       doc.addPage();
+
       y = 20;
     }
 
@@ -1605,7 +1971,9 @@ export function PartnersPage() {
       doc.save(
         fileName
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       console.error(
         'Save PDF:',
         error
@@ -1623,6 +1991,8 @@ export function PartnersPage() {
 
   /* =========================================================
      مشاركة PDF
+
+     حالياً نفس الطريقة التي كانت تعمل عندك.
   ========================================================= */
 
   async function sharePdf() {
@@ -1658,18 +2028,11 @@ export function PartnersPage() {
           }
         );
 
-      /*
-        إذا الهاتف يدعم مشاركة الملفات
-        نفتح قائمة المشاركة.
-      */
-
       if (
         navigator.share &&
         navigator.canShare &&
         navigator.canShare({
-          files: [
-            file,
-          ],
+          files: [file],
         })
       ) {
         await navigator.share({
@@ -1679,18 +2042,11 @@ export function PartnersPage() {
           text:
             `حساب الشركاء - ${equipmentName} - ${monthNames[month]} ${year}`,
 
-          files: [
-            file,
-          ],
+          files: [file],
         });
 
         return;
       }
-
-      /*
-        إذا المتصفح لا يدعم مشاركة PDF
-        نحفظ الملف بدلًا من ذلك.
-      */
 
       doc.save(
         fileName
@@ -1699,12 +2055,9 @@ export function PartnersPage() {
       alert(
         'المشاركة المباشرة غير متاحة في هذا المتصفح، لذلك تم تنزيل ملف PDF.'
       );
-    } catch (error: any) {
-      /*
-        إذا المستخدم أغلق نافذة المشاركة
-        لا نظهر خطأ.
-      */
-
+    } catch (
+      error: any
+    ) {
       if (
         error?.name ===
         'AbortError'
@@ -1732,30 +2085,101 @@ export function PartnersPage() {
   ========================================================= */
 
   const inputStyle:
-    React.CSSProperties = {
-      width: '100%',
+    React.CSSProperties =
+    {
+      width:
+        '100%',
+
       boxSizing:
         'border-box',
-      padding: 12,
-      borderRadius: 12,
+
+      padding:
+        13,
+
+      borderRadius:
+        13,
+
       border:
         '1px solid #263b58',
+
       background:
         '#081526',
-      color: '#ffffff',
-      outline: 'none',
-      fontSize: 13,
+
+      color:
+        '#ffffff',
+
+      outline:
+        'none',
+
+      fontSize:
+        14,
     };
 
   const cardStyle:
-    React.CSSProperties = {
+    React.CSSProperties =
+    {
       background:
         'linear-gradient(145deg,#0d1b2f,#07111f)',
+
       border:
         '1px solid rgba(255,255,255,.08)',
-      borderRadius: 20,
-      padding: 14,
+
+      borderRadius:
+        20,
+
+      padding:
+        14,
     };
+
+  const modeButtonStyle =
+    (
+      active:
+        boolean
+    ):
+    React.CSSProperties => ({
+      flex: 1,
+
+      minHeight:
+        78,
+
+      borderRadius:
+        15,
+
+      border:
+        active
+          ? '1px solid rgba(96,165,250,.65)'
+          : '1px solid rgba(255,255,255,.08)',
+
+      background:
+        active
+          ? 'rgba(59,130,246,.15)'
+          : 'rgba(255,255,255,.025)',
+
+      color:
+        active
+          ? '#93c5fd'
+          : '#94a3b8',
+
+      fontWeight:
+        800,
+
+      display:
+        'flex',
+
+      flexDirection:
+        'column',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      gap: 6,
+
+      cursor:
+        'pointer',
+    });
 
   /* =========================================================
      الواجهة
@@ -1766,8 +2190,12 @@ export function PartnersPage() {
       <div
         dir="rtl"
         style={{
-          padding: 16,
-          paddingBottom: 120,
+          padding:
+            16,
+
+          paddingBottom:
+            120,
+
           color:
             '#ffffff',
         }}
@@ -1776,20 +2204,29 @@ export function PartnersPage() {
 
         <div
           style={{
-            display: 'flex',
+            display:
+              'flex',
+
             alignItems:
               'center',
+
             justifyContent:
               'space-between',
+
             gap: 12,
           }}
         >
           <div>
             <h1
               style={{
-                margin: 0,
-                fontSize: 26,
-                fontWeight: 900,
+                margin:
+                  0,
+
+                fontSize:
+                  26,
+
+                fontWeight:
+                  900,
               }}
             >
               حساب الشركاء
@@ -1799,8 +2236,12 @@ export function PartnersPage() {
               style={{
                 color:
                   '#94a3b8',
-                fontSize: 11,
-                marginTop: 5,
+
+                fontSize:
+                  11,
+
+                marginTop:
+                  5,
               }}
             >
               توزيع صافي حساب الكرين على الشركاء
@@ -1809,14 +2250,24 @@ export function PartnersPage() {
 
           <div
             style={{
-              width: 50,
-              height: 50,
-              borderRadius: 16,
+              width:
+                50,
+
+              height:
+                50,
+
+              borderRadius:
+                16,
+
               background:
                 'rgba(59,130,246,.12)',
-              display: 'flex',
+
+              display:
+                'flex',
+
               alignItems:
                 'center',
+
               justifyContent:
                 'center',
             }}
@@ -1834,27 +2285,45 @@ export function PartnersPage() {
           type="button"
           onClick={() => {
             loadSavedSettlements();
+
             setHistoryOpen(
               true
             );
           }}
           style={{
-            width: '100%',
-            marginTop: 15,
-            padding: 13,
-            borderRadius: 15,
+            width:
+              '100%',
+
+            marginTop:
+              15,
+
+            padding:
+              13,
+
+            borderRadius:
+              15,
+
             border:
               '1px solid rgba(96,165,250,.25)',
+
             background:
               'rgba(59,130,246,.08)',
+
             color:
               '#93c5fd',
-            fontWeight: 800,
-            display: 'flex',
+
+            fontWeight:
+              800,
+
+            display:
+              'flex',
+
             alignItems:
               'center',
+
             justifyContent:
               'center',
+
             gap: 8,
           }}
         >
@@ -1873,21 +2342,28 @@ export function PartnersPage() {
           </span>
         </button>
 
-        {/* اختيار المعدة */}
+        {/* المعدة */}
 
         <section
           style={{
             ...cardStyle,
-            marginTop: 14,
+
+            marginTop:
+              14,
           }}
         >
           <div
             style={{
-              display: 'flex',
+              display:
+                'flex',
+
               alignItems:
                 'center',
+
               gap: 8,
-              marginBottom: 10,
+
+              marginBottom:
+                10,
             }}
           >
             <Truck
@@ -1904,9 +2380,12 @@ export function PartnersPage() {
             value={
               equipmentId
             }
-            onChange={(e) =>
+            onChange={(
+              e
+            ) =>
               setEquipmentId(
-                e.target.value
+                e.target
+                  .value
               )
             }
             disabled={
@@ -1943,18 +2422,26 @@ export function PartnersPage() {
 
           <div
             style={{
-              display: 'grid',
+              display:
+                'grid',
+
               gridTemplateColumns:
                 '1fr 1fr',
-              gap: 8,
-              marginTop: 9,
+
+              gap:
+                8,
+
+              marginTop:
+                9,
             }}
           >
             <select
               value={
                 month
               }
-              onChange={(e) =>
+              onChange={(
+                e
+              ) =>
                 setMonth(
                   Number(
                     e.target
@@ -1979,7 +2466,9 @@ export function PartnersPage() {
                       index
                     }
                   >
-                    {name}
+                    {
+                      name
+                    }
                   </option>
                 )
               )}
@@ -1990,7 +2479,9 @@ export function PartnersPage() {
               value={
                 year
               }
-              onChange={(e) =>
+              onChange={(
+                e
+              ) =>
                 setYear(
                   n(
                     e.target
@@ -2004,59 +2495,360 @@ export function PartnersPage() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={
-              loadMonthlyAccount
-            }
-            disabled={
-              loadingAccount
-            }
+          <div
             style={{
-              width: '100%',
-              marginTop: 10,
-              padding: 11,
-              borderRadius: 12,
-              border:
-                '1px solid rgba(96,165,250,.25)',
+              marginTop:
+                10,
+
+              padding:
+                10,
+
+              borderRadius:
+                12,
+
               background:
-                'rgba(59,130,246,.08)',
+                'rgba(59,130,246,.06)',
+
               color:
                 '#93c5fd',
-              fontWeight: 800,
-              display: 'flex',
+
+              fontSize:
+                11,
+
+              textAlign:
+                'center',
+
+              display:
+                'flex',
+
               alignItems:
                 'center',
+
               justifyContent:
                 'center',
-              gap: 7,
+
+              gap: 6,
             }}
           >
             <RefreshCw
-              size={16}
+              size={14}
             />
 
             {loadingAccount
-              ? 'جاري التحديث...'
-              : 'تحديث الحساب الشهري'}
-          </button>
+              ? 'جاري تحديث الحساب الشهري...'
+              : 'الحساب الشهري يتحدث تلقائياً'}
+          </div>
         </section>
 
-        {/* الملخص */}
+        {/* =====================================================
+            اختيار مصدر الدخل
+        ====================================================== */}
+
+        <section
+          style={{
+            ...cardStyle,
+
+            marginTop:
+              12,
+          }}
+        >
+          <div
+            style={{
+              fontSize:
+                17,
+
+              fontWeight:
+                900,
+
+              marginBottom:
+                5,
+            }}
+          >
+            مصدر الدخل
+          </div>
+
+          <div
+            style={{
+              color:
+                '#94a3b8',
+
+              fontSize:
+                10,
+
+              marginBottom:
+                12,
+            }}
+          >
+            اختر الحساب الشهري أو أدخل المبلغ بنفسك
+          </div>
+
+          <div
+            style={{
+              display:
+                'flex',
+
+              gap:
+                8,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setIncomeMode(
+                  'automatic'
+                )
+              }
+              style={
+                modeButtonStyle(
+                  incomeMode ===
+                    'automatic'
+                )
+              }
+            >
+              <Calculator
+                size={21}
+              />
+
+              تلقائي
+
+              <span
+                style={{
+                  fontSize:
+                    9,
+
+                  opacity:
+                    0.8,
+                }}
+              >
+                الحساب الشهري
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setIncomeMode(
+                  'manual'
+                )
+              }
+              style={
+                modeButtonStyle(
+                  incomeMode ===
+                    'manual'
+                )
+              }
+            >
+              <Keyboard
+                size={21}
+              />
+
+              إدخال يدوي
+
+              <span
+                style={{
+                  fontSize:
+                    9,
+
+                  opacity:
+                    0.8,
+                }}
+              >
+                اكتب المبلغ
+              </span>
+            </button>
+          </div>
+
+          {/* تلقائي */}
+
+          {incomeMode ===
+            'automatic' && (
+            <div
+              style={{
+                marginTop:
+                  12,
+
+                padding:
+                  14,
+
+                borderRadius:
+                  14,
+
+                border:
+                  '1px solid rgba(34,197,94,.18)',
+
+                background:
+                  'rgba(34,197,94,.06)',
+
+                textAlign:
+                  'center',
+              }}
+            >
+              <div
+                style={{
+                  color:
+                    '#94a3b8',
+
+                  fontSize:
+                    10,
+                }}
+              >
+                دخل الحساب الشهري
+              </div>
+
+              <div
+                style={{
+                  color:
+                    '#4ade80',
+
+                  fontWeight:
+                    900,
+
+                  fontSize:
+                    22,
+
+                  marginTop:
+                    5,
+                }}
+              >
+                {money(
+                  monthlyIncome
+                )}
+              </div>
+
+              <div
+                style={{
+                  color:
+                    '#64748b',
+
+                  fontSize:
+                    9,
+
+                  marginTop:
+                    5,
+                }}
+              >
+                يتم تحديثه تلقائياً
+              </div>
+            </div>
+          )}
+
+          {/* يدوي */}
+
+          {incomeMode ===
+            'manual' && (
+            <div
+              style={{
+                marginTop:
+                  12,
+              }}
+            >
+              <label
+                style={{
+                  display:
+                    'block',
+
+                  color:
+                    '#93c5fd',
+
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    800,
+
+                  marginBottom:
+                    7,
+                }}
+              >
+                مبلغ الدخل الذي تريد توزيعه
+              </label>
+
+              <input
+                type="number"
+                inputMode="decimal"
+                value={
+                  manualIncome ||
+                  ''
+                }
+                onChange={(
+                  e
+                ) =>
+                  setManualIncome(
+                    n(
+                      e.target
+                        .value
+                    )
+                  )
+                }
+                placeholder="مثال: 50000"
+                style={{
+                  ...inputStyle,
+
+                  fontSize:
+                    20,
+
+                  fontWeight:
+                    900,
+
+                  textAlign:
+                    'center',
+                }}
+              />
+
+              <div
+                style={{
+                  color:
+                    '#4ade80',
+
+                  fontWeight:
+                    900,
+
+                  textAlign:
+                    'center',
+
+                  marginTop:
+                    8,
+
+                  fontSize:
+                    16,
+                }}
+              >
+                {money(
+                  manualIncome
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* =====================================================
+            ملخص
+        ====================================================== */}
 
         <div
           style={{
-            display: 'grid',
+            display:
+              'grid',
+
             gridTemplateColumns:
               '1fr 1fr',
-            gap: 10,
-            marginTop: 12,
+
+            gap:
+              10,
+
+            marginTop:
+              12,
           }}
         >
           <Summary
-            label="إجمالي الدخل"
+            label={
+              incomeMode ===
+              'automatic'
+                ? 'إجمالي الدخل التلقائي'
+                : 'إجمالي الدخل اليدوي'
+            }
             value={money(
-              monthlyIncome
+              effectiveIncome
             )}
             color="#4ade80"
             icon={
@@ -2101,17 +2893,24 @@ export function PartnersPage() {
         <section
           style={{
             ...cardStyle,
-            marginTop: 12,
+
+            marginTop:
+              12,
           }}
         >
           <label
             style={{
               display:
                 'block',
+
               color:
                 '#94a3b8',
-              fontSize: 11,
-              marginBottom: 7,
+
+              fontSize:
+                11,
+
+              marginBottom:
+                7,
             }}
           >
             مصاريف إضافية خاصة بالشراكة
@@ -2124,7 +2923,9 @@ export function PartnersPage() {
               additionalExpenses ||
               ''
             }
-            onChange={(e) =>
+            onChange={(
+              e
+            ) =>
               setAdditionalExpenses(
                 n(
                   e.target
@@ -2144,7 +2945,10 @@ export function PartnersPage() {
         <section
           style={{
             ...cardStyle,
-            marginTop: 12,
+
+            marginTop:
+              12,
+
             textAlign:
               'center',
           }}
@@ -2162,7 +2966,9 @@ export function PartnersPage() {
             style={{
               color:
                 '#94a3b8',
-              fontSize: 11,
+
+              fontSize:
+                11,
             }}
           >
             صافي المبلغ القابل للتوزيع
@@ -2175,9 +2981,15 @@ export function PartnersPage() {
                 0
                   ? '#4ade80'
                   : '#fb7185',
-              fontSize: 25,
-              fontWeight: 900,
-              marginTop: 6,
+
+              fontSize:
+                25,
+
+              fontWeight:
+                900,
+
+              marginTop:
+                6,
             }}
           >
             {money(
@@ -2186,28 +2998,38 @@ export function PartnersPage() {
           </div>
         </section>
 
-        {/* الشركاء */}
+        {/* =====================================================
+            الشركاء
+        ====================================================== */}
 
         <section
           style={{
             ...cardStyle,
-            marginTop: 14,
+
+            marginTop:
+              14,
           }}
         >
           <div
             style={{
-              display: 'flex',
+              display:
+                'flex',
+
               justifyContent:
                 'space-between',
+
               alignItems:
                 'center',
-              marginBottom: 12,
+
+              marginBottom:
+                12,
             }}
           >
             <div>
               <strong
                 style={{
-                  fontSize: 18,
+                  fontSize:
+                    18,
                 }}
               >
                 الشركاء
@@ -2216,17 +3038,19 @@ export function PartnersPage() {
               <div
                 style={{
                   color:
-                    Math.abs(
-                      percentageTotal -
-                        100
-                    ) < 0.01
+                    percentagesValid
                       ? '#4ade80'
                       : '#fbbf24',
-                  fontSize: 11,
-                  marginTop: 3,
+
+                  fontSize:
+                    11,
+
+                  marginTop:
+                    3,
                 }}
               >
                 مجموع النسب:{' '}
+
                 {percentageTotal.toFixed(
                   2
                 )}
@@ -2242,25 +3066,97 @@ export function PartnersPage() {
               style={{
                 border:
                   '1px solid rgba(96,165,250,.25)',
-                borderRadius: 11,
+
+                borderRadius:
+                  11,
+
                 padding:
                   '8px 10px',
+
                 background:
                   'rgba(59,130,246,.08)',
+
                 color:
                   '#93c5fd',
-                fontWeight: 700,
-                fontSize: 10,
+
+                fontWeight:
+                  700,
+
+                fontSize:
+                  10,
               }}
             >
               توزيع متساوي
             </button>
           </div>
 
+          {/* حالة النسب */}
+
           <div
             style={{
-              display: 'grid',
-              gap: 12,
+              marginBottom:
+                12,
+
+              padding:
+                10,
+
+              borderRadius:
+                12,
+
+              border:
+                percentagesValid
+                  ? '1px solid rgba(34,197,94,.22)'
+                  : '1px solid rgba(245,158,11,.22)',
+
+              background:
+                percentagesValid
+                  ? 'rgba(34,197,94,.07)'
+                  : 'rgba(245,158,11,.07)',
+
+              color:
+                percentagesValid
+                  ? '#4ade80'
+                  : '#fbbf24',
+
+              display:
+                'flex',
+
+              justifyContent:
+                'center',
+
+              alignItems:
+                'center',
+
+              gap:
+                6,
+
+              fontSize:
+                11,
+
+              fontWeight:
+                800,
+            }}
+          >
+            {percentagesValid && (
+              <CheckCircle2
+                size={16}
+              />
+            )}
+
+            {percentagesValid
+              ? 'النسب صحيحة ومكتملة (100%)'
+              : `حدد النسب بنفسك — المتبقي ${(100 - percentageTotal).toFixed(
+                  2
+                )}%`}
+          </div>
+
+          <div
+            style={{
+              display:
+                'grid',
+
+              gap:
+                12,
             }}
           >
             {partners.map(
@@ -2271,13 +3167,19 @@ export function PartnersPage() {
                 const due =
                   distributable *
                   (
-                    partner.percentage /
+                    n(
+                      partner
+                        .percentage
+                    ) /
                     100
                   );
 
                 const remaining =
                   due -
-                  partner.paid;
+                  n(
+                    partner
+                      .paid
+                  );
 
                 return (
                   <div
@@ -2287,27 +3189,38 @@ export function PartnersPage() {
                     style={{
                       background:
                         'rgba(255,255,255,.025)',
+
                       border:
                         '1px solid rgba(255,255,255,.07)',
-                      borderRadius: 16,
-                      padding: 12,
+
+                      borderRadius:
+                        16,
+
+                      padding:
+                        12,
                     }}
                   >
                     <div
                       style={{
                         display:
                           'flex',
+
                         justifyContent:
                           'space-between',
+
                         alignItems:
                           'center',
-                        marginBottom: 9,
+
+                        marginBottom:
+                          9,
                       }}
                     >
                       <strong>
                         الشريك{' '}
-                        {index +
-                          1}
+                        {
+                          index +
+                          1
+                        }
                       </strong>
 
                       {partners.length >
@@ -2331,18 +3244,22 @@ export function PartnersPage() {
                           style={{
                             border:
                               0,
-                            borderRadius: 10,
-                            padding: 8,
+
+                            borderRadius:
+                              10,
+
+                            padding:
+                              8,
+
                             background:
                               'rgba(239,68,68,.12)',
+
                             color:
                               '#fb7185',
                           }}
                         >
                           <Trash2
-                            size={
-                              17
-                            }
+                            size={17}
                           />
                         </button>
                       )}
@@ -2353,7 +3270,9 @@ export function PartnersPage() {
                       value={
                         partner.name
                       }
-                      onChange={(e) =>
+                      onChange={(
+                        e
+                      ) =>
                         updatePartner(
                           partner.id,
                           'name',
@@ -2370,53 +3289,113 @@ export function PartnersPage() {
                       style={{
                         display:
                           'grid',
+
                         gridTemplateColumns:
                           '1fr 1fr',
-                        gap: 8,
-                        marginTop: 8,
+
+                        gap:
+                          8,
+
+                        marginTop:
+                          8,
                       }}
                     >
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="النسبة %"
-                        value={
-                          partner.percentage ||
-                          ''
-                        }
-                        onChange={(e) =>
-                          updatePartner(
-                            partner.id,
-                            'percentage',
-                            e.target
-                              .value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                      />
+                      {/* النسبة يحددها المستخدم */}
 
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="السحوبات / المدفوع"
-                        value={
-                          partner.paid ||
-                          ''
-                        }
-                        onChange={(e) =>
-                          updatePartner(
-                            partner.id,
-                            'paid',
-                            e.target
-                              .value
-                          )
-                        }
-                        style={
-                          inputStyle
-                        }
-                      />
+                      <div>
+                        <label
+                          style={{
+                            display:
+                              'block',
+
+                            color:
+                              '#93c5fd',
+
+                            fontSize:
+                              9,
+
+                            marginBottom:
+                              5,
+                          }}
+                        >
+                          نسبة الشريك %
+                        </label>
+
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          placeholder="مثال: 50"
+                          value={
+                            partner.percentage ||
+                            ''
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePartner(
+                              partner.id,
+                              'percentage',
+                              e.target
+                                .value
+                            )
+                          }
+                          style={{
+                            ...inputStyle,
+
+                            textAlign:
+                              'center',
+
+                            fontWeight:
+                              900,
+
+                            fontSize:
+                              16,
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          style={{
+                            display:
+                              'block',
+
+                            color:
+                              '#94a3b8',
+
+                            fontSize:
+                              9,
+
+                            marginBottom:
+                              5,
+                          }}
+                        >
+                          السحوبات / المدفوع
+                        </label>
+
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={
+                            partner.paid ||
+                            ''
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePartner(
+                              partner.id,
+                              'paid',
+                              e.target
+                                .value
+                            )
+                          }
+                          style={
+                            inputStyle
+                          }
+                        />
+                      </div>
                     </div>
 
                     <input
@@ -2424,7 +3403,9 @@ export function PartnersPage() {
                       value={
                         partner.notes
                       }
-                      onChange={(e) =>
+                      onChange={(
+                        e
+                      ) =>
                         updatePartner(
                           partner.id,
                           'notes',
@@ -2434,7 +3415,9 @@ export function PartnersPage() {
                       }
                       style={{
                         ...inputStyle,
-                        marginTop: 8,
+
+                        marginTop:
+                          8,
                       }}
                     />
 
@@ -2442,10 +3425,15 @@ export function PartnersPage() {
                       style={{
                         display:
                           'grid',
+
                         gridTemplateColumns:
                           '1fr 1fr',
-                        gap: 8,
-                        marginTop: 9,
+
+                        gap:
+                          8,
+
+                        marginTop:
+                          9,
                       }}
                     >
                       <Summary
@@ -2481,28 +3469,48 @@ export function PartnersPage() {
             type="button"
             onClick={() =>
               setPartners(
-                (old) => [
+                (
+                  old
+                ) => [
                   ...old,
                   makePartner(),
                 ]
               )
             }
             style={{
-              width: '100%',
-              marginTop: 12,
-              padding: 13,
-              borderRadius: 13,
+              width:
+                '100%',
+
+              marginTop:
+                12,
+
+              padding:
+                13,
+
+              borderRadius:
+                13,
+
               border:
                 '1px dashed rgba(96,165,250,.55)',
+
               background:
                 'rgba(59,130,246,.08)',
+
               color:
                 '#93c5fd',
-              fontWeight: 800,
-              display: 'flex',
-              gap: 6,
+
+              fontWeight:
+                800,
+
+              display:
+                'flex',
+
+              gap:
+                6,
+
               justifyContent:
                 'center',
+
               alignItems:
                 'center',
             }}
@@ -2519,7 +3527,8 @@ export function PartnersPage() {
 
         <div
           style={{
-            marginTop: 12,
+            marginTop:
+              12,
           }}
         >
           <Summary
@@ -2541,9 +3550,14 @@ export function PartnersPage() {
 
         <div
           style={{
-            display: 'grid',
-            gap: 10,
-            marginTop: 15,
+            display:
+              'grid',
+
+            gap:
+              10,
+
+            marginTop:
+              15,
           }}
         >
           <button
@@ -2552,20 +3566,39 @@ export function PartnersPage() {
               saveSettlement
             }
             style={{
-              width: '100%',
-              padding: 16,
-              border: 0,
-              borderRadius: 16,
+              width:
+                '100%',
+
+              padding:
+                16,
+
+              border:
+                0,
+
+              borderRadius:
+                16,
+
               background:
                 'linear-gradient(135deg,#0f5fb7,#063a78)',
+
               color:
                 '#ffffff',
-              fontWeight: 900,
-              fontSize: 14,
-              display: 'flex',
-              gap: 8,
+
+              fontWeight:
+                900,
+
+              fontSize:
+                14,
+
+              display:
+                'flex',
+
+              gap:
+                8,
+
               justifyContent:
                 'center',
+
               alignItems:
                 'center',
             }}
@@ -2581,10 +3614,14 @@ export function PartnersPage() {
 
           <div
             style={{
-              display: 'grid',
+              display:
+                'grid',
+
               gridTemplateColumns:
                 '1fr 1fr',
-              gap: 9,
+
+              gap:
+                9,
             }}
           >
             <button
@@ -2596,21 +3633,35 @@ export function PartnersPage() {
                 savingPdf
               }
               style={{
-                padding: 14,
-                borderRadius: 15,
+                padding:
+                  14,
+
+                borderRadius:
+                  15,
+
                 border:
                   '1px solid rgba(34,197,94,.30)',
+
                 background:
                   'rgba(34,197,94,.10)',
+
                 color:
                   '#4ade80',
-                fontWeight: 800,
-                display: 'flex',
+
+                fontWeight:
+                  800,
+
+                display:
+                  'flex',
+
                 alignItems:
                   'center',
+
                 justifyContent:
                   'center',
-                gap: 7,
+
+                gap:
+                  7,
               }}
             >
               <FileText
@@ -2631,21 +3682,35 @@ export function PartnersPage() {
                 savingPdf
               }
               style={{
-                padding: 14,
-                borderRadius: 15,
+                padding:
+                  14,
+
+                borderRadius:
+                  15,
+
                 border:
                   '1px solid rgba(168,85,247,.30)',
+
                 background:
                   'rgba(168,85,247,.10)',
+
                 color:
                   '#c084fc',
-                fontWeight: 800,
-                display: 'flex',
+
+                fontWeight:
+                  800,
+
+                display:
+                  'flex',
+
                 alignItems:
                   'center',
+
                 justifyContent:
                   'center',
-                gap: 7,
+
+                gap:
+                  7,
               }}
             >
               <Share2
@@ -2662,32 +3727,48 @@ export function PartnersPage() {
               newSettlement
             }
             style={{
-              padding: 13,
-              borderRadius: 14,
+              padding:
+                13,
+
+              borderRadius:
+                14,
+
               border:
                 '1px solid rgba(255,255,255,.10)',
+
               background:
                 'rgba(255,255,255,.035)',
+
               color:
                 '#cbd5e1',
-              fontWeight: 800,
+
+              fontWeight:
+                800,
             }}
           >
             + حساب شراكة جديد
           </button>
         </div>
 
-        {/* نافذة الحسابات المحفوظة */}
+        {/* =====================================================
+            نافذة الحسابات المحفوظة
+        ====================================================== */}
 
         {historyOpen && (
           <div
             style={{
               position:
                 'fixed',
-              inset: 0,
-              zIndex: 99999,
+
+              inset:
+                0,
+
+              zIndex:
+                99999,
+
               background:
                 'rgba(2,6,15,.95)',
+
               overflowY:
                 'auto',
             }}
@@ -2695,14 +3776,21 @@ export function PartnersPage() {
             <div
               dir="rtl"
               style={{
-                width: '100%',
-                maxWidth: 430,
+                width:
+                  '100%',
+
+                maxWidth:
+                  430,
+
                 minHeight:
                   '100dvh',
+
                 margin:
                   '0 auto',
+
                 padding:
                   '20px 16px 40px',
+
                 boxSizing:
                   'border-box',
               }}
@@ -2711,18 +3799,25 @@ export function PartnersPage() {
                 style={{
                   display:
                     'flex',
+
                   alignItems:
                     'center',
+
                   justifyContent:
                     'space-between',
-                  marginBottom: 18,
+
+                  marginBottom:
+                    18,
                 }}
               >
                 <div>
                   <h2
                     style={{
-                      margin: 0,
-                      fontSize: 21,
+                      margin:
+                        0,
+
+                      fontSize:
+                        21,
                     }}
                   >
                     الحسابات المحفوظة
@@ -2732,9 +3827,12 @@ export function PartnersPage() {
                     style={{
                       margin:
                         '4px 0 0',
+
                       color:
                         '#64748b',
-                      fontSize: 10,
+
+                      fontSize:
+                        10,
                     }}
                   >
                     {
@@ -2752,19 +3850,30 @@ export function PartnersPage() {
                     )
                   }
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 13,
+                    width:
+                      42,
+
+                    height:
+                      42,
+
+                    borderRadius:
+                      13,
+
                     border:
                       '1px solid rgba(255,255,255,.08)',
+
                     background:
                       'rgba(255,255,255,.05)',
+
                     color:
                       '#ffffff',
+
                     display:
                       'flex',
+
                     alignItems:
                       'center',
+
                     justifyContent:
                       'center',
                   }}
@@ -2779,9 +3888,12 @@ export function PartnersPage() {
               0 ? (
                 <div
                   style={{
-                    marginTop: 80,
+                    marginTop:
+                      80,
+
                     textAlign:
                       'center',
+
                     color:
                       '#64748b',
                   }}
@@ -2801,157 +3913,241 @@ export function PartnersPage() {
                   style={{
                     display:
                       'grid',
-                    gap: 10,
+
+                    gap:
+                      10,
                   }}
                 >
                   {savedSettlements.map(
-                    (item) => (
-                      <div
-                        key={
-                          item.id
-                        }
-                        style={{
-                          ...cardStyle,
-                          padding: 13,
-                        }}
-                      >
+                    (
+                      item
+                    ) => {
+                      const itemIncome =
+                        item.incomeMode ===
+                        'manual'
+                          ? n(
+                              item.manualIncome
+                            )
+                          : n(
+                              item.monthlyIncome
+                            );
+
+                      return (
                         <div
+                          key={
+                            item.id
+                          }
                           style={{
-                            display:
-                              'flex',
-                            justifyContent:
-                              'space-between',
-                            gap: 10,
+                            ...cardStyle,
+
+                            padding:
+                              13,
                           }}
                         >
-                          <div>
-                            <strong
-                              style={{
-                                fontSize: 14,
-                              }}
-                            >
-                              {item.equipmentName ||
-                                'كرين'}
-                            </strong>
+                          <div
+                            style={{
+                              display:
+                                'flex',
+
+                              justifyContent:
+                                'space-between',
+
+                              gap:
+                                10,
+                            }}
+                          >
+                            <div>
+                              <strong
+                                style={{
+                                  fontSize:
+                                    14,
+                                }}
+                              >
+                                {item.equipmentName ||
+                                  'كرين'}
+                              </strong>
+
+                              <div
+                                style={{
+                                  color:
+                                    '#94a3b8',
+
+                                  fontSize:
+                                    10,
+
+                                  marginTop:
+                                    4,
+                                }}
+                              >
+                                {
+                                  monthNames[
+                                    item.month
+                                  ]
+                                }{' '}
+                                {
+                                  item.year
+                                }
+                              </div>
+
+                              <div
+                                style={{
+                                  color:
+                                    item.incomeMode ===
+                                    'manual'
+                                      ? '#c084fc'
+                                      : '#60a5fa',
+
+                                  fontSize:
+                                    9,
+
+                                  marginTop:
+                                    4,
+                                }}
+                              >
+                                {item.incomeMode ===
+                                'manual'
+                                  ? 'دخل يدوي'
+                                  : 'دخل تلقائي'}
+
+                                {' • '}
+
+                                {money(
+                                  itemIncome
+                                )}
+                              </div>
+                            </div>
 
                             <div
                               style={{
                                 color:
-                                  '#94a3b8',
-                                fontSize: 10,
-                                marginTop: 4,
+                                  item.distributable >=
+                                  0
+                                    ? '#4ade80'
+                                    : '#fb7185',
+
+                                fontWeight:
+                                  900,
+
+                                fontSize:
+                                  13,
                               }}
                             >
-                              {
-                                monthNames[
-                                  item.month
-                                ]
-                              }{' '}
-                              {
-                                item.year
-                              }
+                              {money(
+                                item.distributable
+                              )}
                             </div>
                           </div>
 
                           <div
                             style={{
-                              color:
-                                item.distributable >=
-                                0
-                                  ? '#4ade80'
-                                  : '#fb7185',
-                              fontWeight: 900,
-                              fontSize: 13,
+                              display:
+                                'grid',
+
+                              gridTemplateColumns:
+                                '1fr 1fr',
+
+                              gap:
+                                7,
+
+                              marginTop:
+                                11,
                             }}
                           >
-                            {money(
-                              item.distributable
-                            )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openSettlement(
+                                  item
+                                )
+                              }
+                              style={{
+                                padding:
+                                  10,
+
+                                borderRadius:
+                                  11,
+
+                                border:
+                                  '1px solid rgba(96,165,250,.25)',
+
+                                background:
+                                  'rgba(59,130,246,.08)',
+
+                                color:
+                                  '#93c5fd',
+
+                                fontWeight:
+                                  800,
+
+                                display:
+                                  'flex',
+
+                                alignItems:
+                                  'center',
+
+                                justifyContent:
+                                  'center',
+
+                                gap:
+                                  5,
+                              }}
+                            >
+                              <Pencil
+                                size={15}
+                              />
+
+                              فتح وتعديل
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteSettlement(
+                                  item.id
+                                )
+                              }
+                              style={{
+                                padding:
+                                  10,
+
+                                borderRadius:
+                                  11,
+
+                                border:
+                                  '1px solid rgba(239,68,68,.25)',
+
+                                background:
+                                  'rgba(239,68,68,.08)',
+
+                                color:
+                                  '#fb7185',
+
+                                fontWeight:
+                                  800,
+
+                                display:
+                                  'flex',
+
+                                alignItems:
+                                  'center',
+
+                                justifyContent:
+                                  'center',
+
+                                gap:
+                                  5,
+                              }}
+                            >
+                              <Trash2
+                                size={15}
+                              />
+
+                              حذف
+                            </button>
                           </div>
                         </div>
-
-                        <div
-                          style={{
-                            display:
-                              'grid',
-                            gridTemplateColumns:
-                              '1fr 1fr',
-                            gap: 7,
-                            marginTop: 11,
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openSettlement(
-                                item
-                              )
-                            }
-                            style={{
-                              padding: 10,
-                              borderRadius: 11,
-                              border:
-                                '1px solid rgba(96,165,250,.25)',
-                              background:
-                                'rgba(59,130,246,.08)',
-                              color:
-                                '#93c5fd',
-                              fontWeight: 800,
-                              display:
-                                'flex',
-                              alignItems:
-                                'center',
-                              justifyContent:
-                                'center',
-                              gap: 5,
-                            }}
-                          >
-                            <Pencil
-                              size={
-                                15
-                              }
-                            />
-
-                            فتح وتعديل
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              deleteSettlement(
-                                item.id
-                              )
-                            }
-                            style={{
-                              padding: 10,
-                              borderRadius: 11,
-                              border:
-                                '1px solid rgba(239,68,68,.25)',
-                              background:
-                                'rgba(239,68,68,.08)',
-                              color:
-                                '#fb7185',
-                              fontWeight: 800,
-                              display:
-                                'flex',
-                              alignItems:
-                                'center',
-                              justifyContent:
-                                'center',
-                              gap: 5,
-                            }}
-                          >
-                            <Trash2
-                              size={
-                                15
-                              }
-                            />
-
-                            حذف
-                          </button>
-                        </div>
-                      </div>
-                    )
+                      );
+                    }
                   )}
                 </div>
               )}
@@ -2974,27 +4170,40 @@ function Summary({
   small = false,
   icon,
 }: {
-  label: string;
-  value: string;
-  color: string;
-  small?: boolean;
-  icon?: React.ReactNode;
+  label:
+    string;
+
+  value:
+    string;
+
+  color:
+    string;
+
+  small?:
+    boolean;
+
+  icon?:
+    React.ReactNode;
 }) {
   return (
     <div
       style={{
         background:
           'linear-gradient(145deg,#0d1b2f,#07111f)',
+
         border:
           '1px solid rgba(255,255,255,.07)',
+
         borderRadius:
           small
             ? 12
             : 17,
+
         padding:
           small
             ? 9
             : 12,
+
         textAlign:
           'center',
       }}
@@ -3003,8 +4212,13 @@ function Summary({
         <div
           style={{
             color,
-            marginBottom: 5,
-            display: 'flex',
+
+            marginBottom:
+              5,
+
+            display:
+              'flex',
+
             justifyContent:
               'center',
           }}
@@ -3017,6 +4231,7 @@ function Summary({
         style={{
           color:
             '#94a3b8',
+
           fontSize:
             small
               ? 9
@@ -3029,16 +4244,21 @@ function Summary({
       <div
         style={{
           color,
-          fontWeight: 900,
+
+          fontWeight:
+            900,
+
           fontSize:
             small
               ? 12
               : 15,
-          marginTop: 5,
+
+          marginTop:
+            5,
         }}
       >
         {value}
       </div>
     </div>
   );
-        }
+          }
