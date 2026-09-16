@@ -19,8 +19,6 @@ import {
   FolderOpen,
   X,
   Pencil,
-  Download,
-  CheckCircle2,
 } from 'lucide-react';
 
 import {
@@ -33,15 +31,6 @@ import {
 } from '@/lib/equipment';
 
 import jsPDF from 'jspdf';
-
-import {
-  Share,
-} from '@capacitor/share';
-
-import {
-  Filesystem,
-  Directory,
-} from '@capacitor/filesystem';
 
 /* =========================================================
    الأنواع
@@ -275,9 +264,7 @@ export function PartnersPage() {
   const [
     savedSettlements,
     setSavedSettlements,
-  ] = useState<
-    SavedSettlement[]
-  >([]);
+  ] = useState<SavedSettlement[]>([]);
 
   const [
     historyOpen,
@@ -301,12 +288,13 @@ export function PartnersPage() {
   ========================================================= */
 
   useEffect(() => {
-    let cancelled =
-      false;
+    let cancelled = false;
 
     async function loadEquipment() {
       try {
-        setEquipmentLoading(true);
+        setEquipmentLoading(
+          true
+        );
 
         const result =
           await fetchEquipment();
@@ -320,11 +308,15 @@ export function PartnersPage() {
             ? result
             : [];
 
-        setEquipmentList(list);
+        setEquipmentList(
+          list
+        );
 
         if (list.length > 0) {
           setEquipmentId(
-            String(list[0].id)
+            String(
+              list[0].id
+            )
           );
         }
       } catch (error) {
@@ -349,7 +341,7 @@ export function PartnersPage() {
   }, []);
 
   /* =========================================================
-     تحميل السجلات المحفوظة
+     تحميل الحسابات المحفوظة
   ========================================================= */
 
   function loadSavedSettlements() {
@@ -420,16 +412,20 @@ export function PartnersPage() {
   function loadMonthlyAccount() {
     if (!equipmentId) {
       setMonthlyIncome(0);
+
       setMonthlyManualExpenses(
         0
       );
+
       setLinkedExpenses(0);
 
       return;
     }
 
     try {
-      setLoadingAccount(true);
+      setLoadingAccount(
+        true
+      );
 
       const monthlyKey =
         `monthly-ledger-v3-${equipmentId}-${year}-${month}`;
@@ -450,7 +446,8 @@ export function PartnersPage() {
           if (
             Array.isArray(parsed)
           ) {
-            rows = parsed;
+            rows =
+              parsed;
           }
         } catch (error) {
           console.error(
@@ -501,7 +498,8 @@ export function PartnersPage() {
           if (
             Array.isArray(parsed)
           ) {
-            external = parsed;
+            external =
+              parsed;
           }
         }
       } catch (error) {
@@ -513,13 +511,18 @@ export function PartnersPage() {
 
       const linked =
         external.reduce(
-          (sum, expense) => {
+          (
+            sum,
+            expense
+          ) => {
             if (
               String(
                 expense.equipmentId ||
                   ''
               ) !==
-              String(equipmentId)
+              String(
+                equipmentId
+              )
             ) {
               return sum;
             }
@@ -535,7 +538,8 @@ export function PartnersPage() {
             }
 
             if (
-              date.year !== year ||
+              date.year !==
+                year ||
               date.month !==
                 month + 1
             ) {
@@ -571,12 +575,16 @@ export function PartnersPage() {
       );
 
       setMonthlyIncome(0);
+
       setMonthlyManualExpenses(
         0
       );
+
       setLinkedExpenses(0);
     } finally {
-      setLoadingAccount(false);
+      setLoadingAccount(
+        false
+      );
     }
   }
 
@@ -629,7 +637,10 @@ export function PartnersPage() {
     useMemo(
       () =>
         partners.reduce(
-          (sum, partner) =>
+          (
+            sum,
+            partner
+          ) =>
             sum +
             n(
               partner.percentage
@@ -643,13 +654,17 @@ export function PartnersPage() {
     useMemo(
       () =>
         partners.reduce(
-          (sum, partner) =>
+          (
+            sum,
+            partner
+          ) =>
             sum +
             distributable *
               (
                 n(
                   partner.percentage
-                ) / 100
+                ) /
+                100
               ),
           0
         ),
@@ -664,7 +679,7 @@ export function PartnersPage() {
     distributed;
 
   /* =========================================================
-     تحديث الشريك
+     تعديل بيانات شريك
   ========================================================= */
 
   function updatePartner(
@@ -681,7 +696,8 @@ export function PartnersPage() {
         old.map(
           (partner) => {
             if (
-              partner.id !== id
+              partner.id !==
+              id
             ) {
               return partner;
             }
@@ -725,7 +741,10 @@ export function PartnersPage() {
 
     const next =
       partners.map(
-        (partner, index) => {
+        (
+          partner,
+          index
+        ) => {
           const percentage =
             index ===
             partners.length - 1
@@ -733,11 +752,14 @@ export function PartnersPage() {
                   (
                     100 -
                     used
-                  ).toFixed(4)
+                  ).toFixed(
+                    4
+                  )
                 )
               : base;
 
-          used += percentage;
+          used +=
+            percentage;
 
           return {
             ...partner,
@@ -746,7 +768,9 @@ export function PartnersPage() {
         }
       );
 
-    setPartners(next);
+    setPartners(
+      next
+    );
   }
 
   /* =========================================================
@@ -763,7 +787,8 @@ export function PartnersPage() {
     }
 
     if (
-      partners.length === 0
+      partners.length ===
+      0
     ) {
       alert(
         'أضف شريكاً واحداً على الأقل'
@@ -792,7 +817,9 @@ export function PartnersPage() {
       ) > 0.01
     ) {
       alert(
-        `مجموع نسب الشركاء يجب أن يكون 100%.\nالمجموع الحالي: ${percentageTotal}%`
+        `مجموع نسب الشركاء يجب أن يكون 100%.\nالمجموع الحالي: ${percentageTotal.toFixed(
+          2
+        )}%`
       );
 
       return false;
@@ -802,11 +829,18 @@ export function PartnersPage() {
   }
 
   /* =========================================================
-     إنشاء السجل الحالي
+     إنشاء سجل
   ========================================================= */
 
   function createRecord():
   SavedSettlement {
+    const current =
+      savedSettlements.find(
+        (item) =>
+          item.id ===
+          editingId
+      );
+
     return {
       id:
         editingId ||
@@ -815,6 +849,7 @@ export function PartnersPage() {
         ),
 
       createdAt:
+        current?.createdAt ||
         new Date()
           .toISOString(),
 
@@ -852,7 +887,7 @@ export function PartnersPage() {
   }
 
   /* =========================================================
-     حفظ الحساب
+     حفظ حساب الشركاء
   ========================================================= */
 
   function saveSettlement() {
@@ -881,9 +916,12 @@ export function PartnersPage() {
             JSON.parse(raw);
 
           if (
-            Array.isArray(parsed)
+            Array.isArray(
+              parsed
+            )
           ) {
-            list = parsed;
+            list =
+              parsed;
           }
         } catch {
           list = [];
@@ -891,20 +929,28 @@ export function PartnersPage() {
       }
 
       if (editingId) {
-        list =
-          list.map(
+        const exists =
+          list.some(
             (item) =>
               item.id ===
               editingId
-                ? {
-                    ...record,
-
-                    createdAt:
-                      item.createdAt ||
-                      record.createdAt,
-                  }
-                : item
           );
+
+        if (exists) {
+          list =
+            list.map(
+              (item) =>
+                item.id ===
+                editingId
+                  ? record
+                  : item
+            );
+        } else {
+          list = [
+            record,
+            ...list,
+          ];
+        }
       } else {
         list = [
           record,
@@ -914,14 +960,18 @@ export function PartnersPage() {
 
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify(list)
+        JSON.stringify(
+          list
+        )
       );
 
       setEditingId(
         record.id
       );
 
-      loadSavedSettlements();
+      setSavedSettlements(
+        list
+      );
 
       alert(
         'تم حفظ حساب الشركاء بنجاح'
@@ -1009,7 +1059,8 @@ export function PartnersPage() {
 
     window.scrollTo({
       top: 0,
-      behavior: 'smooth',
+      behavior:
+        'smooth',
     });
   }
 
@@ -1038,7 +1089,9 @@ export function PartnersPage() {
 
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify(next)
+        JSON.stringify(
+          next
+        )
       );
 
       setSavedSettlements(
@@ -1065,7 +1118,9 @@ export function PartnersPage() {
   ========================================================= */
 
   function newSettlement() {
-    setEditingId(null);
+    setEditingId(
+      null
+    );
 
     setAdditionalExpenses(
       0
@@ -1078,6 +1133,12 @@ export function PartnersPage() {
     ]);
 
     loadMonthlyAccount();
+
+    window.scrollTo({
+      top: 0,
+      behavior:
+        'smooth',
+    });
   }
 
   /* =========================================================
@@ -1095,20 +1156,12 @@ export function PartnersPage() {
       new jsPDF({
         orientation:
           'portrait',
-
         unit: 'mm',
-
         format: 'a4',
       });
 
     const pageWidth =
-      doc.internal
-        .pageSize
-        .getWidth();
-
-    /*
-      رأس التقرير
-    */
+      doc.internal.pageSize.getWidth();
 
     doc.setFillColor(
       8,
@@ -1120,7 +1173,7 @@ export function PartnersPage() {
       0,
       0,
       pageWidth,
-      38,
+      40,
       'F'
     );
 
@@ -1130,14 +1183,17 @@ export function PartnersPage() {
       11
     );
 
-    doc.setFontSize(20);
+    doc.setFontSize(
+      21
+    );
 
     doc.text(
       'BAKR PRO',
       pageWidth / 2,
       14,
       {
-        align: 'center',
+        align:
+          'center',
       }
     );
 
@@ -1147,76 +1203,74 @@ export function PartnersPage() {
       255
     );
 
-    doc.setFontSize(12);
+    doc.setFontSize(
+      13
+    );
 
     doc.text(
       'PARTNERS ACCOUNT',
       pageWidth / 2,
-      23,
+      24,
       {
-        align: 'center',
+        align:
+          'center',
       }
     );
 
-    doc.setFontSize(9);
+    doc.setFontSize(
+      9
+    );
 
     doc.text(
-      `${equipmentName} - ${monthNames[month]} ${year}`,
+      `${equipmentName || 'Equipment'} - ${month + 1}/${year}`,
       pageWidth / 2,
-      31,
+      32,
       {
-        align: 'center',
+        align:
+          'center',
       }
     );
 
-    let y = 49;
+    let y = 50;
 
-    /*
-      ملخص الحساب
-    */
+    const summary:
+      [string, number][] =
+      [
+        [
+          'Monthly Income',
+          monthlyIncome,
+        ],
+        [
+          'Monthly Expenses',
+          monthlyManualExpenses,
+        ],
+        [
+          'Driver / Equipment Expenses',
+          linkedExpenses,
+        ],
+        [
+          'Additional Expenses',
+          additionalExpenses,
+        ],
+        [
+          'Total Expenses',
+          totalExpenses,
+        ],
+        [
+          'Net Distribution',
+          distributable,
+        ],
+      ];
 
-    doc.setTextColor(
-      30,
-      41,
-      59
+    doc.setFontSize(
+      10
     );
 
-    doc.setFontSize(11);
-
-    const summary = [
-      [
-        'Monthly Income',
-        monthlyIncome,
-      ],
-
-      [
-        'Monthly Expenses',
-        monthlyManualExpenses,
-      ],
-
-      [
-        'Driver / Equipment Expenses',
-        linkedExpenses,
-      ],
-
-      [
-        'Additional Expenses',
-        additionalExpenses,
-      ],
-
-      [
-        'Total Expenses',
-        totalExpenses,
-      ],
-
-      [
-        'Net Distribution',
-        distributable,
-      ],
-    ];
-
     summary.forEach(
-      ([label, value]) => {
+      ([
+        label,
+        value,
+      ]) => {
         doc.setFillColor(
           245,
           247,
@@ -1233,8 +1287,14 @@ export function PartnersPage() {
           'F'
         );
 
+        doc.setTextColor(
+          30,
+          41,
+          59
+        );
+
         doc.text(
-          String(label),
+          label,
           20,
           y + 6.5
         );
@@ -1252,7 +1312,8 @@ export function PartnersPage() {
           190,
           y + 6.5,
           {
-            align: 'right',
+            align:
+              'right',
           }
         );
 
@@ -1261,10 +1322,6 @@ export function PartnersPage() {
     );
 
     y += 5;
-
-    /*
-      عنوان الشركاء
-    */
 
     doc.setFillColor(
       15,
@@ -1286,22 +1343,21 @@ export function PartnersPage() {
       255
     );
 
-    doc.setFontSize(10);
+    doc.setFontSize(
+      10
+    );
 
     doc.text(
       'PARTNERS DISTRIBUTION',
-      105,
+      pageWidth / 2,
       y + 6.5,
       {
-        align: 'center',
+        align:
+          'center',
       }
     );
 
     y += 13;
-
-    /*
-      رؤوس الجدول
-    */
 
     doc.setFillColor(
       226,
@@ -1323,7 +1379,9 @@ export function PartnersPage() {
       59
     );
 
-    doc.setFontSize(8);
+    doc.setFontSize(
+      8
+    );
 
     doc.text(
       'Partner',
@@ -1333,7 +1391,7 @@ export function PartnersPage() {
 
     doc.text(
       '%',
-      83,
+      82,
       y + 6
     );
 
@@ -1354,7 +1412,8 @@ export function PartnersPage() {
       190,
       y + 6,
       {
-        align: 'right',
+        align:
+          'right',
       }
     );
 
@@ -1362,7 +1421,9 @@ export function PartnersPage() {
 
     partners.forEach(
       (partner) => {
-        if (y > 270) {
+        if (
+          y > 270
+        ) {
           doc.addPage();
 
           y = 20;
@@ -1373,7 +1434,8 @@ export function PartnersPage() {
           (
             n(
               partner.percentage
-            ) / 100
+            ) /
+            100
           );
 
         const remaining =
@@ -1401,16 +1463,36 @@ export function PartnersPage() {
           59
         );
 
+        /*
+          نستخدم Partner 1/2...
+          في PDF حتى لا تتكسر العربية
+          بسبب خط jsPDF الافتراضي.
+        */
+
+        const partnerIndex =
+          partners.findIndex(
+            (item) =>
+              item.id ===
+              partner.id
+          ) + 1;
+
         doc.text(
-          partner.name ||
-            '-',
+          `Partner ${partnerIndex}`,
           18,
           y + 7
         );
 
         doc.text(
-          `${partner.percentage}%`,
-          83,
+          `${Number(
+            partner.percentage
+          ).toLocaleString(
+            'en-US',
+            {
+              maximumFractionDigits:
+                2,
+            }
+          )}%`,
+          82,
           y + 7
         );
 
@@ -1455,7 +1537,8 @@ export function PartnersPage() {
           190,
           y + 7,
           {
-            align: 'right',
+            align:
+              'right',
           }
         );
 
@@ -1465,23 +1548,32 @@ export function PartnersPage() {
 
     y += 10;
 
+    if (
+      y > 285
+    ) {
+      doc.addPage();
+      y = 20;
+    }
+
     doc.setTextColor(
       100,
       116,
       139
     );
 
-    doc.setFontSize(8);
+    doc.setFontSize(
+      8
+    );
 
     doc.text(
-      `Generated by BAKR PRO - ${new Date().toLocaleDateString('en-GB')}`,
+      `Generated by BAKR PRO - ${new Date().toLocaleDateString(
+        'en-GB'
+      )}`,
       pageWidth / 2,
-      Math.min(
-        y,
-        285
-      ),
+      y,
       {
-        align: 'center',
+        align:
+          'center',
       }
     );
 
@@ -1501,53 +1593,17 @@ export function PartnersPage() {
     }
 
     try {
-      setSavingPdf(true);
+      setSavingPdf(
+        true
+      );
 
       const fileName =
         safeFileName(
-          `BAKR-PRO-Partners-${equipmentName}-${monthNames[month]}-${year}.pdf`
+          `BAKR-PRO-Partners-${equipmentName || 'Equipment'}-${month + 1}-${year}.pdf`
         );
 
-      /*
-        على الويب يتم تنزيله مباشرة
-      */
-
-      if (
-        !(
-          window as any
-        ).Capacitor
-      ) {
-        doc.save(
-          fileName
-        );
-
-        return;
-      }
-
-      const dataUri =
-        doc.output(
-          'datauristring'
-        );
-
-      const base64 =
-        dataUri.split(
-          ','
-        )[1];
-
-      await Filesystem.writeFile({
-        path:
-          `BAKR_PRO/${fileName}`,
-
-        data: base64,
-
-        directory:
-          Directory.Documents,
-
-        recursive: true,
-      });
-
-      alert(
-        'تم حفظ ملف PDF في المستندات'
+      doc.save(
+        fileName
       );
     } catch (error) {
       console.error(
@@ -1555,23 +1611,9 @@ export function PartnersPage() {
         error
       );
 
-      /*
-        محاولة تنزيل عادية
-        إذا فشل Filesystem
-      */
-
-      try {
-        const fallback =
-          buildPdf();
-
-        fallback?.save(
-          `BAKR-PRO-Partners-${year}-${month + 1}.pdf`
-        );
-      } catch {
-        alert(
-          'تعذر حفظ ملف PDF'
-        );
-      }
+      alert(
+        'تعذر حفظ ملف PDF'
+      );
     } finally {
       setSavingPdf(
         false
@@ -1592,57 +1634,91 @@ export function PartnersPage() {
     }
 
     try {
-      setSavingPdf(true);
+      setSavingPdf(
+        true
+      );
 
       const fileName =
         safeFileName(
-          `BAKR-PRO-Partners-${equipmentName}-${monthNames[month]}-${year}.pdf`
+          `BAKR-PRO-Partners-${equipmentName || 'Equipment'}-${month + 1}-${year}.pdf`
         );
 
-      const dataUri =
+      const blob =
         doc.output(
-          'datauristring'
+          'blob'
         );
 
-      const base64 =
-        dataUri.split(
-          ','
-        )[1];
+      const file =
+        new File(
+          [blob],
+          fileName,
+          {
+            type:
+              'application/pdf',
+          }
+        );
 
-      const result =
-        await Filesystem.writeFile({
-          path:
-            `BAKR_PRO/${fileName}`,
+      /*
+        إذا الهاتف يدعم مشاركة الملفات
+        نفتح قائمة المشاركة.
+      */
 
-          data: base64,
+      if (
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({
+          files: [
+            file,
+          ],
+        })
+      ) {
+        await navigator.share({
+          title:
+            'حساب الشركاء - BAKR PRO',
 
-          directory:
-            Directory.Cache,
+          text:
+            `حساب الشركاء - ${equipmentName} - ${monthNames[month]} ${year}`,
 
-          recursive: true,
+          files: [
+            file,
+          ],
         });
 
-      await Share.share({
-        title:
-          'حساب الشركاء - BAKR PRO',
+        return;
+      }
 
-        text:
-          `حساب الشركاء - ${equipmentName} - ${monthNames[month]} ${year}`,
+      /*
+        إذا المتصفح لا يدعم مشاركة PDF
+        نحفظ الملف بدلًا من ذلك.
+      */
 
-        url:
-          result.uri,
+      doc.save(
+        fileName
+      );
 
-        dialogTitle:
-          'مشاركة حساب الشركاء',
-      });
-    } catch (error) {
+      alert(
+        'المشاركة المباشرة غير متاحة في هذا المتصفح، لذلك تم تنزيل ملف PDF.'
+      );
+    } catch (error: any) {
+      /*
+        إذا المستخدم أغلق نافذة المشاركة
+        لا نظهر خطأ.
+      */
+
+      if (
+        error?.name ===
+        'AbortError'
+      ) {
+        return;
+      }
+
       console.error(
         'Share PDF:',
         error
       );
 
       alert(
-        'تعذر فتح المشاركة. يمكنك استخدام زر حفظ PDF.'
+        'تعذر مشاركة ملف PDF. استخدم زر حفظ PDF.'
       );
     } finally {
       setSavingPdf(
@@ -1692,7 +1768,8 @@ export function PartnersPage() {
         style={{
           padding: 16,
           paddingBottom: 120,
-          color: '#ffffff',
+          color:
+            '#ffffff',
         }}
       >
         {/* الرأس */}
@@ -1751,13 +1828,15 @@ export function PartnersPage() {
           </div>
         </div>
 
-        {/* السجلات المحفوظة */}
+        {/* الحسابات المحفوظة */}
 
         <button
           type="button"
           onClick={() => {
             loadSavedSettlements();
-            setHistoryOpen(true);
+            setHistoryOpen(
+              true
+            );
           }}
           style={{
             width: '100%',
@@ -1786,11 +1865,15 @@ export function PartnersPage() {
           الحسابات المحفوظة
 
           <span>
-            ({savedSettlements.length})
+            (
+            {
+              savedSettlements.length
+            }
+            )
           </span>
         </button>
 
-        {/* المعدة */}
+        {/* اختيار المعدة */}
 
         <section
           style={{
@@ -1850,13 +1933,13 @@ export function PartnersPage() {
                     item.id
                   }
                 >
-                  {item.name}
+                  {
+                    item.name
+                  }
                 </option>
               )
             )}
           </select>
-
-          {/* الشهر والسنة */}
 
           <div
             style={{
@@ -1868,7 +1951,9 @@ export function PartnersPage() {
             }}
           >
             <select
-              value={month}
+              value={
+                month
+              }
               onChange={(e) =>
                 setMonth(
                   Number(
@@ -1902,7 +1987,9 @@ export function PartnersPage() {
 
             <input
               type="number"
-              value={year}
+              value={
+                year
+              }
               onChange={(e) =>
                 setYear(
                   n(
@@ -1955,7 +2042,7 @@ export function PartnersPage() {
           </button>
         </section>
 
-        {/* ملخص الدخل والمصاريف */}
+        {/* الملخص */}
 
         <div
           style={{
@@ -2009,7 +2096,7 @@ export function PartnersPage() {
           />
         </div>
 
-        {/* مصاريف إضافية */}
+        {/* المصاريف الإضافية */}
 
         <section
           style={{
@@ -2019,7 +2106,8 @@ export function PartnersPage() {
         >
           <label
             style={{
-              display: 'block',
+              display:
+                'block',
               color:
                 '#94a3b8',
               fontSize: 11,
@@ -2087,7 +2175,6 @@ export function PartnersPage() {
                 0
                   ? '#4ade80'
                   : '#fb7185',
-
               fontSize: 25,
               fontWeight: 900,
               marginTop: 6,
@@ -2135,7 +2222,6 @@ export function PartnersPage() {
                     ) < 0.01
                       ? '#4ade80'
                       : '#fbbf24',
-
                   fontSize: 11,
                   marginTop: 3,
                 }}
@@ -2267,9 +2353,7 @@ export function PartnersPage() {
                       value={
                         partner.name
                       }
-                      onChange={(
-                        e
-                      ) =>
+                      onChange={(e) =>
                         updatePartner(
                           partner.id,
                           'name',
@@ -2300,14 +2384,11 @@ export function PartnersPage() {
                           partner.percentage ||
                           ''
                         }
-                        onChange={(
-                          e
-                        ) =>
+                        onChange={(e) =>
                           updatePartner(
                             partner.id,
                             'percentage',
-                            e
-                              .target
+                            e.target
                               .value
                           )
                         }
@@ -2324,14 +2405,11 @@ export function PartnersPage() {
                           partner.paid ||
                           ''
                         }
-                        onChange={(
-                          e
-                        ) =>
+                        onChange={(e) =>
                           updatePartner(
                             partner.id,
                             'paid',
-                            e
-                              .target
+                            e.target
                               .value
                           )
                         }
@@ -2346,9 +2424,7 @@ export function PartnersPage() {
                       value={
                         partner.notes
                       }
-                      onChange={(
-                        e
-                      ) =>
+                      onChange={(e) =>
                         updatePartner(
                           partner.id,
                           'notes',
@@ -2541,7 +2617,9 @@ export function PartnersPage() {
                 size={18}
               />
 
-              حفظ PDF
+              {savingPdf
+                ? 'جاري...'
+                : 'حفظ PDF'}
             </button>
 
             <button
@@ -2659,7 +2737,9 @@ export function PartnersPage() {
                       fontSize: 10,
                     }}
                   >
-                    {savedSettlements.length}{' '}
+                    {
+                      savedSettlements.length
+                    }{' '}
                     حساب محفوظ
                   </p>
                 </div>
@@ -2762,10 +2842,11 @@ export function PartnersPage() {
                                 marginTop: 4,
                               }}
                             >
-                              {monthNames[
-                                item
-                                  .month
-                              ]}{' '}
+                              {
+                                monthNames[
+                                  item.month
+                                ]
+                              }{' '}
                               {
                                 item.year
                               }
