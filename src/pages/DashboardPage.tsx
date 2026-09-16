@@ -171,7 +171,7 @@ function detectCategory(key: string) {
   ) {
     return {
       category: 'حساب الشركاء',
-      path: '/partners-account',
+      path: '/partners',
     };
   }
 
@@ -668,11 +668,11 @@ export function DashboardPage() {
       tone: 'orange',
     },
 
-    // حساب الشركاء الجديد
+    // حساب الشركاء
     {
       label: 'حساب الشركاء',
       image: '/icons/partners.png',
-      path: '/partners-account',
+      path: '/partners',
       tone: 'blue',
     },
 
@@ -751,7 +751,6 @@ export function DashboardPage() {
   return (
     <AppLayout>
       <div dir="rtl" className="w-full">
-
         {/* صورة الواجهة */}
         <section className="mb-4">
           <div
@@ -935,7 +934,9 @@ export function DashboardPage() {
           <div className="grid grid-cols-2 gap-3">
             <MoneyCard
               label="إجمالي الدخل"
-              value={formatSAR(totals.totalIncome)}
+              value={formatSAR(
+                totals.totalIncome
+              )}
               icon={TrendingUp}
               color="#4ade80"
               bg="rgba(34,197,94,0.10)"
@@ -947,7 +948,9 @@ export function DashboardPage() {
 
             <MoneyCard
               label="إجمالي المصروفات"
-              value={formatSAR(totals.totalExpenses)}
+              value={formatSAR(
+                totals.totalExpenses
+              )}
               icon={TrendingDown}
               color="#fb7185"
               bg="rgba(239,68,68,0.10)"
@@ -959,7 +962,9 @@ export function DashboardPage() {
 
             <MoneyCard
               label="صافي الربح"
-              value={formatSAR(totals.netProfit)}
+              value={formatSAR(
+                totals.netProfit
+              )}
               icon={Wallet}
               color="#60a5fa"
               bg="rgba(59,130,246,0.10)"
@@ -971,7 +976,9 @@ export function DashboardPage() {
 
             <MoneyCard
               label="المستحقات"
-              value={formatSAR(totals.receivables)}
+              value={formatSAR(
+                totals.receivables
+              )}
               icon={Clock}
               color="#fb923c"
               bg="rgba(249,115,22,0.10)"
@@ -1010,7 +1017,9 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={() =>
-                navigate('/operating-expenses')
+                navigate(
+                  '/operating-expenses'
+                )
               }
               className="relative w-full overflow-hidden rounded-[20px] active:scale-[0.97] transition-transform"
               style={{
@@ -1157,13 +1166,15 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {recentTxs.map((tx, i) => (
-                <TransactionItem
-                  key={tx.data.id}
-                  tx={tx}
-                  delay={i * 50}
-                />
-              ))}
+              {recentTxs.map(
+                (tx, i) => (
+                  <TransactionItem
+                    key={tx.data.id}
+                    tx={tx}
+                    delay={i * 50}
+                  />
+                )
+              )}
             </div>
           )}
         </section>
@@ -1237,7 +1248,8 @@ export function DashboardPage() {
               </div>
 
               {searchQuery &&
-                searchResults.length === 0 && (
+                searchResults.length ===
+                  0 && (
                   <div className="mt-16 text-center">
                     <Search className="w-8 h-8 text-amber-400/50 mx-auto" />
 
@@ -1248,22 +1260,36 @@ export function DashboardPage() {
                 )}
 
               {searchQuery &&
-                searchResults.length > 0 && (
+                searchResults.length >
+                  0 && (
                   <div className="mt-5 space-y-5">
                     {Object.entries(
                       groupedSearchResults
                     ).map(
-                      ([category, items]) => (
-                        <section key={category}>
+                      ([
+                        category,
+                        items,
+                      ]) => (
+                        <section
+                          key={
+                            category
+                          }
+                        >
                           <h3 className="text-[12px] font-black text-slate-300 mb-2">
-                            {category}
+                            {
+                              category
+                            }
                           </h3>
 
                           <div className="space-y-2">
                             {items.map(
-                              (item) => (
+                              (
+                                item
+                              ) => (
                                 <button
-                                  key={item.id}
+                                  key={
+                                    item.id
+                                  }
                                   type="button"
                                   onClick={() =>
                                     openSearchResult(
@@ -1276,17 +1302,22 @@ export function DashboardPage() {
 
                                   <div className="flex-1 min-w-0">
                                     <p className="text-[12px] font-bold text-white truncate">
-                                      {item.title}
+                                      {
+                                        item.title
+                                      }
                                     </p>
 
                                     {item.subtitle && (
                                       <p className="text-[9px] text-slate-500 mt-1 truncate">
-                                        {item.subtitle}
+                                        {
+                                          item.subtitle
+                                        }
                                       </p>
                                     )}
                                   </div>
 
-                                  {item.path !== '/' && (
+                                  {item.path !==
+                                    '/' && (
                                     <ChevronLeft className="w-4 h-4 text-slate-600" />
                                   )}
                                 </button>
@@ -1365,4 +1396,4 @@ function MoneyCard({
       </p>
     </button>
   );
-    }
+          }
