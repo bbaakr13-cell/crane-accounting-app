@@ -110,8 +110,8 @@ import {
   حساب الشركاء الجديد
 */
 import {
-  PartnersAccountPage,
-} from '@/pages/PartnersAccountPage';
+  PartnersPage,
+} from '@/pages/PartnersPage';
 
 import AboutPage from '@/pages/AboutPage';
 
@@ -444,8 +444,7 @@ function App() {
               '0 10px 30px rgba(0,0,0,0.28)',
           }}
         >
-          اضغط رجوع مرة
-          أخرى للخروج
+          اضغط رجوع مرة أخرى للخروج
         </div>
       )}
 
@@ -555,13 +554,13 @@ function App() {
 
         {/*
           =========================
-          حساب الشركاء
+          حساب الشركاء الجديد
           =========================
         */}
         <Route
           path="/partners"
           element={
-            <PartnersAccountPage />
+            <PartnersPage />
           }
         />
 
