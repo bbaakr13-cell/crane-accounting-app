@@ -29,7 +29,7 @@ const makePartner=():Partner=>({id:`${Date.now()}-${Math.random()}`,name:'',perc
 const safeFileName=(v:string)=>v.replace(/[\\/:*?"<>|]/g,'-').replace(/\s+/g,'-');
 function getDateParts(v:string){const p=String(v||'').split('-');if(p.length<3)return null;const year=n(p[0]),month=n(p[1]),day=n(p[2]);return year&&month&&day?{year,month,day}:null}
 
-export function PartnersAccountPage(){
+export function PartnersPage(){
  const now=new Date();
  const [equipmentList,setEquipmentList]=useState<Equipment[]>([]); const [equipmentId,setEquipmentId]=useState(''); const [equipmentLoading,setEquipmentLoading]=useState(true);
  const [year,setYear]=useState(now.getFullYear()); const [month,setMonth]=useState(now.getMonth());
