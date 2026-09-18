@@ -285,23 +285,12 @@ export function MonthlyDetailPage() {
       ctx.fillText(String(text || ''), x, y);
     };
 
-    // المعدة / الشهر / السنة: كل قيمة في منتصف خانتها بالضبط
-    const fy = 267, fh = 30, gap = 10, yearW = 130, monthW = 160;
-    const equipmentW = PDF_WIDTH - 36 - yearW - monthW - gap * 2;
-    const boxes = [
-      { x: 18, w: yearW, label: 'السنة', value: String(year) },
-      { x: 18 + yearW + gap, w: monthW, label: 'الشهر', value: monthNames[month] },
-      { x: 18 + yearW + gap + monthW + gap, w: equipmentW, label: 'المعدة', value: displayEquipmentName },
-    ];
-    boxes.forEach(b => {
-      roundedRect(ctx, b.x, fy, b.w, fh, 8);
-      ctx.fillStyle = 'rgba(255,255,255,.97)';
-      ctx.fill();
-      ctx.strokeStyle = '#bcd4ea';
-      ctx.stroke();
-      arabic(b.label, b.x + b.w / 2, fy + 8, 9, '#082c5f', 700);
-      arabic(b.value, b.x + b.w / 2, fy + 21, 18, '#0f172a', 700);
-    });
+    // القيم الديناميكية داخل الخانات الفارغة في صورة الهيدر المعتمدة
+    // ترتيب الصورة من اليسار: السنة - الشهر - المعدة
+    const valueY = 282;
+    arabic(String(year), 215, valueY, 19, '#082c5f', 700);
+    arabic(monthNames[month], 397, valueY, 19, '#082c5f', 700);
+    arabic(displayEquipmentName, 626, valueY, 19, '#082c5f', 700);
 
     const tableX = 18, tableY = 310, tableW = PDF_WIDTH - 36, headH = 36, summaryY = 1000;
     const rowH = (summaryY - tableY - headH - 6) / 31;
@@ -520,4 +509,4 @@ export function MonthlyDetailPage() {
       </div>
     </AppLayout>
   );
-        }
+    }
