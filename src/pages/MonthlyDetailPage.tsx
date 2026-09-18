@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Share2, MessageCircle } from 'lucide-react';
+import { Download, Share2, MessageCircle, Lock, Unlock } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -31,6 +31,13 @@ type ExternalExpenseRecord = {
   affectsDriverBalance: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+type MonthLockRecord = {
+  locked: boolean;
+  lockedAt: string;
+  rows: DayRow[];
+  externalExpenses: ExternalExpenseRecord[];
 };
 
 const EXPENSE_STORAGE_KEY = 'crane_accounting_driver_equipment_expenses_v1';
@@ -110,6 +117,7 @@ export function MonthlyDetailPage() {
   const [creatingPdf, setCreatingPdf] = useState(false);
   const [externalExpenses, setExternalExpenses] = useState<ExternalExpenseRecord[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
+  const [monthLock, setMonthLock] = useState<MonthLockRecord | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -143,6 +151,26 @@ export function MonthlyDetailPage() {
   const storageKey = equipmentId
     ? `monthly-ledger-v3-${equipmentId}-${year}-${month}`
     : `monthly-ledger-v3-no-equipment-${year}-${month}`;
+
+  const monthLockKey = equipmentId
+    ? `monthly-ledger-lock-v1-${equipmentId}-${year}-${month}`
+    : `monthly-ledger-lock-v1-no-equipment-${year}-${month}`;
+
+  const isMonthLocked = Boolean(monthLock?.locked);
+
+  useEffect(() => {
+    if (!equipmentId) {
+      setMonthLock(null);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(monthLockKey);
+      const parsed = raw ? JSON.parse(raw) as MonthLockRecord : null;
+      setMonthLock(parsed?.locked ? parsed : null);
+    } catch {
+      setMonthLock(null);
+    }
+  }, [monthLockKey, equipmentId]);
 
   const emptyRows = () => Array.from({ length: daysInMonth }, (_, i): DayRow => ({
     day: i + 1, workType: '', tripType: '', tripPrice: 0,
@@ -199,7 +227,8 @@ export function MonthlyDetailPage() {
   const externalByDay = useMemo(() => {
     const map = new Map<number, ExternalExpenseRecord[]>();
     if (!equipmentId) return map;
-    externalExpenses.forEach(expense => {
+    const sourceExpenses = isMonthLocked && monthLock ? monthLock.externalExpenses : externalExpenses;
+    sourceExpenses.forEach(expense => {
       if (String(expense.equipmentId || '') !== String(equipmentId)) return;
       const d = getDateParts(expense.date);
       if (!d || d.year !== year || d.month !== month + 1) return;
@@ -208,7 +237,7 @@ export function MonthlyDetailPage() {
       map.set(d.day, arr);
     });
     return map;
-  }, [externalExpenses, equipmentId, year, month]);
+  }, [externalExpenses, equipmentId, year, month, isMonthLocked, monthLock]);
 
   const linkedTotal = (day: number) => (externalByDay.get(day) || [])
     .reduce((s, x) => s + (Number(x.amount) || 0), 0);
@@ -218,10 +247,12 @@ export function MonthlyDetailPage() {
   )).join(' + ');
 
   const updateText = (day: number, field: 'workType'|'tripType'|'expenseType'|'notes', value: string) => {
+    if (isMonthLocked) return;
     setRows(old => old.map(r => r.day === day ? { ...r, [field]: value } : r));
   };
 
   const updateNumber = (day: number, field: 'tripPrice'|'expenseAmount', value: string) => {
+    if (isMonthLocked) return;
     const valueNumber = Number(normalizeArabicNumbers(value));
     setRows(old => old.map(r => r.day === day ? { ...r, [field]: Number.isFinite(valueNumber) ? valueNumber : 0 } : r));
   };
@@ -244,7 +275,7 @@ export function MonthlyDetailPage() {
   const inputStyle: React.CSSProperties = {
     width: '100%', minWidth: 120, padding: '10px 8px', borderRadius: 10,
     border: '1px solid #26364f', background: '#0a1424', color: '#fff',
-    fontSize: 13, boxSizing: 'border-box', outline: 'none',
+    fontSize: 13, boxSizing: 'border-box', outline: 'none', opacity: isMonthLocked ? .72 : 1,
   };
   const selectStyle: React.CSSProperties = { ...inputStyle, minWidth: 0, padding: 12 };
   const summaryCard: React.CSSProperties = {
@@ -256,6 +287,54 @@ export function MonthlyDetailPage() {
     fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center',
     justifyContent: 'center', gap: 6, color: '#fff',
   };
+
+  function handleLockMonth() {
+    if (!equipmentId) return alert('اختر المعدة أولاً');
+    if (isMonthLocked) return;
+    const ok = window.confirm(
+      `هل أنت متأكد من تقفيل حساب ${displayEquipmentName} لشهر ${monthNames[month]} ${year}؟\n\nبعد التقفيل لن يمكن تعديل بيانات هذا الشهر إلا بعد فتحه للتعديل.`
+    );
+    if (!ok) return;
+
+    const record: MonthLockRecord = {
+      locked: true,
+      lockedAt: new Date().toISOString(),
+      rows: rows.map(r => ({ ...r })),
+      externalExpenses: externalExpenses
+        .filter(expense => {
+          if (String(expense.equipmentId || '') !== String(equipmentId)) return false;
+          const d = getDateParts(expense.date);
+          return Boolean(d && d.year === year && d.month === month + 1);
+        })
+        .map(expense => ({ ...expense })),
+    };
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(record.rows));
+      localStorage.setItem(monthLockKey, JSON.stringify(record));
+      setRows(record.rows);
+      setMonthLock(record);
+    } catch (e) {
+      console.error('MONTH LOCK ERROR:', e);
+      alert('تعذر تقفيل الشهر');
+    }
+  }
+
+  function handleUnlockMonth() {
+    if (!isMonthLocked) return;
+    const ok = window.confirm(
+      `فتح ${monthNames[month]} ${year} للتعديل؟\n\nبعد الفتح ستعود إمكانية تعديل البيانات وسيتم احتساب المصروفات المرتبطة الحالية.`
+    );
+    if (!ok) return;
+    try {
+      localStorage.removeItem(monthLockKey);
+      setMonthLock(null);
+      loadExternalExpenses();
+    } catch (e) {
+      console.error('MONTH UNLOCK ERROR:', e);
+      alert('تعذر فتح الشهر');
+    }
+  }
 
   async function createPdfBlob() {
     try { await document.fonts.load(`400 20px "${HACEN_FONT_NAME}"`); } catch {}
@@ -497,6 +576,26 @@ export function MonthlyDetailPage() {
           </div>
         </div>
 
+        <div style={{marginBottom:18}}>
+          {isMonthLocked ? (
+            <div style={{background:'linear-gradient(135deg,#052e16,#064e3b)',border:'1px solid #22c55e',borderRadius:18,padding:16,textAlign:'center'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,color:'#4ade80',fontSize:20,fontWeight:900}}>
+                <Lock size={22}/> الشهر مقفل
+              </div>
+              <div style={{color:'#d1fae5',fontSize:13,marginTop:6}}>
+                تم التقفيل {monthLock?.lockedAt ? new Date(monthLock.lockedAt).toLocaleString('ar-SA') : ''}
+              </div>
+              <button onClick={handleUnlockMonth} style={{...buttonStyle,background:'#2563eb',margin:'12px auto 0',minWidth:190}}>
+                <Unlock size={18}/> فتح الشهر للتعديل
+              </button>
+            </div>
+          ) : (
+            <button onClick={handleLockMonth} style={{...buttonStyle,background:'linear-gradient(135deg,#f59e0b,#eab308)',color:'#111827',width:'100%',fontSize:17}}>
+              <Lock size={20}/> تقفيل الشهر
+            </button>
+          )}
+        </div>
+
         <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,marginBottom:18}}>
           <div style={summaryCard}>إجمالي المشاوير<h2>{totals.trips}</h2></div>
           <div style={summaryCard}>إجمالي الدخل<h2 style={{color:'#22c55e'}}>{totals.income.toLocaleString('en-US')} ر.س</h2></div>
@@ -514,11 +613,11 @@ export function MonthlyDetailPage() {
               const linkedAmount=linkedTotal(row.day);
               return <tr key={row.day} style={{borderTop:'1px solid #1d2d47'}}>
                 <td>{row.day}</td>
-                <td><input value={row.workType} onChange={e=>updateText(row.day,'workType',e.target.value)} style={inputStyle}/></td>
-                <td><input value={row.tripType} onChange={e=>updateText(row.day,'tripType',e.target.value)} style={inputStyle}/></td>
-                <td><input inputMode="decimal" value={row.tripPrice||''} onChange={e=>updateNumber(row.day,'tripPrice',e.target.value)} style={inputStyle}/></td>
-                <td><div style={{display:'grid',gap:6}}><input value={row.expenseType} onChange={e=>updateText(row.day,'expenseType',e.target.value)} placeholder="مثال: ديزل" style={inputStyle}/>{linked.length>0&&<small style={{color:'#fca5a5'}}>مرتبط: {linkedAmount.toLocaleString('en-US')} ر.س</small>}</div></td>
-                <td><input inputMode="decimal" value={row.expenseAmount||''} onChange={e=>updateNumber(row.day,'expenseAmount',e.target.value)} style={inputStyle}/></td>
+                <td><input disabled={isMonthLocked} value={row.workType} onChange={e=>updateText(row.day,'workType',e.target.value)} style={inputStyle}/></td>
+                <td><input disabled={isMonthLocked} value={row.tripType} onChange={e=>updateText(row.day,'tripType',e.target.value)} style={inputStyle}/></td>
+                <td><input disabled={isMonthLocked} inputMode="decimal" value={row.tripPrice||''} onChange={e=>updateNumber(row.day,'tripPrice',e.target.value)} style={inputStyle}/></td>
+                <td><div style={{display:'grid',gap:6}}><input disabled={isMonthLocked} value={row.expenseType} onChange={e=>updateText(row.day,'expenseType',e.target.value)} placeholder="مثال: ديزل" style={inputStyle}/>{linked.length>0&&<small style={{color:'#fca5a5'}}>مرتبط: {linkedAmount.toLocaleString('en-US')} ر.س</small>}</div></td>
+                <td><input disabled={isMonthLocked} inputMode="decimal" value={row.expenseAmount||''} onChange={e=>updateNumber(row.day,'expenseAmount',e.target.value)} style={inputStyle}/></td>
               </tr>;
             })}</tbody>
           </table>
@@ -532,4 +631,4 @@ export function MonthlyDetailPage() {
       </div>
     </AppLayout>
   );
-          }
+      }
