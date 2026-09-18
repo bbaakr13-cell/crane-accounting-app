@@ -111,11 +111,9 @@ export function MonthlyDetailPage() {
   const [externalExpenses, setExternalExpenses] = useState<ExternalExpenseRecord[]>([]);
   const [rowsLoaded, setRowsLoaded] = useState(false);
 
-  // نفس منطق نسخة APK الشغالة: تحميل المعدات فقط، بدون monthly_equipment_days.
   useEffect(() => {
     let alive = true;
     setEquipmentLoading(true);
-
     fetchEquipment()
       .then(list => {
         if (!alive) return;
@@ -131,10 +129,7 @@ export function MonthlyDetailPage() {
         console.error('EQUIPMENT LOAD ERROR:', error);
         if (alive) setEquipmentList([]);
       })
-      .finally(() => {
-        if (alive) setEquipmentLoading(false);
-      });
-
+      .finally(() => { if (alive) setEquipmentLoading(false); });
     return () => { alive = false; };
   }, [id]);
 
@@ -159,23 +154,15 @@ export function MonthlyDetailPage() {
   useEffect(() => {
     setRowsLoaded(false);
     try {
-      if (!equipmentId) {
-        setRows(emptyRows());
-        return;
-      }
+      if (!equipmentId) { setRows(emptyRows()); return; }
       const raw = localStorage.getItem(storageKey);
-      if (!raw) {
-        setRows(emptyRows());
-        return;
-      }
+      if (!raw) { setRows(emptyRows()); return; }
       const saved = JSON.parse(raw) as DayRow[];
       setRows(emptyRows().map(r => ({ ...r, ...(saved.find(x => x.day === r.day) || {}) })));
     } catch (e) {
       console.error('MONTHLY READ ERROR:', e);
       setRows(emptyRows());
-    } finally {
-      setRowsLoaded(true);
-    }
+    } finally { setRowsLoaded(true); }
   }, [equipmentId, year, month, daysInMonth, storageKey]);
 
   useEffect(() => {
@@ -235,8 +222,8 @@ export function MonthlyDetailPage() {
   };
 
   const updateNumber = (day: number, field: 'tripPrice'|'expenseAmount', value: string) => {
-    const n = Number(normalizeArabicNumbers(value));
-    setRows(old => old.map(r => r.day === day ? { ...r, [field]: Number.isFinite(n) ? n : 0 } : r));
+    const valueNumber = Number(normalizeArabicNumbers(value));
+    setRows(old => old.map(r => r.day === day ? { ...r, [field]: Number.isFinite(valueNumber) ? valueNumber : 0 } : r));
   };
 
   const totals = useMemo(() => rows.reduce((s, r) => {
@@ -289,13 +276,16 @@ export function MonthlyDetailPage() {
       ctx.fillText('BAKR PRO', PDF_WIDTH / 2, 70);
     }
 
-    const arabic = (text: string, x: number, y: number, size: number, color = '#0f172a') => {
-      ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `400 ${size}px "${HACEN_FONT_NAME}", Arial`; ctx.fillStyle = color;
+    const arabic = (text: string, x: number, y: number, size: number, color = '#0f172a', weight = 400) => {
+      ctx.direction = 'rtl';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `${weight} ${size}px "${HACEN_FONT_NAME}", Arial`;
+      ctx.fillStyle = color;
       ctx.fillText(String(text || ''), x, y);
     };
 
-    // ثلاث خانات فقط: المعدة - الشهر - السنة
+    // المعدة / الشهر / السنة: كل قيمة في منتصف خانتها بالضبط
     const fy = 267, fh = 30, gap = 10, yearW = 130, monthW = 160;
     const equipmentW = PDF_WIDTH - 36 - yearW - monthW - gap * 2;
     const boxes = [
@@ -304,9 +294,13 @@ export function MonthlyDetailPage() {
       { x: 18 + yearW + gap + monthW + gap, w: equipmentW, label: 'المعدة', value: displayEquipmentName },
     ];
     boxes.forEach(b => {
-      roundedRect(ctx, b.x, fy, b.w, fh, 8); ctx.fillStyle = 'rgba(255,255,255,.97)'; ctx.fill();
-      ctx.strokeStyle = '#bcd4ea'; ctx.stroke(); arabic(b.label, b.x + b.w/2, fy+8, 9, '#082c5f');
-      arabic(b.value, b.x + b.w/2, fy+21, 18);
+      roundedRect(ctx, b.x, fy, b.w, fh, 8);
+      ctx.fillStyle = 'rgba(255,255,255,.97)';
+      ctx.fill();
+      ctx.strokeStyle = '#bcd4ea';
+      ctx.stroke();
+      arabic(b.label, b.x + b.w / 2, fy + 8, 9, '#082c5f', 700);
+      arabic(b.value, b.x + b.w / 2, fy + 21, 18, '#0f172a', 700);
     });
 
     const tableX = 18, tableY = 310, tableW = PDF_WIDTH - 36, headH = 36, summaryY = 1000;
@@ -316,26 +310,55 @@ export function MonthlyDetailPage() {
       ['trip','سعر المشوار',.18], ['expense','مصاريف أخرى',.20], ['amount','المبلغ',.15],
     ] as const;
     let cx = tableX + tableW;
-    const rects = cols.map(([key,label,ratio]) => { const w = tableW*ratio; cx -= w; return {key,label,w,x:cx}; });
-    rects.forEach(c => {
-      ctx.fillStyle = '#0b4f99'; ctx.fillRect(c.x, tableY, c.w, headH);
-      ctx.strokeStyle = '#ffffff66'; ctx.strokeRect(c.x, tableY, c.w, headH);
-      arabic(c.label, c.x+c.w/2, tableY+headH/2, 16, '#fff');
+    const rects = cols.map(([key,label,ratio]) => {
+      const w = tableW * ratio;
+      cx -= w;
+      return { key, label, w, x: cx };
     });
-    for (let day=1; day<=31; day++) {
-      const r = rows.find(x => x.day === day) || {day,workType:'',tripType:'',tripPrice:0,expenseType:'',expenseAmount:0,notes:''};
-      const linked = linkedTotal(day); const amount = (Number(r.expenseAmount)||0)+linked;
-      const vals: Record<string,string> = {
-        day:String(day), work:r.workType, location:r.tripType,
-        trip:r.tripPrice>0?r.tripPrice.toLocaleString('en-US'):'',
-        expense:[r.expenseType,linkedCategories(day)].filter(Boolean).join(' + '),
-        amount:amount>0?amount.toLocaleString('en-US'):'',
+
+    rects.forEach(c => {
+      ctx.fillStyle = '#0b4f99';
+      ctx.fillRect(c.x, tableY, c.w, headH);
+      ctx.strokeStyle = '#ffffff66';
+      ctx.strokeRect(c.x, tableY, c.w, headH);
+      arabic(c.label, c.x + c.w / 2, tableY + headH / 2, 16, '#fff', 700);
+    });
+
+    for (let day = 1; day <= 31; day++) {
+      const r = rows.find(x => x.day === day) || {
+        day, workType:'', tripType:'', tripPrice:0,
+        expenseType:'', expenseAmount:0, notes:''
       };
-      const y = tableY + headH + (day-1)*rowH;
+      const linked = linkedTotal(day);
+      const amount = (Number(r.expenseAmount) || 0) + linked;
+      const vals: Record<string,string> = {
+        day: String(day),
+        work: r.workType,
+        location: r.tripType,
+        trip: r.tripPrice > 0 ? r.tripPrice.toLocaleString('en-US') : '',
+        expense: [r.expenseType, linkedCategories(day)].filter(Boolean).join(' + '),
+        amount: amount > 0 ? amount.toLocaleString('en-US') : '',
+      };
+      const y = tableY + headH + (day - 1) * rowH;
       rects.forEach(c => {
-        ctx.fillStyle = day%2===0?'#eef7ff':'#fff'; ctx.fillRect(c.x,y,c.w,rowH);
-        ctx.strokeStyle='#bcd4ea'; ctx.lineWidth=.55; ctx.strokeRect(c.x,y,c.w,rowH);
-        const value=vals[c.key]||''; if(value) arabic(value,c.x+c.w/2,y+rowH/2,14,c.key==='amount'?'#d32f2f':c.key==='trip'?'#129c70':'#0f172a');
+        ctx.fillStyle = day % 2 === 0 ? '#eef7ff' : '#fff';
+        ctx.fillRect(c.x, y, c.w, rowH);
+        ctx.strokeStyle = '#bcd4ea';
+        ctx.lineWidth = .55;
+        ctx.strokeRect(c.x, y, c.w, rowH);
+
+        const value = vals[c.key] || '';
+        if (value) {
+          // المطلوب: خزان / ديزل / 50 وباقي بيانات الصفوف = 19px
+          arabic(
+            value,
+            c.x + c.w / 2,
+            y + rowH / 2,
+            19,
+            c.key === 'amount' ? '#d32f2f' : c.key === 'trip' ? '#129c70' : '#0f172a',
+            700
+          );
+        }
       });
     }
 
@@ -343,53 +366,97 @@ export function MonthlyDetailPage() {
       ['إجمالي المشاوير', String(totals.trips), '#5b21b6', '#f7f3ff'],
       ['إجمالي الدخل', `${totals.income.toLocaleString('en-US')} ر.س`, '#129c70', '#eefcf4'],
       ['إجمالي المصروفات', `${totalExpense.toLocaleString('en-US')} ر.س`, '#d32f2f', '#fff3f3'],
-      ['صافي الشهر', `${net.toLocaleString('en-US')} ر.س`, net>=0?'#082c5f':'#d32f2f', '#fff8ee'],
+      ['صافي الشهر', `${net.toLocaleString('en-US')} ر.س`, net >= 0 ? '#082c5f' : '#d32f2f', '#fff8ee'],
     ];
-    const sg=8, sw=(PDF_WIDTH-36-sg*3)/4, sh=54;
-    cards.forEach((c,i)=>{
-      const x=PDF_WIDTH-18-sw-i*(sw+sg); roundedRect(ctx,x,1008,sw,sh,9);
-      ctx.fillStyle=c[3];ctx.fill();ctx.strokeStyle=`${c[2]}55`;ctx.stroke();
-      arabic(c[0],x+sw/2,1026,11.5); arabic(c[1],x+sw/2,1047,14,c[2]);
+    const sg = 8, sw = (PDF_WIDTH - 36 - sg * 3) / 4, sh = 64;
+
+    cards.forEach((c, i) => {
+      const x = PDF_WIDTH - 18 - sw - i * (sw + sg);
+      roundedRect(ctx, x, 1003, sw, sh, 9);
+      ctx.fillStyle = c[3];
+      ctx.fill();
+      ctx.strokeStyle = `${c[2]}55`;
+      ctx.stroke();
+
+      // المطلوب: عناوين الإجماليات = 19px
+      arabic(c[0], x + sw / 2, 1022, 19, '#0f172a', 700);
+
+      // المطلوب: الأرقام مثل 2,000 و 2,550 = 20px
+      arabic(c[1], x + sw / 2, 1050, 20, c[2], 700);
     });
-    ctx.direction='ltr';ctx.textAlign='center';ctx.fillStyle='#334155';ctx.font='700 9px Arial';
-    ctx.fillText('BAKR ALMASBHI © 2026 — All Rights Reserved.',PDF_WIDTH/2,1090);
-    ctx.font='900 12px Arial';ctx.fillStyle='#082c5f';ctx.fillText('0558995962',120,1090);
+
+    ctx.direction = 'ltr';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#334155';
+    ctx.font = '700 9px Arial';
+    ctx.fillText('BAKR ALMASBHI © 2026 — All Rights Reserved.', PDF_WIDTH / 2, 1090);
+    ctx.font = '900 12px Arial';
+    ctx.fillStyle = '#082c5f';
+    ctx.fillText('0558995962', 120, 1090);
 
     const imageData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:false });
-    pdf.addImage(imageData,'PNG',0,0,pdf.internal.pageSize.getWidth(),pdf.internal.pageSize.getHeight(),undefined,'NONE');
+    pdf.addImage(
+      imageData, 'PNG', 0, 0,
+      pdf.internal.pageSize.getWidth(),
+      pdf.internal.pageSize.getHeight(),
+      undefined, 'NONE'
+    );
     return pdf.output('blob');
   }
 
   async function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onloadend=()=>{const s=String(reader.result||'');resolve(s.includes(',')?s.split(',')[1]:s)};
-      reader.onerror=()=>reject(new Error('تعذر قراءة PDF'));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const s = String(reader.result || '');
+        resolve(s.includes(',') ? s.split(',')[1] : s);
+      };
+      reader.onerror = () => reject(new Error('تعذر قراءة PDF'));
       reader.readAsDataURL(blob);
     });
   }
 
   async function createPdfFile() {
-    const blob=await createPdfBlob();
-    const data=await blobToBase64(blob);
-    const clean=displayEquipmentName.replace(/[\\/:*?"<>|]/g,'-');
-    const result=await Filesystem.writeFile({
-      path:`BAKR-PRO-${clean}-${monthNames[month]}-${year}.pdf`, data, directory:Directory.Cache,
+    const blob = await createPdfBlob();
+    const data = await blobToBase64(blob);
+    const clean = displayEquipmentName.replace(/[\\/:*?"<>|]/g,'-');
+    const result = await Filesystem.writeFile({
+      path:`BAKR-PRO-${clean}-${monthNames[month]}-${year}.pdf`,
+      data,
+      directory:Directory.Cache,
     });
     return result.uri;
   }
 
   async function handlePdf() {
     if(!equipmentId) return alert('اختر المعدة أولاً');
-    try { setCreatingPdf(true); const url=await createPdfFile(); await Share.share({title:'الحساب الشهري',url,dialogTitle:'حفظ أو مشاركة كشف الحساب'}); }
-    catch(e){console.error(e);alert('تعذر إنشاء ملف PDF');} finally {setCreatingPdf(false);}
+    try {
+      setCreatingPdf(true);
+      const url = await createPdfFile();
+      await Share.share({title:'الحساب الشهري',url,dialogTitle:'حفظ أو مشاركة كشف الحساب'});
+    } catch(e) {
+      console.error(e);
+      alert('تعذر إنشاء ملف PDF');
+    } finally {
+      setCreatingPdf(false);
+    }
   }
 
   async function handleShare() {
     if(!equipmentId) return alert('اختر المعدة أولاً');
-    try { setCreatingPdf(true); const url=await createPdfFile(); await Share.share({title:'الحساب الشهري',text:`${displayEquipmentName} - ${monthNames[month]} ${year}`,url,dialogTitle:'مشاركة كشف الحساب'}); }
-    finally {setCreatingPdf(false);}
+    try {
+      setCreatingPdf(true);
+      const url = await createPdfFile();
+      await Share.share({
+        title:'الحساب الشهري',
+        text:`${displayEquipmentName} - ${monthNames[month]} ${year}`,
+        url,
+        dialogTitle:'مشاركة كشف الحساب'
+      });
+    } finally {
+      setCreatingPdf(false);
+    }
   }
 
   function handleWhatsApp() {
@@ -431,7 +498,8 @@ export function MonthlyDetailPage() {
               {['اليوم','نوع العمل','موقع العمل','سعر المشوار','مصاريف أخرى','المبلغ'].map(x=><th key={x} style={{padding:'15px 10px',fontSize:17,fontWeight:900,color:'#fff',whiteSpace:'nowrap'}}>{x}</th>)}
             </tr></thead>
             <tbody>{rows.map(row=>{
-              const linked=externalByDay.get(row.day)||[]; const linkedAmount=linkedTotal(row.day);
+              const linked=externalByDay.get(row.day)||[];
+              const linkedAmount=linkedTotal(row.day);
               return <tr key={row.day} style={{borderTop:'1px solid #1d2d47'}}>
                 <td>{row.day}</td>
                 <td><input value={row.workType} onChange={e=>updateText(row.day,'workType',e.target.value)} style={inputStyle}/></td>
@@ -452,4 +520,4 @@ export function MonthlyDetailPage() {
       </div>
     </AppLayout>
   );
-}
+        }
