@@ -287,7 +287,7 @@ export function MonthlyDetailPage() {
 
     // القيم الديناميكية داخل الخانات الفارغة في صورة الهيدر المعتمدة
     // ترتيب الصورة من اليسار: السنة - الشهر - المعدة
-    const valueY = 282;
+    const valueY = 287;
     arabic(String(year), 215, valueY, 19, '#082c5f', 700);
     arabic(monthNames[month], 397, valueY, 19, '#082c5f', 700);
     arabic(displayEquipmentName, 626, valueY, 19, '#082c5f', 700);
@@ -338,12 +338,13 @@ export function MonthlyDetailPage() {
 
         const value = vals[c.key] || '';
         if (value) {
-          // المطلوب: خزان / ديزل / 50 وباقي بيانات الصفوف = 19px
+          // أرقام الأيام 1-31 أصغر، وباقي بيانات الصفوف 18px
+          const rowFontSize = c.key === 'day' ? 11 : 18;
           arabic(
             value,
             c.x + c.w / 2,
             y + rowH / 2,
-            19,
+            rowFontSize,
             c.key === 'amount' ? '#d32f2f' : c.key === 'trip' ? '#129c70' : '#0f172a',
             700
           );
@@ -367,21 +368,43 @@ export function MonthlyDetailPage() {
       ctx.strokeStyle = `${c[2]}55`;
       ctx.stroke();
 
-      // المطلوب: عناوين الإجماليات = 19px
-      arabic(c[0], x + sw / 2, 1022, 19, '#0f172a', 700);
+      // عناوين الإجماليات = 18px
+      arabic(c[0], x + sw / 2, 1022, 18, '#0f172a', 700);
 
       // المطلوب: الأرقام مثل 2,000 و 2,550 = 20px
       arabic(c[1], x + sw / 2, 1050, 20, c[2], 700);
     });
 
+    // الفوتر السفلي الاحترافي المعتمد
+    const footerX = 18;
+    const footerY = 1077;
+    const footerW = PDF_WIDTH - 36;
+    const footerH = 32;
+
+    roundedRect(ctx, footerX, footerY, footerW, footerH, 7);
+    ctx.fillStyle = '#062b55';
+    ctx.fill();
+
+    ctx.fillStyle = '#d9a62e';
+    ctx.fillRect(footerX + 8, footerY, footerW - 16, 2);
+
     ctx.direction = 'ltr';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#334155';
-    ctx.font = '700 9px Arial';
-    ctx.fillText('BAKR ALMASBHI © 2026 — All Rights Reserved.', PDF_WIDTH / 2, 1090);
+    ctx.textBaseline = 'middle';
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
     ctx.font = '900 12px Arial';
-    ctx.fillStyle = '#082c5f';
-    ctx.fillText('0558995962', 120, 1090);
+    ctx.fillText('0558995962', footerX + 18, footerY + footerH / 2 + 1);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 10px Arial';
+    ctx.fillText('BAKR ALMASBHI @ 2026 - All Rights Reserved.', PDF_WIDTH / 2, footerY + footerH / 2 + 1);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#f2c14e';
+    ctx.font = '900 11px Arial';
+    ctx.fillText('BAKR PRO', footerX + footerW - 18, footerY + footerH / 2 + 1);
 
     const imageData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:false });
@@ -509,4 +532,4 @@ export function MonthlyDetailPage() {
       </div>
     </AppLayout>
   );
-    }
+}
