@@ -269,7 +269,7 @@ export function MonthlyDetailPage() {
 
     try {
       const img = await loadImage(MONTHLY_HEADER_URL);
-      ctx.drawImage(img, 0, 0, PDF_WIDTH, 304);
+      ctx.drawImage(img, 0, 0, PDF_WIDTH, 281);
     } catch {
       ctx.fillStyle = '#eef7ff'; ctx.fillRect(0, 0, PDF_WIDTH, 304);
       ctx.fillStyle = '#082c5f'; ctx.textAlign = 'center'; ctx.font = 'bold 38px Arial';
@@ -287,10 +287,10 @@ export function MonthlyDetailPage() {
 
     // القيم الديناميكية داخل الخانات الفارغة في صورة الهيدر المعتمدة
     // ترتيب الصورة من اليسار: السنة - الشهر - المعدة
-    const valueY = 286;
-    arabic(String(year), 215, valueY, 19, '#082c5f', 700);
+    const valueY = 256;
+    arabic(String(year), 137, valueY, 19, '#082c5f', 700);
     arabic(monthNames[month], 397, valueY, 19, '#082c5f', 700);
-    arabic(displayEquipmentName, 626, valueY, 19, '#082c5f', 700);
+    arabic(displayEquipmentName, 652, valueY, 19, '#082c5f', 700);
 
     const tableX = 18, tableY = 310, tableW = PDF_WIDTH - 36, headH = 36, summaryY = 1000;
     const rowH = (summaryY - tableY - headH - 6) / 31;
@@ -532,4 +532,4 @@ export function MonthlyDetailPage() {
       </div>
     </AppLayout>
   );
-}
+          }
