@@ -287,7 +287,7 @@ export function MonthlyDetailPage() {
 
     // القيم الديناميكية داخل الخانات الفارغة في صورة الهيدر المعتمدة
     // ترتيب الصورة من اليسار: السنة - الشهر - المعدة
-    const valueY = 287;
+    const valueY = 286;
     arabic(String(year), 215, valueY, 19, '#082c5f', 700);
     arabic(monthNames[month], 397, valueY, 19, '#082c5f', 700);
     arabic(displayEquipmentName, 626, valueY, 19, '#082c5f', 700);
@@ -339,7 +339,7 @@ export function MonthlyDetailPage() {
         const value = vals[c.key] || '';
         if (value) {
           // أرقام الأيام 1-31 أصغر، وباقي بيانات الصفوف 18px
-          const rowFontSize = c.key === 'day' ? 11 : 18;
+          const rowFontSize = c.key === 'day' ? 12 : 17;
           arabic(
             value,
             c.x + c.w / 2,
