@@ -1119,6 +1119,67 @@ export function DashboardPage() {
           </div>
         </section>
 
+        {/* حالة المعدات اليوم */}
+        <section className="mt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[16px] font-black text-white flex items-center gap-2"><Truck className="w-5 h-5 text-amber-400" /> حالة المعدات اليوم</h2>
+            <button type="button" onClick={() => navigate('/equipment')} className="text-[10px] font-bold text-blue-400">عرض الكل</button>
+          </div>
+          <div className="flex gap-2.5 overflow-x-auto pb-2 snap-x" style={{scrollbarWidth:'none'}}>
+            {[
+              {name:'المعدات والكرينات', image:'/icons/equipment.png', status:'عرض المعدات', color:'#4ade80', path:'/equipment'},
+              {name:'مستندات المعدات', image:'/icons/equipment-documents.png', status:'الرخص و TUV والتأمين', color:'#60a5fa', path:'/equipment-documents'},
+              {name:'السواقين والمشغلين', image:'/icons/drivers-operators.png', status:'المستندات والحسابات', color:'#c084fc', path:'/drivers'},
+            ].map((item) => (
+              <button key={item.name} type="button" onClick={() => navigate(item.path)} className="shrink-0 w-[155px] snap-start overflow-hidden rounded-[19px] text-right active:scale-[0.97] transition-transform" style={{background:'linear-gradient(145deg,#0d1b2f,#07111f)',border:'1px solid rgba(96,165,250,.18)'}}>
+                <div className="h-[92px] bg-slate-900/60 overflow-hidden"><img src={item.image} alt={item.name} className="w-full h-full object-cover" draggable={false}/></div>
+                <div className="p-3">
+                  <p className="text-[12px] font-black text-white truncate">{item.name}</p>
+                  <p className="text-[9px] mt-2 truncate" style={{color:item.color}}>● {item.status}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* التنبيهات المهمة والمستندات السريعة */}
+        <section className="mt-5 grid grid-cols-1 gap-3">
+          <div className="rounded-[22px] p-4" style={{background:'linear-gradient(145deg,#0d1b2f,#07111f)',border:'1px solid rgba(245,158,11,.17)'}}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[15px] font-black text-white">🔔 التنبيهات المهمة</h2>
+              <button type="button" onClick={() => navigate('/equipment-documents')} className="text-[10px] text-blue-400 font-bold">عرض المستندات</button>
+            </div>
+            {[
+              ['🛡️','تأمين ورخص المعدات','راجع تواريخ الانتهاء والتنبيهات','/equipment-documents'],
+              ['🔧','صيانة المعدات','تابع حالة الكرين ومصاريف الصيانة','/expenses'],
+              ['📄','TUV السائق والكرين','جميع مستندات الفحص في مكان واحد','/equipment-documents'],
+              ['💰','المستحقات','راجع المبالغ المستحقة للعملاء','/customers'],
+            ].map(([icon,title,sub,path],i) => (
+              <button key={title} type="button" onClick={() => navigate(path)} className={`w-full py-3 flex items-center gap-3 text-right ${i ? 'border-t border-white/5' : ''}`}>
+                <span className="text-[20px]">{icon}</span>
+                <div className="flex-1 min-w-0"><p className="text-[11px] font-bold text-slate-100">{title}</p><p className="text-[9px] text-slate-500 mt-1 truncate">{sub}</p></div>
+                <ChevronLeft className="w-4 h-4 text-slate-600" />
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-[22px] p-4" style={{background:'linear-gradient(145deg,#0d1b2f,#07111f)',border:'1px solid rgba(96,165,250,.17)'}}>
+            <div className="flex items-center justify-between mb-3"><h2 className="text-[15px] font-black text-white">📁 المستندات السريعة</h2><button type="button" onClick={() => navigate('/equipment-documents')} className="text-[10px] text-blue-400 font-bold">عرض الكل</button></div>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                ['📄','الفواتير','/invoices','#4ade80'],
+                ['🪪','رخص المعدات','/equipment-documents','#60a5fa'],
+                ['👥','السائقين','/drivers','#c084fc'],
+                ['📝','العقود','/monthly-rental','#fbbf24'],
+              ].map(([icon,label,path,color]) => (
+                <button key={label} type="button" onClick={() => navigate(path)} className="min-h-[88px] rounded-[15px] flex flex-col items-center justify-center gap-2 active:scale-95" style={{background:`${color}10`,border:`1px solid ${color}30`}}>
+                  <span className="text-[25px]">{icon}</span><span className="text-[9px] font-bold text-slate-200 text-center">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* الاختصارات */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
