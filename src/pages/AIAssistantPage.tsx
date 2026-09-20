@@ -3,8 +3,9 @@ import {
   Mic, MicOff, Volume2, VolumeX, Users, Wrench, FileText,
   AlertTriangle, ExternalLink, RefreshCw,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { formatSAR } from '@/lib/format';
 import {
@@ -57,13 +58,6 @@ type Action =
   | { label: string; route: string }
   | { label: string; kind: 'invoice'; draft: WorkInvoiceDraft };
 type Message = { id: number; type: 'user' | 'ai'; text: string; action?: Action };
-type SpeechRecognitionLike = {
-  lang: string; interimResults: boolean; continuous: boolean;
-  start: () => void; stop: () => void;
-  onresult: ((event: any) => void) | null;
-  onerror: ((event: any) => void) | null;
-  onend: (() => void) | null;
-};
 
 function readArray<T>(key: string): T[] {
   try {
@@ -162,7 +156,6 @@ function mergeInvoice(draft:WorkInvoiceDraft) {
 
 export function AIAssistantPage() {
   const navigate=useNavigate();
-  const recognitionRef=useRef<SpeechRecognitionLike|null>(null);
   const [input,setInput]=useState('');
   const [listening,setListening]=useState(false);
   const [voiceEnabled,setVoiceEnabled]=useState(true);
@@ -300,14 +293,60 @@ export function AIAssistantPage() {
     setMessages(c=>[...c,{id:now,type:'user',text},{id:now+1,type:'ai',text:a.text,action:a.action}]);
     setInput('');speak(a.text);
   }
-  function startVoice(){
-    if(listening){recognitionRef.current?.stop();return}
-    const C=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
-    if(!C){alert('التعرف الصوتي غير متاح في هذا المحرك حالياً. الكتابة تعمل الآن.');return}
-    const r:SpeechRecognitionLike=new C();r.lang='ar-SA';r.interimResults=false;r.continuous=false;
-    r.onresult=e=>{const t=e?.results?.[0]?.[0]?.transcript||'';if(t){setInput(t);setTimeout(()=>sendMessage(t),100)}};
-    r.onerror=()=>setListening(false);r.onend=()=>setListening(false);recognitionRef.current=r;setListening(true);
-    try{r.start()}catch{setListening(false)}
+  async function startVoice(){
+    if(listening){
+      try { await SpeechRecognition.stop(); } catch {}
+      setListening(false);
+      return;
+    }
+
+    try {
+      const { available } = await SpeechRecognition.available();
+      if(!available){
+        alert('التعرف الصوتي غير متاح على هذا الجهاز.');
+        return;
+      }
+
+      const permission = await SpeechRecognition.checkPermissions();
+      const microphoneGranted =
+        (permission as any).microphone === 'granted' ||
+        (permission as any).speechRecognition === 'granted';
+
+      if(!microphoneGranted){
+        const requested = await SpeechRecognition.requestPermissions();
+        const granted =
+          (requested as any).microphone === 'granted' ||
+          (requested as any).speechRecognition === 'granted';
+        if(!granted){
+          alert('لازم تسمح للتطبيق باستخدام الميكروفون حتى يعمل BAAKR AI بالصوت.');
+          return;
+        }
+      }
+
+      setListening(true);
+
+      const result = await SpeechRecognition.start({
+        language: 'ar-SA',
+        maxResults: 3,
+        partialResults: false,
+        popup: true,
+        prompt: 'تكلم الآن مع BAAKR AI',
+      });
+
+      const transcript = result.matches?.[0]?.trim() || '';
+      setListening(false);
+
+      if(transcript){
+        setInput(transcript);
+        sendMessage(transcript);
+      } else {
+        alert('ما قدرت أسمع الكلام بوضوح. حاول مرة ثانية.');
+      }
+    } catch (error) {
+      console.error('BAAKR AI native speech error:', error);
+      setListening(false);
+      alert('تعذر تشغيل الميكروفون. تأكد من إذن الميكروفون ثم حاول مرة ثانية.');
+    }
   }
   function runAction(action?:Action){
     if(!action)return;
@@ -414,4 +453,4 @@ function SmallStatus({icon:Icon,label,value,warning=false}:{icon:any;label:strin
     <Icon className={`w-4 h-4 mb-2 ${warning?'text-amber-400':'text-purple-400'}`}/>
     <div className="text-white text-lg font-black">{value}</div><div className="text-[9px] text-slate-500">{label}</div>
   </div>;
-        }
+      }
