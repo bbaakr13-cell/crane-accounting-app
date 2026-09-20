@@ -122,15 +122,73 @@ export function EquipmentDocumentsPage(){
   async function pdf(){
     if(busy)return;
     try{
-      setBusy(true);const p=new jsPDF({unit:'mm',format:'a4'});let y=18;
-      const line=(a:string,b:string)=>{if(y>280){p.addPage();y=18}p.setFontSize(10);p.text(`${a}: ${b||'-'}`,15,y);y+=7};
-      p.setFontSize(19);p.text('BAAKR PRO',15,y);y+=10;p.setFontSize(14);p.text('Equipment Digital File',15,y);y+=12;
-      line('Equipment',selected.name);line('Brand',selected.brand);line('Capacity',selected.capacity);line('Model',selected.model);line('Plate',selected.plateNumber);line('Driver',selected.driver.name);
-      y+=4;line('Registration',selected.registration.number);line('Registration Expiry',selected.registration.expiryDate);line('Crane TUV',selected.craneTuv.number);line('Crane TUV Expiry',selected.craneTuv.expiryDate);line('Insurance',selected.insurance.number);line('Insurance Expiry',selected.insurance.expiryDate);
-      line('Iqama',selected.driver.iqamaNumber);line('Iqama Expiry',selected.driver.iqamaExpiry);line('Driver License',selected.driver.licenseNumber);line('License Expiry',selected.driver.licenseExpiry);line('Driver TUV',selected.driver.tuvNumber);line('Driver TUV Expiry',selected.driver.tuvExpiryDate);
+      setBusy(true);
+      const p=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const pageW=210,pageH=297,margin=14;
+
+      const safeText=(v:string)=>v&&v.trim()?v:'-';
+      const addHeader=(title:string,subtitle?:string)=>{
+        p.setFillColor(7,17,29);p.rect(0,0,pageW,38,'F');
+        p.setTextColor(255,255,255);p.setFont('helvetica','bold');p.setFontSize(19);p.text('BAAKR PRO',margin,15);
+        p.setFontSize(12);p.text(title,margin,25);
+        if(subtitle){p.setFont('helvetica','normal');p.setFontSize(8);p.setTextColor(180,190,205);p.text(subtitle,margin,32);}
+        p.setTextColor(25,25,25);
+      };
+      const addInfo=(label:string,value:string,x:number,y:number)=>{
+        p.setFont('helvetica','bold');p.setFontSize(8);p.setTextColor(105,115,130);p.text(label,x,y);
+        p.setFontSize(11);p.setTextColor(25,25,25);p.text(safeText(value),x,y+6);
+      };
+      const addImagePage=(title:string,file?:StoredFile|null,number?:string,expiry?:string)=>{
+        if(!file)return;
+        p.addPage();addHeader(title,file.name);
+        addInfo('Document No.',number||'',margin,48);addInfo('Expiry',expiry||'',110,48);
+        if(file.mime.startsWith('image/') && file.dataUrl){
+          try{
+            const props=p.getImageProperties(file.dataUrl);
+            const maxW=pageW-margin*2,maxH=pageH-76;
+            const ratio=Math.min(maxW/props.width,maxH/props.height);
+            const w=props.width*ratio,h=props.height*ratio;
+            p.addImage(file.dataUrl,props.fileType||'JPEG',(pageW-w)/2,68,w,h,undefined,'FAST');
+          }catch(err){console.error('PDF image error',err);p.setFontSize(12);p.text('Unable to render document image.',margin,75);}
+        }else{
+          p.setDrawColor(210,215,225);p.roundedRect(margin,70,pageW-margin*2,70,4,4,'S');
+          p.setFont('helvetica','bold');p.setFontSize(16);p.text('PDF DOCUMENT',pageW/2,96,{align:'center'});
+          p.setFont('helvetica','normal');p.setFontSize(10);p.text(file.name,pageW/2,108,{align:'center',maxWidth:150});
+          p.setFontSize(8);p.setTextColor(100,110,125);p.text('The original PDF is stored in the BAAKR PRO document record.',pageW/2,122,{align:'center'});
+        }
+      };
+
+      // Professional cover
+      p.setFillColor(7,17,29);p.rect(0,0,pageW,pageH,'F');
+      p.setFillColor(245,158,11);p.rect(0,0,7,pageH,'F');
+      p.setTextColor(255,255,255);p.setFont('helvetica','bold');p.setFontSize(27);p.text('BAAKR PRO',18,35);
+      p.setTextColor(245,158,11);p.setFontSize(14);p.text('CRANE DIGITAL DOCUMENT FILE',18,47);
+      if(selected.image?.dataUrl){
+        try{const pr=p.getImageProperties(selected.image.dataUrl);const mw=174,mh=82,r=Math.min(mw/pr.width,mh/pr.height);const w=pr.width*r,h=pr.height*r;p.addImage(selected.image.dataUrl,pr.fileType||'JPEG',18,62,w,h,undefined,'FAST');}catch{}
+      }
+      p.setTextColor(255,255,255);p.setFontSize(21);p.text(safeText(selected.name),18,162);
+      p.setFont('helvetica','normal');p.setFontSize(11);p.setTextColor(185,195,210);
+      p.text(`Brand: ${safeText(selected.brand)}`,18,174);p.text(`Capacity: ${safeText(selected.capacity)}`,18,183);p.text(`Model: ${safeText(selected.model)}`,18,192);p.text(`Plate: ${safeText(selected.plateNumber)}`,18,201);p.text(`Driver: ${safeText(selected.driver.name)}`,18,210);
+      p.setDrawColor(245,158,11);p.line(18,225,192,225);p.setFontSize(9);p.text('Crane + operator documents in one professional file',18,238);
+
+      // Summary page
+      p.addPage();addHeader('DOCUMENT SUMMARY','Crane and operator document status');
+      let y=52;
+      const row=(name:string,num:string,exp:string)=>{p.setFillColor(247,249,252);p.roundedRect(margin,y,pageW-margin*2,19,3,3,'F');p.setFont('helvetica','bold');p.setFontSize(10);p.setTextColor(25,25,25);p.text(name,margin+4,y+7);p.setFont('helvetica','normal');p.setFontSize(8);p.setTextColor(90,100,115);p.text(`No: ${safeText(num)}   Expiry: ${safeText(exp)}`,margin+4,y+14);y+=23;};
+      row('Crane Registration',selected.registration.number,selected.registration.expiryDate);row('Crane TUV',selected.craneTuv.number,selected.craneTuv.expiryDate);row('Insurance',selected.insurance.number,selected.insurance.expiryDate);row('Driver Iqama',selected.driver.iqamaNumber,selected.driver.iqamaExpiry);row('Driver License',selected.driver.licenseNumber,selected.driver.licenseExpiry);row('Driver TUV',selected.driver.tuvNumber,selected.driver.tuvExpiryDate);
+
+      // Actual uploaded document images, each on its own page
+      addImagePage('CRANE REGISTRATION',selected.registration.file,selected.registration.number,selected.registration.expiryDate);
+      addImagePage('CRANE TUV',selected.craneTuv.file,selected.craneTuv.number,selected.craneTuv.expiryDate);
+      addImagePage('CRANE INSURANCE',selected.insurance.file,selected.insurance.number,selected.insurance.expiryDate);
+      addImagePage('DRIVER IQAMA',selected.driver.iqamaFile,selected.driver.iqamaNumber,selected.driver.iqamaExpiry);
+      addImagePage('DRIVER LICENSE',selected.driver.licenseFile,selected.driver.licenseNumber,selected.driver.licenseExpiry);
+      addImagePage('DRIVER TUV',selected.driver.tuvFile,selected.driver.tuvNumber,selected.driver.tuvExpiryDate);
+      selected.extraDocuments.forEach((d,i)=>addImagePage(`ADDITIONAL DOCUMENT ${i+1}`,d.file,d.number,d.expiryDate));
+
       const b=p.output('blob'),data=await blob64(b),name=`BAAKR-PRO-${(selected.name||'equipment').replace(/[\\/:*?"<>|]/g,'-')}-${Date.now()}.pdf`;
       const out=await Filesystem.writeFile({path:name,data,directory:Directory.Cache});
-      await Share.share({title:'ملف الكرين',text:selected.name||'ملف الكرين',url:out.uri,dialogTitle:'مشاركة ملف الكرين'});
+      await Share.share({title:'ملف مستندات الكرين',text:selected.name||'ملف الكرين',url:out.uri,dialogTitle:'حفظ أو مشاركة ملف مستندات الكرين'});
     }catch(e){console.error(e);alert('تعذر إنشاء ملف PDF')}finally{setBusy(false)}
   }
 
