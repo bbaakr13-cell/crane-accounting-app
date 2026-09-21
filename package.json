@@ -12,6 +12,7 @@
   "dependencies": {
     "@capacitor/android": "8.5.2",
     "@capacitor/core": "8.5.2",
+    "@capgo/capacitor-speech-recognition": "^8.3.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.344.0",
