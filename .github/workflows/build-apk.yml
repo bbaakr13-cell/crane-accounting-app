@@ -70,7 +70,8 @@ jobs:
             @capacitor/share \
             @capacitor/app \
             @aparajita/capacitor-biometric-auth \
-            @capgo/capacitor-social-login
+            @capgo/capacitor-social-login \
+            @capgo/capacitor-speech-recognition
 
       - name: Fix fetchEquipment export
         working-directory: ${{ steps.project.outputs.dir }}
