@@ -39,6 +39,10 @@ import {
 } from '@/pages/CustomersPage';
 
 import {
+  CustomersOpportunitiesPage,
+} from '@/pages/CustomersOpportunitiesPage';
+
+import {
   CustomerDetailPage,
 } from '@/pages/CustomerDetailPage';
 
@@ -526,6 +530,14 @@ function App() {
           path="/customers"
           element={
             <CustomersPage />
+          }
+        />
+
+        {/* العملاء والفرص */}
+        <Route
+          path="/customers-opportunities"
+          element={
+            <CustomersOpportunitiesPage />
           }
         />
 
