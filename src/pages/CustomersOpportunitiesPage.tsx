@@ -18,7 +18,6 @@ import {
   X,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { moveToRecycleBin } from '@/lib/recycleBin';
 
 type OpportunityStatus =
   | 'new'
@@ -268,47 +267,10 @@ export function CustomersOpportunitiesPage() {
   }
 
   function deleteItem(item: CustomerOpportunity) {
-    const name = item.companyName || item.customerName || 'العميل';
-
-    const ok = window.confirm(
-      `نقل ${name} إلى سلة المحذوفات؟
-
-يمكن استعادته لاحقًا من سلة المحذوفات.`
-    );
-
-    if (!ok) return;
-
-    const originalIndex = items.findIndex(
-      x => x.id === item.id
-    );
-
-    moveToRecycleBin({
-      entityType: 'customers-opportunities',
-      title: name,
-      subtitle: [
-        item.phone,
-        item.workType,
-        item.projectLocation || item.city,
-      ]
-        .filter(Boolean)
-        .join(' • '),
-      sourceStorageKey: STORAGE_KEY,
-      payload: item,
-      originalIndex,
-      retentionDays: 30,
-    });
-
-    setItems(old =>
-      old.filter(x => x.id !== item.id)
-    );
-
-    if (selectedId === item.id) {
-      setSelectedId('');
-    }
-
-    window.setTimeout(() => {
-      alert('تم نقل العميل إلى سلة المحذوفات');
-    }, 50);
+    const name = item.companyName || item.customerName;
+    if (!window.confirm(`حذف ${name}؟`)) return;
+    setItems(old => old.filter(x => x.id !== item.id));
+    if (selectedId === item.id) setSelectedId('');
   }
 
   function openPhone(phone: string) {
@@ -600,4 +562,4 @@ function ActionButton({ label, icon, onClick, bg }: { label: string; icon: React
       {icon}{label}
     </button>
   );
-}
+                      }
