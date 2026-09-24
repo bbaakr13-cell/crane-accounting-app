@@ -124,6 +124,10 @@ import {
 } from '@/pages/BackupPage';
 
 import {
+  RecycleBinPage,
+} from '@/pages/RecycleBinPage';
+
+import {
   AIAssistantPage,
 } from '@/pages/AIAssistantPage';
 
@@ -669,6 +673,14 @@ function App() {
           path="/backup"
           element={
             <BackupPage />
+          }
+        />
+
+        {/* سلة المحذوفات */}
+        <Route
+          path="/recycle-bin"
+          element={
+            <RecycleBinPage />
           }
         />
 
