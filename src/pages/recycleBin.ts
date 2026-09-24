@@ -1,727 +1,478 @@
-export const RECYCLE_BIN_KEY = 'bakr_pro_recycle_bin_v1';
-export const RECYCLE_BIN_EVENT = 'bakr-pro-recycle-bin-updated';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
-export type RecycleBinItem = {
-  id: string;
-  entityType: string;
-  title: string;
-  subtitle?: string;
-  sourceStorageKey: string;
-  payload: unknown;
-  originalIndex?: number;
-  deletedAt: string;
-};
+import {
+  RotateCcw,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 
-type AddToRecycleBinInput = {
-  entityType: string;
-  title: string;
-  subtitle?: string;
-  sourceStorageKey: string;
-  payload: unknown;
-  originalIndex?: number;
-};
+import {
+  AppLayout,
+} from '@/components/layout/AppLayout';
 
-function makeId() {
+import {
+  deleteRecycleItemPermanently,
+  emptyRecycleBin,
+  readRecycleBin,
+  RECYCLE_BIN_EVENT,
+  restoreRecycleItem,
+  type RecycleBinItem,
+} from '@/lib/recycleBin';
+
+function formatDeletedAt(value: string) {
   try {
-    if (
-      typeof crypto !== 'undefined' &&
-      typeof crypto.randomUUID === 'function'
-    ) {
-      return crypto.randomUUID();
-    }
-  } catch {}
-
-  return `trash-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 10)}`;
-}
-
-function notifyRecycleBinUpdated() {
-  try {
-    window.dispatchEvent(
-      new CustomEvent(RECYCLE_BIN_EVENT)
-    );
-  } catch {}
-}
-
-export function readRecycleBin(): RecycleBinItem[] {
-  try {
-    const raw = localStorage.getItem(RECYCLE_BIN_KEY);
-
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-
-    return Array.isArray(parsed)
-      ? parsed
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-export function writeRecycleBin(
-  items: RecycleBinItem[]
-) {
-  localStorage.setItem(
-    RECYCLE_BIN_KEY,
-    JSON.stringify(items)
-  );
-
-  notifyRecycleBinUpdated();
-}
-
-
-function payloadIdentity(value: unknown) {
-  if (
-    !value ||
-    typeof value !== 'object'
-  ) {
-    return '';
-  }
-
-  const record = value as Record<string, unknown>;
-
-  const candidates = [
-    'id',
-    '_id',
-    'uuid',
-    'key',
-    'invoiceNo',
-    'invoiceNumber',
-    'number',
-    'day',
-  ];
-
-  for (const field of candidates) {
-    const current = record[field];
-
-    if (
-      current !== undefined &&
-      current !== null &&
-      String(current).trim() !== ''
-    ) {
-      return `${field}:${String(current)}`;
-    }
-  }
-
-  try {
-    return `json:${JSON.stringify(value)}`;
-  } catch {
-    return '';
-  }
-}
-
-function isSamePayload(
-  a: unknown,
-  b: unknown
-) {
-  const aId = payloadIdentity(a);
-  const bId = payloadIdentity(b);
-
-  return Boolean(
-    aId &&
-    bId &&
-    aId === bId
-  );
-}
-
-function entityTypeFromStorageKey(
-  key: string
-) {
-  const k = key.toLowerCase();
-
-  if (
-    k.includes('customer') ||
-    k.includes('client') ||
-    k.includes('opportun')
-  ) {
-    return 'العملاء والفرص';
-  }
-
-  if (
-    k.includes('driver') ||
-    k.includes('operator')
-  ) {
-    return 'السواقين والمشغلين';
-  }
-
-  if (
-    k.includes('expense')
-  ) {
-    return 'المصاريف';
-  }
-
-  if (
-    k.includes('transaction') ||
-    k.includes('income')
-  ) {
-    return 'الحركات المالية';
-  }
-
-  if (
-    k.includes('equipment') ||
-    k.includes('crane') ||
-    k.includes('machine')
-  ) {
-    return 'المعدات';
-  }
-
-  if (
-    k.includes('trip')
-  ) {
-    return 'المشاوير';
-  }
-
-  if (
-    k.includes('partner')
-  ) {
-    return 'حساب الشركاء';
-  }
-
-  if (
-    k.includes('invoice') ||
-    k.includes('rental') ||
-    k.includes('quotation')
-  ) {
-    return 'الفواتير وعروض السعر';
-  }
-
-  if (
-    k.includes('monthly')
-  ) {
-    return 'الحساب الشهري';
-  }
-
-  if (
-    k.includes('document')
-  ) {
-    return 'المستندات';
-  }
-
-  return 'بيانات التطبيق';
-}
-
-function titleFromPayload(
-  payload: unknown,
-  fallback: string
-) {
-  if (
-    !payload ||
-    typeof payload !== 'object'
-  ) {
-    return fallback;
-  }
-
-  const record = payload as Record<string, unknown>;
-
-  const fields = [
-    'name',
-    'customerName',
-    'companyName',
-    'clientName',
-    'partnerName',
-    'driverName',
-    'operatorName',
-    'equipmentName',
-    'equipment',
-    'craneName',
-    'invoiceNo',
-    'invoiceNumber',
-    'number',
-    'title',
-    'description',
-    'category',
-    'date',
-  ];
-
-  for (const field of fields) {
-    const value = record[field];
-
-    if (
-      value !== undefined &&
-      value !== null &&
-      String(value).trim() !== ''
-    ) {
-      return String(value);
-    }
-  }
-
-  return fallback;
-}
-
-function subtitleFromPayload(
-  payload: unknown
-) {
-  if (
-    !payload ||
-    typeof payload !== 'object'
-  ) {
-    return '';
-  }
-
-  const record = payload as Record<string, unknown>;
-
-  const values = [
-    record.phone,
-    record.mobile,
-    record.workType,
-    record.projectLocation,
-    record.city,
-    record.location,
-    record.equipment,
-    record.equipmentName,
-    record.driverName,
-    record.amount,
-    record.date,
-  ]
-    .filter(
-      value =>
-        value !== undefined &&
-        value !== null &&
-        String(value).trim() !== ''
-    )
-    .map(String);
-
-  return Array.from(
-    new Set(values)
-  )
-    .slice(0, 3)
-    .join(' • ');
-}
-
-function shouldTrackStorageKey(
-  key: string
-) {
-  const k = String(key || '')
-    .toLowerCase();
-
-  if (
-    !k ||
-    k === RECYCLE_BIN_KEY.toLowerCase()
-  ) {
-    return false;
-  }
-
-  const excluded = [
-    'backup',
-    'ai_chat',
-    'chat_history',
-    'dashboard',
-    'theme',
-    'setting',
-    'app_lock',
-    'auth',
-    'token',
-    'session',
-    'speech',
-  ];
-
-  if (
-    excluded.some(
-      word => k.includes(word)
-    )
-  ) {
-    return false;
-  }
-
-  const tracked = [
-    'customer',
-    'client',
-    'opportun',
-    'driver',
-    'operator',
-    'expense',
-    'transaction',
-    'income',
-    'equipment',
-    'crane',
-    'machine',
-    'trip',
-    'partner',
-    'invoice',
-    'rental',
-    'quotation',
-    'monthly',
-    'document',
-    'job',
-  ];
-
-  return tracked.some(
-    word => k.includes(word)
-  );
-}
-
-function archiveAutomatically(
-  sourceStorageKey: string,
-  payload: unknown,
-  originalIndex: number
-) {
-  addToRecycleBin({
-    entityType:
-      entityTypeFromStorageKey(
-        sourceStorageKey
-      ),
-    title:
-      titleFromPayload(
-        payload,
-        entityTypeFromStorageKey(
-          sourceStorageKey
-        )
-      ),
-    subtitle:
-      subtitleFromPayload(
-        payload
-      ),
-    sourceStorageKey,
-    payload,
-    originalIndex,
-  });
-}
-
-let autoGuardInstalled = false;
-
-/**
- * يربط عمليات الحذف من بيانات التطبيق المخزنة في localStorage
- * بسلة المحذوفات تلقائياً.
- *
- * لا يغير طريقة الحذف في الصفحات؛ فقط يحتفظ بالعنصر المحذوف
- * قبل أن يختفي من التخزين.
- */
-export function installRecycleBinAutoGuard() {
-  if (
-    autoGuardInstalled ||
-    typeof window === 'undefined' ||
-    typeof Storage === 'undefined'
-  ) {
-    return;
-  }
-
-  autoGuardInstalled = true;
-
-  const originalGetItem =
-    Storage.prototype.getItem;
-
-  const originalSetItem =
-    Storage.prototype.setItem;
-
-  const originalRemoveItem =
-    Storage.prototype.removeItem;
-
-  Storage.prototype.setItem =
-    function (
-      key: string,
-      value: string
-    ) {
-      if (
-        this !== window.localStorage ||
-        !shouldTrackStorageKey(key)
-      ) {
-        return originalSetItem.call(
-          this,
-          key,
-          value
-        );
+    return new Intl.DateTimeFormat(
+      'ar-SA-u-ca-gregory',
+      {
+        dateStyle: 'medium',
+        timeStyle: 'short',
       }
+    ).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
 
-      let removed: Array<{
-        payload: unknown;
-        index: number;
-      }> = [];
+export function RecycleBinPage() {
+  const [items, setItems] =
+    useState<RecycleBinItem[]>([]);
 
-      try {
-        const oldRaw =
-          originalGetItem.call(
-            this,
-            key
-          );
+  const [search, setSearch] =
+    useState('');
 
-        if (oldRaw) {
-          const oldValue =
-            JSON.parse(oldRaw);
+  const load = useCallback(() => {
+    setItems(readRecycleBin());
+  }, []);
 
-          const newValue =
-            JSON.parse(value);
+  useEffect(() => {
+    load();
 
-          if (
-            Array.isArray(oldValue) &&
-            Array.isArray(newValue) &&
-            newValue.length <
-              oldValue.length
-          ) {
-            removed =
-              oldValue
-                .map(
-                  (
-                    payload,
-                    index
-                  ) => ({
-                    payload,
-                    index,
-                  })
-                )
-                .filter(
-                  ({ payload }) =>
-                    !newValue.some(
-                      next =>
-                        isSamePayload(
-                          payload,
-                          next
+    const onUpdated = () => load();
+
+    const onStorage = (
+      event: StorageEvent
+    ) => {
+      if (
+        !event.key ||
+        event.key ===
+          'bakr_pro_recycle_bin_v1'
+      ) {
+        load();
+      }
+    };
+
+    window.addEventListener(
+      RECYCLE_BIN_EVENT,
+      onUpdated
+    );
+
+    window.addEventListener(
+      'storage',
+      onStorage
+    );
+
+    return () => {
+      window.removeEventListener(
+        RECYCLE_BIN_EVENT,
+        onUpdated
+      );
+
+      window.removeEventListener(
+        'storage',
+        onStorage
+      );
+    };
+  }, [load]);
+
+  const filtered = useMemo(() => {
+    const q = search
+      .trim()
+      .toLowerCase();
+
+    if (!q) return items;
+
+    return items.filter(item =>
+      [
+        item.title,
+        item.subtitle,
+        item.entityType,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [items, search]);
+
+  function restore(item: RecycleBinItem) {
+    const result =
+      restoreRecycleItem(item.id);
+
+    if (!result.ok) {
+      alert(result.message);
+      return;
+    }
+
+    load();
+    alert('تمت استعادة العنصر');
+  }
+
+  function removeForever(
+    item: RecycleBinItem
+  ) {
+    const ok = window.confirm(
+      `حذف "${item.title}" نهائيًا؟\n\nلن يمكن استعادته بعد ذلك.`
+    );
+
+    if (!ok) return;
+
+    deleteRecycleItemPermanently(
+      item.id
+    );
+
+    load();
+  }
+
+  function clearAll() {
+    if (!items.length) return;
+
+    const ok = window.confirm(
+      `إفراغ سلة المحذوفات بالكامل؟\n\nسيتم حذف ${items.length} عنصر نهائيًا.`
+    );
+
+    if (!ok) return;
+
+    emptyRecycleBin();
+    load();
+  }
+
+  return (
+    <AppLayout>
+      <div
+        dir="rtl"
+        style={{
+          maxWidth: 1000,
+          margin: '0 auto',
+          padding: 18,
+          paddingBottom: 110,
+          color: '#fff',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent:
+              'space-between',
+            alignItems: 'center',
+            gap: 12,
+            flexWrap: 'wrap',
+            marginBottom: 18,
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 27,
+                fontWeight: 900,
+              }}
+            >
+              سلة المحذوفات
+            </h1>
+
+            <p
+              style={{
+                color: '#94a3b8',
+                margin:
+                  '6px 0 0',
+                fontSize: 13,
+              }}
+            >
+              استعادة العناصر أو حذفها نهائيًا
+            </p>
+          </div>
+
+          <button
+            type="button"
+            disabled={!items.length}
+            onClick={clearAll}
+            style={{
+              border:
+                '1px solid rgba(239,68,68,.30)',
+              borderRadius: 12,
+              background:
+                items.length
+                  ? 'rgba(239,68,68,.12)'
+                  : 'rgba(255,255,255,.04)',
+              color:
+                items.length
+                  ? '#fda4af'
+                  : '#64748b',
+              padding:
+                '11px 14px',
+              fontWeight: 900,
+              cursor:
+                items.length
+                  ? 'pointer'
+                  : 'not-allowed',
+            }}
+          >
+            إفراغ السلة
+          </button>
+        </div>
+
+        <div
+          style={{
+            position: 'relative',
+            marginBottom: 14,
+          }}
+        >
+          <Search
+            size={18}
+            style={{
+              position: 'absolute',
+              right: 13,
+              top: 13,
+              color: '#94a3b8',
+            }}
+          />
+
+          <input
+            value={search}
+            onChange={event =>
+              setSearch(event.target.value)
+            }
+            placeholder="ابحث في المحذوفات..."
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              borderRadius: 13,
+              border:
+                '1px solid #26384f',
+              background: '#091321',
+              color: '#fff',
+              padding:
+                '12px 42px 12px 42px',
+              outline: 'none',
+              fontSize: 14,
+            }}
+          />
+
+          {search && (
+            <button
+              type="button"
+              onClick={() =>
+                setSearch('')
+              }
+              style={{
+                position: 'absolute',
+                left: 8,
+                top: 7,
+                width: 36,
+                height: 36,
+                border: 'none',
+                borderRadius: 9,
+                background:
+                  'transparent',
+                color: '#94a3b8',
+                display: 'grid',
+                placeItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={17} />
+            </button>
+          )}
+        </div>
+
+        <div
+          style={{
+            marginBottom: 12,
+            color: '#94a3b8',
+            fontSize: 12,
+          }}
+        >
+          عدد العناصر: {items.length}
+        </div>
+
+        {!filtered.length ? (
+          <div
+            style={{
+              borderRadius: 20,
+              padding: 42,
+              textAlign: 'center',
+              background:
+                'linear-gradient(145deg,#0d1b2f,#07111f)',
+              border:
+                '1px solid rgba(255,255,255,.07)',
+            }}
+          >
+            <Trash2
+              size={44}
+              style={{
+                color: '#475569',
+                marginBottom: 10,
+              }}
+            />
+
+            <div
+              style={{
+                fontWeight: 900,
+                fontSize: 16,
+              }}
+            >
+              {items.length
+                ? 'لا توجد نتائج'
+                : 'سلة المحذوفات فارغة'}
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gap: 10,
+            }}
+          >
+            {filtered.map(item => (
+              <div
+                key={item.id}
+                style={{
+                  borderRadius: 18,
+                  padding: 14,
+                  background:
+                    'linear-gradient(145deg,#0d1b2f,#07111f)',
+                  border:
+                    '1px solid rgba(255,255,255,.07)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent:
+                      'space-between',
+                    alignItems:
+                      'flex-start',
+                    gap: 12,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 210,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 900,
+                        fontSize: 16,
+                      }}
+                    >
+                      {item.title}
+                    </div>
+
+                    {item.subtitle && (
+                      <div
+                        style={{
+                          color: '#b8c3d2',
+                          marginTop: 5,
+                          fontSize: 12,
+                        }}
+                      >
+                        {item.subtitle}
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        color: '#718198',
+                        marginTop: 8,
+                        fontSize: 11,
+                      }}
+                    >
+                      تم الحذف:{' '}
+                      {formatDeletedAt(
+                        item.deletedAt
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 7,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        restore(item)
+                      }
+                      style={{
+                        border:
+                          '1px solid rgba(34,197,94,.25)',
+                        borderRadius: 11,
+                        background:
+                          'rgba(34,197,94,.11)',
+                        color: '#86efac',
+                        padding:
+                          '10px 12px',
+                        fontWeight: 900,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems:
+                          'center',
+                        gap: 6,
+                      }}
+                    >
+                      <RotateCcw
+                        size={16}
+                      />
+                      استعادة
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeForever(
+                          item
                         )
-                    )
-                );
-          }
-        }
-      } catch {
-        removed = [];
-      }
-
-      const result =
-        originalSetItem.call(
-          this,
-          key,
-          value
-        );
-
-      removed.forEach(
-        ({ payload, index }) => {
-          archiveAutomatically(
-            key,
-            payload,
-            index
-          );
-        }
-      );
-
-      return result;
-    };
-
-  Storage.prototype.removeItem =
-    function (
-      key: string
-    ) {
-      if (
-        this !== window.localStorage ||
-        !shouldTrackStorageKey(key)
-      ) {
-        return originalRemoveItem.call(
-          this,
-          key
-        );
-      }
-
-      let oldValue: unknown = null;
-
-      try {
-        const oldRaw =
-          originalGetItem.call(
-            this,
-            key
-          );
-
-        oldValue =
-          oldRaw
-            ? JSON.parse(oldRaw)
-            : null;
-      } catch {
-        oldValue = null;
-      }
-
-      const result =
-        originalRemoveItem.call(
-          this,
-          key
-        );
-
-      if (
-        Array.isArray(oldValue)
-      ) {
-        oldValue.forEach(
-          (payload, index) => {
-            archiveAutomatically(
-              key,
-              payload,
-              index
-            );
-          }
-        );
-      } else if (
-        oldValue &&
-        typeof oldValue ===
-          'object'
-      ) {
-        archiveAutomatically(
-          key,
-          oldValue,
-          0
-        );
-      }
-
-      return result;
-    };
-}
-
-export function addToRecycleBin(
-  input: AddToRecycleBinInput
-) {
-  const current =
-    readRecycleBin();
-
-  const now = Date.now();
-
-  const recentDuplicate =
-    current.some(item => {
-      if (
-        item.sourceStorageKey !==
-          input.sourceStorageKey ||
-        !isSamePayload(
-          item.payload,
-          input.payload
-        )
-      ) {
-        return false;
-      }
-
-      const deletedAt =
-        new Date(
-          item.deletedAt
-        ).getTime();
-
-      return (
-        Number.isFinite(
-          deletedAt
-        ) &&
-        now - deletedAt <
-          8000
-      );
-    });
-
-  if (recentDuplicate) {
-    return current.find(
-      item =>
-        item.sourceStorageKey ===
-          input.sourceStorageKey &&
-        isSamePayload(
-          item.payload,
-          input.payload
-        )
-    )!;
-  }
-
-  const item: RecycleBinItem = {
-    id: makeId(),
-    entityType: input.entityType,
-    title:
-      input.title ||
-      'عنصر محذوف',
-    subtitle:
-      input.subtitle || '',
-    sourceStorageKey:
-      input.sourceStorageKey,
-    payload: input.payload,
-    originalIndex:
-      input.originalIndex,
-    deletedAt:
-      new Date().toISOString(),
-  };
-
-  writeRecycleBin([
-    item,
-    ...current,
-  ]);
-
-  return item;
-}
-
-export function deleteRecycleItemPermanently(
-  id: string
-) {
-  writeRecycleBin(
-    readRecycleBin().filter(
-      item => item.id !== id
-    )
+                      }
+                      style={{
+                        border:
+                          '1px solid rgba(239,68,68,.25)',
+                        borderRadius: 11,
+                        background:
+                          'rgba(239,68,68,.11)',
+                        color: '#fda4af',
+                        padding:
+                          '10px 12px',
+                        fontWeight: 900,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems:
+                          'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Trash2
+                        size={16}
+                      />
+                      حذف نهائي
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </AppLayout>
   );
-}
-
-export function emptyRecycleBin() {
-  writeRecycleBin([]);
-}
-
-export function restoreRecycleItem(
-  id: string
-): { ok: true } | { ok: false; message: string } {
-  const items = readRecycleBin();
-
-  const item = items.find(
-    entry => entry.id === id
-  );
-
-  if (!item) {
-    return {
-      ok: false,
-      message: 'العنصر غير موجود',
-    };
-  }
-
-  try {
-    const raw = localStorage.getItem(
-      item.sourceStorageKey
-    );
-
-    let current: unknown = [];
-
-    if (raw) {
-      try {
-        current = JSON.parse(raw);
-      } catch {
-        current = [];
-      }
-    }
-
-    if (Array.isArray(current)) {
-      const next = [...current];
-
-      const index =
-        typeof item.originalIndex === 'number'
-          ? Math.max(
-              0,
-              Math.min(
-                item.originalIndex,
-                next.length
-              )
-            )
-          : next.length;
-
-      next.splice(
-        index,
-        0,
-        item.payload
-      );
-
-      localStorage.setItem(
-        item.sourceStorageKey,
-        JSON.stringify(next)
-      );
-    } else {
-      localStorage.setItem(
-        item.sourceStorageKey,
-        JSON.stringify(item.payload)
-      );
-    }
-
-    writeRecycleBin(
-      items.filter(
-        entry => entry.id !== id
-      )
-    );
-
-    return { ok: true };
-  } catch {
-    return {
-      ok: false,
-      message: 'تعذر استعادة العنصر',
-    };
-  }
 }
