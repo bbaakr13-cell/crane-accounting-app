@@ -470,6 +470,7 @@ export function CustomersOpportunitiesPage() {
                         <RoundButton title="واتساب" onClick={() => openWhatsApp(item)} bg="#0aa86f"><MessageCircle size={18} /></RoundButton>
                         <RoundButton title="الموقع" onClick={() => openMap(item)}><MapPin size={18} /></RoundButton>
                         <RoundButton title="تعديل" onClick={() => openEdit(item)}><Edit3 size={18} /></RoundButton>
+                        <RoundButton title="حذف" onClick={() => deleteItem(item)} bg="#7f1d1d"><Trash2 size={18} /></RoundButton>
                       </div>
                     </div>
                   </div>
