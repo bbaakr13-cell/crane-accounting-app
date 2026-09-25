@@ -138,93 +138,128 @@ export function AppLayout({
           className="sticky top-0 z-40"
           style={{
             background:
-              'linear-gradient(180deg, rgba(7,16,31,0.99) 0%, rgba(7,16,31,0.94) 100%)',
-            backdropFilter: 'blur(18px)',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+              'linear-gradient(180deg, rgba(5,14,28,0.995) 0%, rgba(7,16,31,0.965) 100%)',
+            backdropFilter: 'blur(20px)',
+            borderBottom:
+              '1px solid rgba(245,158,11,0.12)',
+            boxShadow:
+              '0 8px 28px rgba(0,0,0,0.22)',
           }}
         >
           <div
-            className="px-4 pb-4"
+            className="px-4 pb-3.5"
             style={{
               paddingTop:
-                'calc(env(safe-area-inset-top, 0px) + 12px)',
+                'calc(env(safe-area-inset-top, 0px) + 11px)',
             }}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
 
               {/* يمين - القائمة */}
               <button
                 type="button"
                 onClick={() => setMenuOpen(true)}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center active:scale-95 transition-transform"
+                className="w-12 h-12 rounded-[18px] flex items-center justify-center active:scale-95 transition-transform shrink-0"
                 style={{
                   background:
-                    'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025))',
+                    'linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.018))',
                   border:
-                    '1px solid rgba(255,255,255,0.10)',
+                    '1px solid rgba(148,163,184,0.15)',
                   boxShadow:
-                    '0 8px 24px rgba(0,0,0,0.25)',
+                    '0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.03)',
                 }}
                 aria-label="القائمة"
               >
                 <Menu
                   className="w-6 h-6 text-white"
-                  strokeWidth={2.1}
+                  strokeWidth={2.2}
                 />
               </button>
 
-              {/* الوسط - هوية التطبيق */}
-              <div className="flex-1 px-3 min-w-0">
-
-                <div className="flex items-center justify-center gap-2">
+              {/* الوسط - هوية التطبيق الجديدة */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-center gap-2.5">
 
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    className="relative w-12 h-12 rounded-[16px] overflow-hidden shrink-0"
                     style={{
                       background:
-                        'linear-gradient(145deg, #fbbf24, #f97316)',
+                        'linear-gradient(145deg,rgba(245,158,11,0.13),rgba(59,130,246,0.06))',
+                      border:
+                        '1px solid rgba(245,158,11,0.34)',
                       boxShadow:
-                        '0 6px 20px rgba(245,158,11,0.22)',
+                        '0 0 0 1px rgba(255,255,255,0.025), 0 8px 24px rgba(245,158,11,0.17)',
                     }}
                   >
-                    <Truck
-                      className="w-5 h-5 text-slate-950"
-                      strokeWidth={2.4}
+                    <img
+                      src="/baakr-pro-logo.png"
+                      alt="BAAKR PRO"
+                      className="w-full h-full object-cover"
+                      draggable={false}
                     />
                   </div>
 
                   <div className="min-w-0">
-                    <h1 className="text-[16px] leading-tight font-black tracking-wide text-white">
-                      BAAKR PRO
-                    </h1>
+                    <div className="flex items-baseline gap-1.5">
+                      <h1 className="text-[17px] leading-tight font-black tracking-[0.08em] text-white whitespace-nowrap">
+                        BAAKR
+                      </h1>
 
-                    <p className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap">
-                      إدارة حسابات الكرينات
-                    </p>
+                      <span
+                        className="text-[17px] leading-tight font-black tracking-[0.06em] whitespace-nowrap"
+                        style={{
+                          background:
+                            'linear-gradient(180deg,#fde68a,#f59e0b)',
+                          WebkitBackgroundClip:
+                            'text',
+                          WebkitTextFillColor:
+                            'transparent',
+                        }}
+                      >
+                        PRO
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{
+                          background: '#f59e0b',
+                          boxShadow:
+                            '0 0 8px rgba(245,158,11,.65)',
+                        }}
+                      />
+
+                      <p className="text-[10px] text-slate-400 whitespace-nowrap">
+                        إدارة حسابات الكرينات
+                      </p>
+                    </div>
                   </div>
 
                 </div>
               </div>
 
               {/* يسار - التنبيهات والإعدادات */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
 
                 <button
                   type="button"
                   onClick={() =>
                     setNotificationsOpen(true)
                   }
-                  className="relative w-11 h-11 rounded-2xl flex items-center justify-center active:scale-95 transition-transform"
+                  className="relative w-11 h-11 rounded-[16px] flex items-center justify-center active:scale-95 transition-transform"
                   style={{
                     background:
-                      'rgba(255,255,255,0.045)',
+                      'linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))',
                     border:
-                      '1px solid rgba(255,255,255,0.08)',
+                      '1px solid rgba(148,163,184,0.12)',
+                    boxShadow:
+                      '0 6px 18px rgba(0,0,0,.18)',
                   }}
                   aria-label="التنبيهات"
                 >
                   <Bell
-                    className="w-5 h-5 text-slate-200"
+                    className="w-5 h-5 text-slate-100"
                     strokeWidth={2}
                   />
 
@@ -234,7 +269,7 @@ export function AppLayout({
                       background: '#f59e0b',
                       border: '2px solid #07101f',
                       boxShadow:
-                        '0 0 10px rgba(245,158,11,0.6)',
+                        '0 0 10px rgba(245,158,11,0.7)',
                     }}
                   />
                 </button>
@@ -244,17 +279,19 @@ export function AppLayout({
                   onClick={() =>
                     navigate('/settings')
                   }
-                  className="w-11 h-11 rounded-2xl flex items-center justify-center active:scale-95 transition-transform"
+                  className="w-11 h-11 rounded-[16px] flex items-center justify-center active:scale-95 transition-transform"
                   style={{
                     background:
-                      'rgba(255,255,255,0.045)',
+                      'linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))',
                     border:
-                      '1px solid rgba(255,255,255,0.08)',
+                      '1px solid rgba(148,163,184,0.12)',
+                    boxShadow:
+                      '0 6px 18px rgba(0,0,0,.18)',
                   }}
                   aria-label="الإعدادات"
                 >
                   <Settings
-                    className="w-5 h-5 text-slate-200"
+                    className="w-5 h-5 text-slate-100"
                     strokeWidth={2}
                   />
                 </button>
@@ -317,14 +354,15 @@ export function AppLayout({
             >
 
               {/* هوية القائمة */}
-
               <div
-                className="rounded-3xl p-4 mb-5"
+                className="rounded-[26px] p-4 mb-5"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(245,158,11,0.14), rgba(255,255,255,0.025))',
+                    'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(59,130,246,0.035))',
                   border:
-                    '1px solid rgba(245,158,11,0.16)',
+                    '1px solid rgba(245,158,11,0.18)',
+                  boxShadow:
+                    '0 12px 34px rgba(0,0,0,.20)',
                 }}
               >
                 <div className="flex items-center justify-between">
@@ -332,26 +370,34 @@ export function AppLayout({
                   <div className="flex items-center gap-3">
 
                     <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                      className="w-14 h-14 rounded-[18px] overflow-hidden shrink-0"
                       style={{
-                        background:
-                          'linear-gradient(145deg, #fbbf24, #f97316)',
+                        border:
+                          '1px solid rgba(245,158,11,0.34)',
                         boxShadow:
-                          '0 8px 22px rgba(245,158,11,0.22)',
+                          '0 8px 24px rgba(245,158,11,0.16)',
                       }}
                     >
-                      <Truck
-                        className="w-6 h-6 text-slate-950"
-                        strokeWidth={2.3}
+                      <img
+                        src="/baakr-pro-logo.png"
+                        alt="BAAKR PRO"
+                        className="w-full h-full object-cover"
+                        draggable={false}
                       />
                     </div>
 
                     <div>
-                      <h2 className="text-lg font-black text-white">
-                        BAAKR PRO
-                      </h2>
+                      <div className="flex items-baseline gap-1.5">
+                        <h2 className="text-lg font-black text-white">
+                          BAAKR
+                        </h2>
 
-                      <p className="text-[11px] text-slate-400 mt-1">
+                        <span className="text-lg font-black text-amber-400">
+                          PRO
+                        </span>
+                      </div>
+
+                      <p className="text-[10px] text-slate-400 mt-1">
                         نظام إدارة حسابات الكرينات
                       </p>
                     </div>
@@ -372,7 +418,6 @@ export function AppLayout({
               </div>
 
               {/* عناصر القائمة */}
-
               <div className="space-y-2">
 
                 {menuItems.map((item) => {
@@ -397,9 +442,7 @@ export function AppLayout({
                           : '1px solid rgba(255,255,255,0.055)',
                       }}
                     >
-
                       <div className="flex items-center gap-3">
-
                         <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center"
                           style={{
@@ -426,13 +469,11 @@ export function AppLayout({
                         >
                           {item.label}
                         </span>
-
                       </div>
 
                       <ChevronLeft
                         className="w-4 h-4 text-slate-600"
                       />
-
                     </button>
                   );
                 })}
@@ -440,7 +481,6 @@ export function AppLayout({
               </div>
 
               <div className="mt-7 pt-5 border-t border-white/10 text-center">
-
                 <p className="text-xs font-bold text-slate-400">
                   BAAKR PRO
                 </p>
@@ -448,7 +488,6 @@ export function AppLayout({
                 <p className="text-[10px] text-slate-600 mt-1">
                   إدارة أعمالك بشكل أسهل وأسرع
                 </p>
-
               </div>
 
             </div>
@@ -468,7 +507,6 @@ export function AppLayout({
               'calc(env(safe-area-inset-top, 0px) + 85px)',
           }}
         >
-
           <button
             type="button"
             onClick={() =>
@@ -490,11 +528,8 @@ export function AppLayout({
                 '1px solid rgba(255,255,255,0.09)',
             }}
           >
-
             <div className="flex items-center justify-between mb-5">
-
               <div className="flex items-center gap-3">
-
                 <div
                   className="w-11 h-11 rounded-2xl flex items-center justify-center"
                   style={{
@@ -514,7 +549,6 @@ export function AppLayout({
                     مركز تنبيهات BAAKR PRO
                   </p>
                 </div>
-
               </div>
 
               <button
@@ -526,7 +560,6 @@ export function AppLayout({
               >
                 <X className="w-5 h-5" />
               </button>
-
             </div>
 
             <div
@@ -579,10 +612,7 @@ export function AppLayout({
               'env(safe-area-inset-bottom, 0px)',
           }}
         >
-
           <div className="max-w-lg mx-auto h-[78px] px-3 grid grid-cols-5 items-center">
-
-            {/* الرئيسية */}
 
             <button
               type="button"
@@ -600,8 +630,6 @@ export function AppLayout({
                 الرئيسية
               </span>
             </button>
-
-            {/* الحركات */}
 
             <button
               type="button"
@@ -626,14 +654,11 @@ export function AppLayout({
               </span>
             </button>
 
-            {/* زر الإضافة */}
-
             <button
               type="button"
               onClick={() => navigate('/add')}
               className="relative flex flex-col items-center justify-center"
             >
-
               <div
                 className="absolute -top-[40px] w-[62px] h-[62px] rounded-[22px] flex items-center justify-center active:scale-95 transition-transform"
                 style={{
@@ -654,10 +679,7 @@ export function AppLayout({
               <span className="text-[10px] font-bold text-amber-400 mt-8">
                 إضافة
               </span>
-
             </button>
-
-            {/* العملاء */}
 
             <button
               type="button"
@@ -681,8 +703,6 @@ export function AppLayout({
                 العملاء
               </span>
             </button>
-
-            {/* التقارير */}
 
             <button
               type="button"
