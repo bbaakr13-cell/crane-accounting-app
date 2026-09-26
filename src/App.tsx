@@ -39,6 +39,10 @@ import {
 } from '@/pages/CustomersPage';
 
 import {
+  CustomersOpportunitiesPage,
+} from '@/pages/CustomersOpportunitiesPage';
+
+import {
   CustomerDetailPage,
 } from '@/pages/CustomerDetailPage';
 
@@ -91,12 +95,12 @@ import {
 } from '@/pages/DriverEquipmentExpensesPage';
 
 import {
-  CalculatorPage,
-} from '@/pages/CalculatorPage';
+  ExpensesPage,
+} from '@/pages/ExpensesPage';
 
 import {
-  MonthlyRentalPage,
-} from '@/pages/MonthlyRentalPage';
+  CalculatorPage,
+} from '@/pages/CalculatorPage';
 
 import {
   DriversPage,
@@ -106,11 +110,22 @@ import {
   QuotationPage,
 } from '@/pages/QuotationPage';
 
+/*
+  حساب الشركاء الجديد
+*/
+import {
+  PartnersPage,
+} from '@/pages/PartnersPage';
+
 import AboutPage from '@/pages/AboutPage';
 
 import {
   BackupPage,
 } from '@/pages/BackupPage';
+
+import {
+  RecycleBinPage,
+} from '@/pages/RecycleBinPage';
 
 import {
   AIAssistantPage,
@@ -119,7 +134,6 @@ import {
 import {
   OpportunityRadarPage,
 } from '@/pages/OpportunityRadarPage';
-
 
 import {
   AppLockScreen,
@@ -133,9 +147,16 @@ import {
   isAppLockEnabled,
 } from '@/lib/appLock';
 
+import {
+  installRecycleBinAutoGuard,
+} from '@/lib/recycleBin';
+
 function App() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate =
+    useNavigate();
+
+  const location =
+    useLocation();
 
   const showBackButton =
     location.pathname !== '/';
@@ -157,29 +178,47 @@ function App() {
     return isAppLockEnabled();
   });
 
+  /*
+    ربط الحذف في أقسام التطبيق بسلة المحذوفات
+  */
+  useEffect(() => {
+    installRecycleBinAutoGuard();
+  }, []);
+
+  /*
+    النسخ الاحتياطي التلقائي
+  */
   useEffect(() => {
     runAutomaticBackup();
   }, []);
 
+  /*
+    قفل التطبيق عند الخروج منه
+  */
   useEffect(() => {
     let listener: {
       remove: () => Promise<void>;
     } | null = null;
 
-    const setup = async () => {
-      listener =
-        await CapacitorApp.addListener(
-          'appStateChange',
-          ({ isActive }) => {
-            if (
-              !isActive &&
-              isAppLockEnabled()
-            ) {
-              setLocked(true);
+    const setup =
+      async () => {
+        listener =
+          await CapacitorApp.addListener(
+            'appStateChange',
+            ({
+              isActive,
+            }) => {
+              if (
+                !isActive &&
+                isAppLockEnabled()
+              ) {
+                setLocked(
+                  true
+                );
+              }
             }
-          }
-        );
-    };
+          );
+      };
 
     setup();
 
@@ -188,24 +227,36 @@ function App() {
     };
   }, []);
 
-  const handleBack = () => {
-    if (
-      window.history.length > 1
-    ) {
-      navigate(-1);
-    } else {
-      navigate('/');
-    }
-  };
+  /*
+    زر الرجوع العادي
+  */
+  const handleBack =
+    () => {
+      if (
+        window.history
+          .length > 1
+      ) {
+        navigate(-1);
+      } else {
+        navigate('/');
+      }
+    };
 
+  /*
+    زر الرجوع في أندرويد
+    ضغطتين للخروج من الصفحة الرئيسية
+  */
   useEffect(() => {
     let exitHintTimer:
-      | ReturnType<typeof setTimeout>
+      | ReturnType<
+          typeof setTimeout
+        >
       | undefined;
 
     let activeListener:
       | {
-          remove: () => Promise<void>;
+          remove: () =>
+            Promise<void>;
         }
       | undefined;
 
@@ -220,7 +271,8 @@ function App() {
               }
 
               if (
-                location.pathname !== '/'
+                location.pathname !==
+                '/'
               ) {
                 navigate(-1);
                 return;
@@ -238,21 +290,31 @@ function App() {
                 return;
               }
 
-              setLastBackPress(now);
-              setShowExitHint(true);
+              setLastBackPress(
+                now
+              );
 
-              if (exitHintTimer) {
+              setShowExitHint(
+                true
+              );
+
+              if (
+                exitHintTimer
+              ) {
                 clearTimeout(
                   exitHintTimer
                 );
               }
 
               exitHintTimer =
-                setTimeout(() => {
-                  setShowExitHint(
-                    false
-                  );
-                }, 1800);
+                setTimeout(
+                  () => {
+                    setShowExitHint(
+                      false
+                    );
+                  },
+                  1800
+                );
             }
           );
 
@@ -263,7 +325,9 @@ function App() {
     setupBackButton();
 
     return () => {
-      if (exitHintTimer) {
+      if (
+        exitHintTimer
+      ) {
         clearTimeout(
           exitHintTimer
         );
@@ -278,6 +342,9 @@ function App() {
     locked,
   ]);
 
+  /*
+    شاشة القفل
+  */
   if (locked) {
     return (
       <AppLockScreen
@@ -290,61 +357,112 @@ function App() {
 
   return (
     <>
+      {/* زر الرجوع */}
       {showBackButton && (
         <button
           type="button"
-          onClick={handleBack}
+          onClick={
+            handleBack
+          }
           aria-label="رجوع"
           style={{
-            position: 'fixed',
+            position:
+              'fixed',
+
             top:
               'calc(env(safe-area-inset-top, 0px) + 12px)',
+
             left: 14,
-            zIndex: 9999,
+
+            zIndex:
+              9999,
+
             width: 44,
+
             height: 44,
-            borderRadius: 14,
+
+            borderRadius:
+              14,
+
             border:
               '1px solid rgba(255,255,255,0.16)',
+
             background:
               'rgba(10, 25, 48, 0.94)',
-            color: '#ffffff',
-            fontSize: 24,
-            fontWeight: 900,
-            display: 'flex',
-            alignItems: 'center',
+
+            color:
+              '#ffffff',
+
+            fontSize:
+              24,
+
+            fontWeight:
+              900,
+
+            display:
+              'flex',
+
+            alignItems:
+              'center',
+
             justifyContent:
               'center',
+
             boxShadow:
               '0 8px 24px rgba(0,0,0,0.24)',
-            cursor: 'pointer',
+
+            cursor:
+              'pointer',
           }}
         >
           ←
         </button>
       )}
 
+      {/* رسالة الخروج */}
       {showExitHint && (
         <div
           role="status"
           style={{
-            position: 'fixed',
-            left: '50%',
+            position:
+              'fixed',
+
+            left:
+              '50%',
+
             bottom:
               'calc(env(safe-area-inset-bottom, 0px) + 28px)',
+
             transform:
               'translateX(-50%)',
-            zIndex: 10000,
+
+            zIndex:
+              10000,
+
             background:
               'rgba(15, 23, 42, 0.96)',
-            color: '#ffffff',
+
+            color:
+              '#ffffff',
+
             border:
               '1px solid rgba(255,255,255,0.14)',
-            borderRadius: 14,
-            padding: '11px 16px',
-            fontSize: 14,
-            fontWeight: 700,
-            whiteSpace: 'nowrap',
+
+            borderRadius:
+              14,
+
+            padding:
+              '11px 16px',
+
+            fontSize:
+              14,
+
+            fontWeight:
+              700,
+
+            whiteSpace:
+              'nowrap',
+
             boxShadow:
               '0 10px 30px rgba(0,0,0,0.28)',
           }}
@@ -354,6 +472,7 @@ function App() {
       )}
 
       <Routes>
+        {/* الرئيسية */}
         <Route
           path="/"
           element={
@@ -361,6 +480,7 @@ function App() {
           }
         />
 
+        {/* BAKR AI */}
         <Route
           path="/ai"
           element={
@@ -368,6 +488,7 @@ function App() {
           }
         />
 
+        {/* رادار الفرص */}
         <Route
           path="/opportunity-radar"
           element={
@@ -375,6 +496,7 @@ function App() {
           }
         />
 
+        {/* الحركات */}
         <Route
           path="/transactions"
           element={
@@ -382,6 +504,7 @@ function App() {
           }
         />
 
+        {/* إضافة حركة */}
         <Route
           path="/add"
           element={
@@ -389,6 +512,7 @@ function App() {
           }
         />
 
+        {/* إضافة معدة */}
         <Route
           path="/equipment/add"
           element={
@@ -396,6 +520,7 @@ function App() {
           }
         />
 
+        {/* تعديل معدة */}
         <Route
           path="/equipment/:id/edit"
           element={
@@ -403,6 +528,7 @@ function App() {
           }
         />
 
+        {/* المعدات */}
         <Route
           path="/equipment"
           element={
@@ -410,6 +536,7 @@ function App() {
           }
         />
 
+        {/* تفاصيل المعدة */}
         <Route
           path="/equipment/:id"
           element={
@@ -417,6 +544,7 @@ function App() {
           }
         />
 
+        {/* مستندات المعدات */}
         <Route
           path="/equipment-documents"
           element={
@@ -424,6 +552,7 @@ function App() {
           }
         />
 
+        {/* العملاء */}
         <Route
           path="/customers"
           element={
@@ -431,6 +560,15 @@ function App() {
           }
         />
 
+        {/* العملاء والفرص */}
+        <Route
+          path="/customers-opportunities"
+          element={
+            <CustomersOpportunitiesPage />
+          }
+        />
+
+        {/* تفاصيل العميل */}
         <Route
           path="/customers/:id"
           element={
@@ -438,6 +576,7 @@ function App() {
           }
         />
 
+        {/* الحساب الشهري */}
         <Route
           path="/monthly"
           element={
@@ -452,6 +591,19 @@ function App() {
           }
         />
 
+        {/*
+          =========================
+          حساب الشركاء الجديد
+          =========================
+        */}
+        <Route
+          path="/partners"
+          element={
+            <PartnersPage />
+          }
+        />
+
+        {/* المشاوير اليومية */}
         <Route
           path="/daily-trips"
           element={
@@ -459,6 +611,7 @@ function App() {
           }
         />
 
+        {/* مصاريف السواقين والمعدات */}
         <Route
           path="/operating-expenses"
           element={
@@ -466,13 +619,15 @@ function App() {
           }
         />
 
+        {/* المصاريف */}
         <Route
-          path="/monthly-rental"
+          path="/expenses"
           element={
-            <MonthlyRentalPage />
+            <ExpensesPage />
           }
         />
 
+        {/* السواقين */}
         <Route
           path="/drivers"
           element={
@@ -480,6 +635,7 @@ function App() {
           }
         />
 
+        {/* التقارير */}
         <Route
           path="/reports"
           element={
@@ -487,6 +643,7 @@ function App() {
           }
         />
 
+        {/* الفواتير */}
         <Route
           path="/invoices"
           element={
@@ -494,6 +651,7 @@ function App() {
           }
         />
 
+        {/* فاتورة عمل */}
         <Route
           path="/work-invoice"
           element={
@@ -501,6 +659,7 @@ function App() {
           }
         />
 
+        {/* فاتورة تأجير */}
         <Route
           path="/rental-invoice"
           element={
@@ -508,6 +667,7 @@ function App() {
           }
         />
 
+        {/* عرض سعر */}
         <Route
           path="/quotation"
           element={
@@ -515,6 +675,7 @@ function App() {
           }
         />
 
+        {/* حساب اليوم */}
         <Route
           path="/daily-calculator"
           element={
@@ -522,6 +683,7 @@ function App() {
           }
         />
 
+        {/* الحاسبة */}
         <Route
           path="/calculator"
           element={
@@ -529,6 +691,7 @@ function App() {
           }
         />
 
+        {/* النسخ الاحتياطي */}
         <Route
           path="/backup"
           element={
@@ -536,6 +699,15 @@ function App() {
           }
         />
 
+        {/* سلة المحذوفات */}
+        <Route
+          path="/recycle-bin"
+          element={
+            <RecycleBinPage />
+          }
+        />
+
+        {/* الإعدادات */}
         <Route
           path="/settings"
           element={
@@ -543,6 +715,7 @@ function App() {
           }
         />
 
+        {/* حول التطبيق */}
         <Route
           path="/about"
           element={
