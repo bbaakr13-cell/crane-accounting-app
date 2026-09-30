@@ -205,14 +205,6 @@ jobs:
           }
           EOF
 
-      - name: Add WhatsApp opportunity monitor
-        working-directory: ${{ steps.project.outputs.dir }}
-        run: |
-          cp ../../android-native/WhatsAppMonitorPlugin.java android/app/src/main/java/com/crane/accounting/WhatsAppMonitorPlugin.java
-          cp ../../android-native/WhatsAppNotificationService.java android/app/src/main/java/com/crane/accounting/WhatsAppNotificationService.java
-          python ../../android-native/patch_main_activity.py
-          python ../../android-native/patch_manifest.py
-
       - name: Generate BAKR PRO app icon
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
