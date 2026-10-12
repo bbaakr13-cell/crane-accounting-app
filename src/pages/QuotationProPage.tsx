@@ -54,6 +54,18 @@ export type QuotationForm = {
   items: QuotationItem[];
 };
 
+type AiQuotationPayload = {
+  companyName?: unknown;
+  customer?: unknown;
+  region?: unknown;
+  workDays?: unknown;
+  workHours?: unknown;
+  housingDiesel?: unknown;
+  vatNote?: unknown;
+  extraNote?: unknown;
+  items?: unknown;
+};
+
 const STORAGE_KEY = 'bakr_pro_professional_quotation_v2';
 const OLD_STORAGE_KEY = 'bakr_pro_professional_quotation_v1';
 const PAPER_WIDTH = 794;
@@ -74,6 +86,74 @@ function todayIso() {
 function makeQuoteNo(value: string) {
   const date = value || todayIso();
   return `QT-${date.replace(/-/g, '')}-01`;
+}
+
+function aiText(value: unknown) {
+  return String(value ?? '').trim();
+}
+
+function aiNumberText(value: unknown) {
+  const text = aiText(value)
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .replace(/[٬,]/g, '')
+    .replace(/[^0-9.]/g, '');
+
+  return text;
+}
+
+function parseAiQuotation(rawText: string): AiQuotationPayload {
+  const cleaned = String(rawText || '')
+    .replace(/^\s*BAKRQUOTE(?:_V1)?\s*:?/i, '')
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  const jsonText =
+    firstBrace >= 0 && lastBrace > firstBrace
+      ? cleaned.slice(firstBrace, lastBrace + 1)
+      : cleaned;
+
+  const parsed = JSON.parse(jsonText);
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('صيغة بيانات العرض غير صحيحة');
+  }
+
+  return parsed as AiQuotationPayload;
+}
+
+function makeItemsFromAi(value: unknown): QuotationItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .slice(0, 6)
+    .map((raw, index) => {
+      const item =
+        raw && typeof raw === 'object'
+          ? (raw as Record<string, unknown>)
+          : {};
+
+      const quantity = aiNumberText(item.quantity || item.qty || 1) || '1';
+
+      return {
+        id: `${uid()}-ai-${index}`,
+        equipment: aiText(item.equipment || item.machine || item.type),
+        description: aiText(item.description || item.capacity || item.details),
+        quantity,
+        monthly: aiNumberText(item.monthly || item.monthlyRent || item.monthlyPrice),
+        daily: aiNumberText(item.daily || item.dailyRent || item.dailyPrice),
+      };
+    })
+    .filter(
+      (item) =>
+        item.equipment ||
+        item.description ||
+        item.monthly ||
+        item.daily
+    );
 }
 
 function defaultForm(): QuotationForm {
@@ -217,6 +297,9 @@ export function QuotationProPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [busy, setBusy] = useState<'pdf' | 'image' | 'share' | null>(null);
   const paperRef = useRef<HTMLDivElement | null>(null);
+  const [aiImportOpen, setAiImportOpen] = useState(false);
+  const [aiImportText, setAiImportText] = useState('');
+  const [aiImportError, setAiImportError] = useState('');
 
   const previewScale = useMemo(() => {
     if (typeof window === 'undefined') return 0.42;
@@ -230,6 +313,30 @@ export function QuotationProPage() {
       console.error('Quotation save error:', error);
     }
   }, [form]);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const encoded = params.get('bakrQuote') || params.get('quoteData');
+      if (!encoded) return;
+
+      const payload = parseAiQuotation(decodeURIComponent(encoded));
+      applyAiPayload(payload);
+
+      params.delete('bakrQuote');
+      params.delete('quoteData');
+      const next = params.toString();
+      window.history.replaceState(
+        {},
+        '',
+        `${window.location.pathname}${next ? `?${next}` : ''}`
+      );
+    } catch (error) {
+      console.error('AI quotation URL import error:', error);
+    }
+    // يعمل مرة واحدة عند فتح صفحة عرض السعر من رابط واتساب.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function update<K extends keyof QuotationForm>(
     key: K,
@@ -422,6 +529,57 @@ export function QuotationProPage() {
     }
   }
 
+  function applyAiPayload(payload: AiQuotationPayload) {
+    const importedItems = makeItemsFromAi(payload.items);
+
+    setForm((current) => ({
+      ...current,
+      quoteNo: makeQuoteNo(todayIso()),
+      date: todayIso(),
+      companyName: aiText(payload.companyName) || current.companyName,
+      customer: aiText(payload.customer) || current.customer,
+      region: aiText(payload.region) || current.region,
+      workDays: aiText(payload.workDays) || current.workDays,
+      workHours: aiText(payload.workHours) || current.workHours,
+      housingDiesel: aiText(payload.housingDiesel) || current.housingDiesel,
+      vatNote: aiText(payload.vatNote) || current.vatNote,
+      extraNote: aiText(payload.extraNote),
+      items: importedItems.length ? importedItems : current.items,
+    }));
+  }
+
+  async function openAiImport() {
+    setAiImportError('');
+    setAiImportOpen(true);
+
+    try {
+      const clipboardText = await navigator.clipboard?.readText?.();
+      if (clipboardText && (clipboardText.includes('{') || /BAKRQUOTE/i.test(clipboardText))) {
+        setAiImportText(clipboardText);
+      }
+    } catch {
+      // بعض أجهزة أندرويد تمنع قراءة الحافظة تلقائياً؛ يمكن اللصق يدوياً.
+    }
+  }
+
+  function confirmAiImport() {
+    try {
+      const payload = parseAiQuotation(aiImportText);
+      applyAiPayload(payload);
+      setAiImportError('');
+      setAiImportOpen(false);
+      setAiImportText('');
+      window.setTimeout(() => {
+        window.alert('تم استيراد طلب واتساب. راجع الأسعار ثم احفظ أو شارك PDF.');
+      }, 50);
+    } catch (error) {
+      console.error('AI quotation import error:', error);
+      setAiImportError(
+        'تعذر قراءة الطلب. تأكد أن رسالة الذكاء الاصطناعي تبدأ بـ BAKRQUOTE وتحتوي بيانات JSON.'
+      );
+    }
+  }
+
   function resetNewQuotation() {
     if (!window.confirm('بدء عرض سعر جديد؟ سيتم مسح بيانات عرض السعر الحالي فقط.')) {
       return;
@@ -461,14 +619,24 @@ export function QuotationProPage() {
         <section className="mb-4 rounded-[24px] border border-white/8 bg-slate-900/70 p-4">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-black text-white">بيانات العرض والشركات</h2>
-            <button
-              type="button"
-              onClick={resetNewQuotation}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/7 px-3 py-2 text-[10px] font-black text-slate-300"
-            >
-              <RotateCcw size={14} />
-              عرض جديد
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={openAiImport}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-[10px] font-black text-emerald-200"
+              >
+                <FileText size={14} />
+                استيراد من واتساب AI
+              </button>
+              <button
+                type="button"
+                onClick={resetNewQuotation}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white/7 px-3 py-2 text-[10px] font-black text-slate-300"
+              >
+                <RotateCcw size={14} />
+                عرض جديد
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -674,6 +842,64 @@ export function QuotationProPage() {
           </div>
         </div>
 
+        {aiImportOpen ? (
+          <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/90 p-3 backdrop-blur-md sm:items-center">
+            <div className="w-full max-w-xl rounded-[26px] border border-emerald-300/15 bg-slate-900 p-4 shadow-2xl">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-black text-white">استيراد طلب من ذكاء واتساب</div>
+                  <div className="mt-1 text-[10px] leading-5 text-slate-400">
+                    الصق رسالة BAKRQUOTE التي جهزها الذكاء الاصطناعي، وسيتم تعبئة اسم الشركة والمعدات والعدد والأسعار والشروط تلقائياً.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAiImportOpen(false)}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/8 text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <textarea
+                value={aiImportText}
+                onChange={(event) => {
+                  setAiImportText(event.target.value);
+                  setAiImportError('');
+                }}
+                rows={11}
+                dir="ltr"
+                placeholder={'BAKRQUOTE\n{\n  "customer": "شركة بلت",\n  "items": [{"equipment":"كرين","description":"25 طن","quantity":2,"monthly":50000,"daily":2500}]\n}'}
+                className="w-full resize-none rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-left font-mono text-[11px] leading-5 text-white outline-none focus:border-emerald-300/40"
+              />
+
+              {aiImportError ? (
+                <div className="mt-2 rounded-xl border border-rose-300/15 bg-rose-400/10 px-3 py-2 text-[10px] font-bold leading-5 text-rose-200">
+                  {aiImportError}
+                </div>
+              ) : null}
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAiImportOpen(false)}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-black text-white"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmAiImport}
+                  disabled={!aiImportText.trim()}
+                  className="rounded-2xl bg-emerald-500 px-3 py-3 text-xs font-black text-white disabled:opacity-40"
+                >
+                  تعبئة عرض السعر
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {previewOpen ? (
           <div className="fixed inset-0 z-[100] flex flex-col bg-slate-950/95 p-3 backdrop-blur-md">
             <div className="mb-3 flex items-center justify-between">
@@ -719,4 +945,4 @@ export function QuotationProPage() {
       </div>
     </AppLayout>
   );
-}
+                    }
