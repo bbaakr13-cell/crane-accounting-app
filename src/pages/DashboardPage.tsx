@@ -3,22 +3,25 @@ import {
   TrendingDown,
   Wallet,
   Clock,
-  Users,
   Truck,
-  CalendarClock,
-  FileBarChart,
-  FileText,
   Plus,
-  Receipt,
-  Settings,
-  Calculator,
-  ShieldCheck,
   Image as ImageIcon,
   ChevronLeft,
   Bot,
   Sparkles,
   Search,
   X,
+  Activity,
+  LockKeyhole,
+  Home,
+  CalendarDays,
+  UsersRound,
+  LayoutGrid,
+  UserPlus,
+  FileText,
+  ChevronUp,
+  SlidersHorizontal,
+  Check,
 } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
@@ -33,7 +36,6 @@ import {
 import { AppLayout } from '@/components/layout/AppLayout';
 
 import {
-  TransactionItem,
   type Transaction,
 } from '@/components/dashboard/TransactionItem';
 
@@ -54,14 +56,115 @@ type ActionTone =
   | 'blue'
   | 'gold'
   | 'orange'
-  | 'purple';
-
+  | 'purple'
+  | 'cyan'
+  | 'teal'
+  | 'pink';
 type ActionItem = {
   label: string;
   image: string;
   path: string;
   tone: ActionTone;
 };
+
+type QuickAddAction = {
+  id: string;
+  label: string;
+  icon: any;
+  color: string;
+  path: string;
+};
+
+const QUICK_ADD_STORAGE_KEY =
+  'bakr_pro_quick_add_actions_v1';
+
+const QUICK_ADD_DEFAULT_IDS = [
+  'lead',
+  'work-invoice',
+  'income',
+  'expense',
+  'trip',
+];
+
+const QUICK_ADD_CATALOG: QuickAddAction[] = [
+  {
+    id: 'trip',
+    label: 'مشوار',
+    icon: Truck,
+    color: '#fbbf24',
+    path: '/daily-trips',
+  },
+  {
+    id: 'expense',
+    label: 'مصروف',
+    icon: Wallet,
+    color: '#fb7185',
+    path: '/operating-expenses',
+  },
+  {
+    id: 'income',
+    label: 'دخل جديد',
+    icon: TrendingUp,
+    color: '#4ade80',
+    path: '/add',
+  },
+  {
+    id: 'work-invoice',
+    label: 'فاتورة عمل',
+    icon: FileText,
+    color: '#60a5fa',
+    path: '/work-invoice',
+  },
+  {
+    id: 'lead',
+    label: 'عميل / فرصة',
+    icon: UserPlus,
+    color: '#c084fc',
+    path: '/customers-opportunities',
+  },
+  {
+    id: 'quotation',
+    label: 'عرض سعر',
+    icon: FileText,
+    color: '#22d3ee',
+    path: '/quotation',
+  },
+  {
+    id: 'quotation-pro',
+    label: 'عرض سعر احترافي',
+    icon: FileText,
+    color: '#f59e0b',
+    path: '/quotation-pro',
+  },
+  {
+    id: 'invoice',
+    label: 'الفواتير',
+    icon: FileText,
+    color: '#a78bfa',
+    path: '/invoices',
+  },
+  {
+    id: 'customer',
+    label: 'العملاء',
+    icon: UsersRound,
+    color: '#38bdf8',
+    path: '/customers',
+  },
+  {
+    id: 'equipment',
+    label: 'المعدات',
+    icon: Truck,
+    color: '#f59e0b',
+    path: '/equipment',
+  },
+  {
+    id: 'today',
+    label: 'حساب اليوم',
+    icon: CalendarDays,
+    color: '#34d399',
+    path: '/daily-calculator',
+  },
+];
 
 type SearchResult = {
   id: string;
@@ -103,12 +206,37 @@ const tones: Record<
     background: 'rgba(249,115,22,0.12)',
     color: '#fb923c',
   },
-
   purple: {
     background: 'rgba(168,85,247,0.12)',
     color: '#c084fc',
   },
+
+  cyan: {
+    background: 'rgba(34,211,238,0.12)',
+    color: '#22d3ee',
+  },
+
+  teal: {
+    background: 'rgba(45,212,191,0.12)',
+    color: '#2dd4bf',
+  },
+
+  pink: {
+    background: 'rgba(244,114,182,0.12)',
+    color: '#f472b6',
+  },
 };
+const shortcutPalette = [
+  { color: '#7f9aad', bg: 'rgba(127,154,173,.10)', border: 'rgba(127,154,173,.24)', glow: 'rgba(127,154,173,.10)' },
+  { color: '#7f9f92', bg: 'rgba(127,159,146,.10)', border: 'rgba(127,159,146,.24)', glow: 'rgba(127,159,146,.10)' },
+  { color: '#a78383', bg: 'rgba(167,131,131,.10)', border: 'rgba(167,131,131,.24)', glow: 'rgba(167,131,131,.10)' },
+  { color: '#8c86a7', bg: 'rgba(140,134,167,.10)', border: 'rgba(140,134,167,.24)', glow: 'rgba(140,134,167,.10)' },
+  { color: '#6f9797', bg: 'rgba(111,151,151,.10)', border: 'rgba(111,151,151,.24)', glow: 'rgba(111,151,151,.10)' },
+  { color: '#a18d78', bg: 'rgba(161,141,120,.10)', border: 'rgba(161,141,120,.24)', glow: 'rgba(161,141,120,.10)' },
+  { color: '#7f8ca6', bg: 'rgba(127,140,166,.10)', border: 'rgba(127,140,166,.24)', glow: 'rgba(127,140,166,.10)' },
+  { color: '#77958a', bg: 'rgba(119,149,138,.10)', border: 'rgba(119,149,138,.24)', glow: 'rgba(119,149,138,.10)' },
+  { color: '#9d7d8e', bg: 'rgba(157,125,142,.10)', border: 'rgba(157,125,142,.24)', glow: 'rgba(157,125,142,.10)' },
+];
 
 function normalizeSearch(value: unknown) {
   return String(value ?? '')
@@ -152,6 +280,18 @@ function detectCategory(key: string) {
   const k = key.toLowerCase();
 
   if (
+    k.includes('opportunit') ||
+    k.includes('lead') ||
+    k.includes('فرص') ||
+    k.includes('bakr_pro_customers_opportunities')
+  ) {
+    return {
+      category: 'العملاء والفرص',
+      path: '/customers-opportunities',
+    };
+  }
+
+  if (
     k.includes('customer') ||
     k.includes('client') ||
     k.includes('عميل')
@@ -169,6 +309,16 @@ function detectCategory(key: string) {
     return {
       category: 'الفواتير',
       path: '/invoices',
+    };
+  }
+
+  if (
+    k.includes('partner') ||
+    k.includes('شريك')
+  ) {
+    return {
+      category: 'حساب الشركاء',
+      path: '/partners',
     };
   }
 
@@ -276,7 +426,9 @@ function buildLocalSearchItems(): SearchResult[] {
             firstValue(record, [
               'name',
               'customerName',
+              'companyName',
               'clientName',
+              'partnerName',
               'driverName',
               'operatorName',
               'equipmentName',
@@ -302,6 +454,9 @@ function buildLocalSearchItems(): SearchResult[] {
             record,
             [
               'description',
+              'workType',
+              'projectLocation',
+              'city',
               'notes',
               'note',
               'equipment',
@@ -408,9 +563,6 @@ export function DashboardPage() {
       receivables: 0,
     });
 
-  const [recentTxs, setRecentTxs] =
-    useState<Transaction[]>([]);
-
   const [allTxs, setAllTxs] =
     useState<Transaction[]>([]);
 
@@ -424,6 +576,50 @@ export function DashboardPage() {
     useState('');
 
   const [searchOpen, setSearchOpen] =
+    useState(false);
+
+  const [quickAddOpen, setQuickAddOpen] =
+    useState(false);
+
+  const [
+    quickAddCustomizeOpen,
+    setQuickAddCustomizeOpen,
+  ] = useState(false);
+
+  const [quickAddIds, setQuickAddIds] =
+    useState<string[]>(() => {
+      try {
+        const raw = localStorage.getItem(
+          QUICK_ADD_STORAGE_KEY
+        );
+
+        if (!raw) {
+          return QUICK_ADD_DEFAULT_IDS;
+        }
+
+        const parsed = JSON.parse(raw);
+
+        if (!Array.isArray(parsed)) {
+          return QUICK_ADD_DEFAULT_IDS;
+        }
+
+        const validIds = parsed.filter(
+          (id: unknown) =>
+            typeof id === 'string' &&
+            QUICK_ADD_CATALOG.some(
+              (item) => item.id === id
+            )
+        );
+
+        return validIds.length
+          ? validIds.slice(0, 8)
+          : QUICK_ADD_DEFAULT_IDS;
+      } catch {
+        return QUICK_ADD_DEFAULT_IDS;
+      }
+    });
+
+  const [moreOpen, setMoreOpen] =
     useState(false);
 
   const [
@@ -440,7 +636,6 @@ export function DashboardPage() {
 
       setTotals(t);
       setAllTxs(txs);
-      setRecentTxs(txs.slice(0, 5));
     } catch (error) {
       console.error(
         'Dashboard load error:',
@@ -450,7 +645,6 @@ export function DashboardPage() {
       setLoading(false);
     }
   }, []);
-
   const refreshSearchData =
     useCallback(() => {
       setLocalSearchItems(
@@ -492,7 +686,6 @@ export function DashboardPage() {
       refreshSearchData();
       load();
     };
-
     window.addEventListener(
       'storage',
       handleStorage
@@ -520,6 +713,57 @@ export function DashboardPage() {
     refreshSearchData,
   ]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        QUICK_ADD_STORAGE_KEY,
+        JSON.stringify(quickAddIds)
+      );
+    } catch (error) {
+      console.error(
+        'Quick add preferences save error:',
+        error
+      );
+    }
+  }, [quickAddIds]);
+
+  const selectedQuickAddActions = useMemo(
+    () =>
+      quickAddIds
+        .map((id) =>
+          QUICK_ADD_CATALOG.find(
+            (item) => item.id === id
+          )
+        )
+        .filter(
+          (item): item is QuickAddAction =>
+            Boolean(item)
+        ),
+    [quickAddIds]
+  );
+
+  function toggleQuickAddAction(id: string) {
+    setQuickAddIds((current) => {
+      if (current.includes(id)) {
+        if (current.length <= 1) {
+          return current;
+        }
+        return current.filter(
+          (itemId) => itemId !== id
+        );
+      }
+
+      if (current.length >= 8) {
+        alert(
+          'يمكن إضافة 8 اختصارات كحد أقصى'
+        );
+        return current;
+      }
+
+      return [...current, id];
+    });
+  }
+
   const transactionSearchItems =
     useMemo(
       () =>
@@ -545,7 +789,6 @@ export function DashboardPage() {
       ...transactionSearchItems,
       ...localSearchItems,
     ];
-
     const unique =
       new Map<string, SearchResult>();
 
@@ -608,6 +851,51 @@ export function DashboardPage() {
     navigate(item.path);
   }
 
+  const liveSummary = useMemo(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayKey = `${y}-${m}-${d}`;
+    let trips = 0;
+    let income = 0;
+    let expenses = 0;
+
+    allTxs.forEach((tx: any) => {
+      const data = tx?.data && typeof tx.data === 'object' ? tx.data : tx;
+      const date = String(data?.date || data?.createdAt || data?.created_at || '');
+      if (!date.startsWith(todayKey)) return;
+      const amount = Number(data?.amount ?? data?.total ?? data?.value ?? data?.price ?? 0) || 0;
+      const kind = normalizeSearch(`${data?.type || ''} ${data?.category || ''} ${data?.transactionType || ''}`);
+      if (kind.includes('مصروف') || kind.includes('expense')) expenses += amount;
+      else { income += amount; trips += 1; }
+    });
+
+    return { trips, income, expenses, net: income - expenses };
+  }, [allTxs]);
+
+  const [dayClosed, setDayClosed] = useState(() => {
+    try {
+      const now = new Date();
+      const key = `baakr-live-closed-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      return Boolean(localStorage.getItem(key));
+    } catch { return false; }
+  });
+
+  function toggleDayClose() {
+    const now = new Date();
+    const key = `baakr-live-closed-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    if (dayClosed) {
+      if (!window.confirm('فتح يوم العمل مرة أخرى؟')) return;
+      localStorage.removeItem(key);
+      setDayClosed(false);
+      return;
+    }
+    if (!window.confirm(`إنهاء يوم العمل؟\nالمشاوير: ${liveSummary.trips}\nالدخل: ${formatSAR(liveSummary.income)}\nالمصروفات: ${formatSAR(liveSummary.expenses)}\nالصافي: ${formatSAR(liveSummary.net)}`)) return;
+    localStorage.setItem(key, JSON.stringify({ closedAt: new Date().toISOString(), ...liveSummary }));
+    setDayClosed(true);
+  }
+
   const actions: ActionItem[] = [
     {
       label: 'BAKR AI',
@@ -634,35 +922,67 @@ export function DashboardPage() {
       tone: 'blue',
     },
     {
+      label: 'العملاء والفرص',
+      image: '/icons/customers-opportunities.png',
+      path: '/customers-opportunities',
+      tone: 'green',
+    },
+    {
+      label: 'رادار الفرص',
+      image: '/icons/customers-opportunities.png',
+      path: '/opportunity-radar',
+      tone: 'purple',
+    },
+    {
+      label: 'مركز التسويق',
+      image: '/icons/marketing-center.svg',
+      path: '/marketing-center',
+      tone: 'gold',
+    },
+    {
+      label: 'مراقب واتساب',
+      image: '/icons/whatsapp-monitor.svg',
+      path: '/whatsapp-monitor',
+      tone: 'green',
+    },
+    {
       label: 'المعدات',
       image: '/icons/equipment.png',
       path: '/equipment',
-      tone: 'gold',
+      tone: 'teal',
     },
     {
       label: 'مستندات الكرين والمشغل',
       image: '/icons/equipment-documents.png',
       path: '/equipment-documents',
-      tone: 'blue',
+      tone: 'teal',
     },
     {
       label: 'حساب المصاريف',
       image: '/icons/operating-expenses.png',
       path: '/expenses',
-      tone: 'orange',
+      tone: 'red',
     },
     {
       label: 'مشاوير يومية',
       image: '/icons/daily-trips.png',
       path: '/daily-trips',
-      tone: 'green',
+      tone: 'teal',
     },
     {
       label: 'الحساب الشهري',
       image: '/icons/monthly-account.png',
       path: '/monthly',
-      tone: 'orange',
+      tone: 'pink',
     },
+
+    {
+      label: 'حساب الشركاء',
+      image: '/icons/partners.png',
+      path: '/partners',
+      tone: 'cyan',
+    },
+
     {
       label: 'التأجير الشهري',
       image: '/icons/monthly-rental.png',
@@ -674,20 +994,13 @@ export function DashboardPage() {
       image:
         '/icons/drivers-operators.png',
       path: '/drivers',
-      tone: 'gold',
-    },
-    {
-      label: 'بطاقة تأهيل المشغل',
-      image:
-        '/icons/drivers-operators.png',
-      path: '/operator-qualification',
-      tone: 'blue',
+      tone: 'orange',
     },
     {
       label:
         'مصاريف السواقين والمعدات',
       image:
-        '/icons/operating-expenses.png',
+        '/icons/driver-equipment-expenses.png',
       path: '/operating-expenses',
       tone: 'red',
     },
@@ -695,38 +1008,44 @@ export function DashboardPage() {
       label: 'التقارير',
       image: '/icons/reports.png',
       path: '/reports',
-      tone: 'blue',
+      tone: 'cyan',
     },
     {
       label: 'الفواتير',
       image: '/icons/invoices.png',
       path: '/invoices',
-      tone: 'purple',
+      tone: 'pink',
     },
     {
       label: 'فاتورة عمل',
       image: '/icons/work-invoice.png',
       path: '/work-invoice',
-      tone: 'blue',
+      tone: 'teal',
     },
     {
       label: 'عرض سعر',
       image: '/icons/quotation.png',
       path: '/quotation',
-      tone: 'green',
+      tone: 'cyan',
+    },
+    {
+      label: 'عرض سعر احترافي',
+      image: '/icons/quotation.png',
+      path: '/quotation-pro',
+      tone: 'yellow',
     },
     {
       label: 'حساب اليوم',
       image:
         '/icons/daily-calculator.png',
       path: '/daily-calculator',
-      tone: 'gold',
+      tone: 'green',
     },
     {
       label: 'الحاسبة',
       image: '/icons/calculator.png',
       path: '/calculator',
-      tone: 'purple',
+      tone: 'cyan',
     },
     {
       label: 'الإعدادات',
@@ -735,17 +1054,22 @@ export function DashboardPage() {
       tone: 'red',
     },
     {
+      label: 'سلة المحذوفات',
+      image: '/icons/recycle-bin.png',
+      path: '/recycle-bin',
+      tone: 'red',
+    },
+    {
       label: 'النسخ الاحتياطي',
       image: '/icons/backup.png',
       path: '/backup',
-      tone: 'blue',
+      tone: 'teal',
     },
   ];
 
   return (
-    <AppLayout>
-      <div dir="rtl" className="w-full">
-        {/* صورة الواجهة */}
+    <AppLayout showBottomNav={false}>
+      <div dir="rtl" className="w-full pb-36">
         <section className="mb-4">
           <div
             className="relative overflow-hidden rounded-[25px] w-full"
@@ -779,7 +1103,6 @@ export function DashboardPage() {
                 />
               </div>
             )}
-
             <div
               className="absolute inset-0"
               style={{
@@ -829,7 +1152,6 @@ export function DashboardPage() {
           </div>
         </section>
 
-        {/* البحث */}
         <section className="mb-5">
           <button
             type="button"
@@ -854,7 +1176,7 @@ export function DashboardPage() {
               </p>
 
               <p className="text-[9px] text-slate-500 mt-0.5">
-                عميل • فاتورة • كرين • سائق • مبلغ • جوال
+                عميل • فرصة • فاتورة • كرين • سائق • مبلغ • جوال
               </p>
             </div>
 
@@ -862,7 +1184,6 @@ export function DashboardPage() {
           </button>
         </section>
 
-        {/* BAKR AI */}
         <section className="mb-5">
           <button
             type="button"
@@ -877,15 +1198,6 @@ export function DashboardPage() {
                 '0 12px 30px rgba(88,28,135,0.20)',
             }}
           >
-            <div
-              className="absolute -left-8 -top-8 w-28 h-28 rounded-full"
-              style={{
-                background:
-                  'rgba(168,85,247,0.16)',
-                filter: 'blur(8px)',
-              }}
-            />
-
             <div className="relative flex items-center gap-3">
               <div
                 className="w-14 h-14 shrink-0 rounded-[18px] flex items-center justify-center"
@@ -916,15 +1228,11 @@ export function DashboardPage() {
                   اسأل عن الدخل • الأرباح • المستحقات • التقارير
                 </p>
               </div>
-
-              <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">
-                <ChevronLeft className="w-5 h-5 text-purple-300" />
-              </div>
+              <ChevronLeft className="w-5 h-5 text-purple-300" />
             </div>
           </button>
         </section>
 
-        {/* نظرة عامة */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[16px] font-black text-white">
@@ -995,87 +1303,285 @@ export function DashboardPage() {
           </div>
         </section>
 
-        {/* الزران الرئيسيان 3D */}
+        <section className="mt-5">
+          <button
+            type="button"
+            onClick={() => navigate('/opportunity-radar')}
+            className="w-full rounded-[22px] p-4 text-right active:scale-[0.98] transition-transform"
+            style={{
+              background:
+                'linear-gradient(135deg,rgba(3,105,161,.94),rgba(7,23,42,.98))',
+              border:
+                '1px solid rgba(56,189,248,.26)',
+              boxShadow:
+                '0 12px 30px rgba(0,0,0,.20)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-14 h-14 rounded-[18px] overflow-hidden shrink-0 flex items-center justify-center"
+                style={{
+                  background: 'rgba(14,165,233,.13)',
+                  border: '1px solid rgba(125,211,252,.22)',
+                }}
+              >
+                <img
+                  src="/icons/customers-opportunities.png"
+                  alt="رادار الفرص"
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-[15px] font-black text-white">
+                  رادار الفرص
+                </h2>
+
+                <p className="text-[10px] text-sky-100/80 mt-1">
+                  مشاريع جديدة • مواقع على الخريطة • واتساب • فرص قوية وقريبة
+                </p>
+              </div>
+
+              <ChevronLeft className="w-5 h-5 text-sky-300" />
+            </div>
+          </button>
+        </section>
+
+        <section className="mt-5">
+          <button
+            type="button"
+            onClick={() => navigate('/customers-opportunities')}
+            className="w-full rounded-[22px] p-4 text-right active:scale-[0.98] transition-transform"
+            style={{
+              background:
+                'linear-gradient(135deg,rgba(16,85,65,.92),rgba(11,35,49,.98))',
+              border:
+                '1px solid rgba(74,222,128,.22)',
+              boxShadow:
+                '0 12px 30px rgba(0,0,0,.18)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-14 h-14 rounded-[18px] overflow-hidden shrink-0"
+                style={{
+                  background: 'rgba(34,197,94,.10)',
+                  border: '1px solid rgba(74,222,128,.20)',
+                }}
+              >
+                <img
+                  src="/icons/customers.png"
+                  alt="العملاء والفرص"
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              </div>
+
+              <div className="flex-1">
+                <h2 className="text-[15px] font-black text-white">
+                  العملاء والفرص
+                </h2>
+
+                <p className="text-[10px] text-emerald-100/75 mt-1">
+                  تابع العملاء • عروض السعر • المشاريع • المتابعة القادمة
+                </p>
+              </div>
+
+              <ChevronLeft className="w-5 h-5 text-emerald-300" />
+            </div>
+          </button>
+        </section>
+
         <section className="mt-5">
           <div className="grid grid-cols-2 gap-3">
-
-            {/* مشاوير يومية */}
+            {/* مشاوير يومية — نفس الصورة المعتمدة */}
             <button
               type="button"
-              onClick={() =>
-                navigate('/daily-trips')
-              }
-              className="relative w-full overflow-hidden rounded-[20px] active:scale-[0.97] transition-transform"
+              onClick={() => navigate('/daily-trips')}
+              className="relative w-full overflow-hidden rounded-[24px] active:scale-[0.98] transition-transform"
               style={{
-                aspectRatio: '2.25 / 1',
-                border:
-                  '1px solid rgba(34,197,94,0.30)',
-                boxShadow:
-                  '0 10px 25px rgba(0,0,0,0.38), 0 0 18px rgba(34,197,94,0.14)',
-                background: '#07131f',
+                aspectRatio: '1 / 1',
+                background: '#06110d',
+                border: '1px solid rgba(71,160,111,.32)',
+                boxShadow: '0 14px 30px rgba(0,0,0,.30)',
               }}
             >
               <img
-                src="/icons/daily-trips-3d.png"
+                src="/icons/daily-trips-card.png"
                 alt="مشاوير يومية"
                 className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}
               />
-
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  boxShadow:
-                    'inset 0 1px 0 rgba(255,255,255,0.16)',
-                }}
-              />
             </button>
 
-            {/* مصاريف السواقين والمعدات */}
+            {/* المصاريف — نفس الصورة المعتمدة مع استبدال النص القديم فقط */}
             <button
               type="button"
-              onClick={() =>
-                navigate(
-                  '/operating-expenses'
-                )
-              }
-              className="relative w-full overflow-hidden rounded-[20px] active:scale-[0.97] transition-transform"
+              onClick={() => navigate('/operating-expenses')}
+              className="relative w-full overflow-hidden rounded-[24px] active:scale-[0.98] transition-transform"
               style={{
-                aspectRatio: '2.25 / 1',
-                border:
-                  '1px solid rgba(239,68,68,0.32)',
-                boxShadow:
-                  '0 10px 25px rgba(0,0,0,0.38), 0 0 18px rgba(239,68,68,0.14)',
-                background: '#07131f',
+                aspectRatio: '1 / 1',
+                background: '#07111f',
+                border: '1px solid rgba(195,160,76,.34)',
+                boxShadow: '0 14px 30px rgba(0,0,0,.30)',
               }}
             >
               <img
-                src="/icons/operating-expenses-3d.png"
-                alt="مصاريف السواقين والمعدات"
+                src="/icons/expenses-card-original.png"
+                alt="المصاريف"
                 className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}
               />
 
+              {/* يغطي عبارة "مصاريف السواقين والمعدات" الموجودة بالصورة الأصلية */}
               <div
-                className="absolute inset-0 pointer-events-none"
+                className="absolute left-[5%] right-[5%] bottom-[4.5%] h-[22%] rounded-[18px] flex items-center justify-center pointer-events-none"
                 style={{
-                  boxShadow:
-                    'inset 0 1px 0 rgba(255,255,255,0.16)',
+                  background: 'linear-gradient(180deg,rgba(7,14,25,.98),rgba(3,8,16,.995))',
+                  border: '1px solid rgba(226,190,96,.64)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06), 0 0 18px rgba(59,130,246,.14)',
                 }}
-              />
+              >
+                <span
+                  className="text-[17px] font-black"
+                  style={{
+                    background: 'linear-gradient(180deg,#fff2bd 0%,#e9c868 50%,#b88928 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: '0 2px 8px rgba(0,0,0,.70)',
+                  }}
+                >
+                  المصاريف
+                </span>
+              </div>
             </button>
+          </div>
+        </section>
+        <section className="mt-5">
+          <div className="rounded-[25px] p-4" style={{background:'linear-gradient(145deg,rgba(8,28,43,.98),rgba(5,14,27,.99))',border:'1px solid rgba(34,197,94,.20)',boxShadow:'0 14px 34px rgba(0,0,0,.22)'}}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-[13px] bg-emerald-500/10 border border-emerald-400/15 flex items-center justify-center"><Activity className="w-5 h-5 text-emerald-400" /></div>
+                <div><div className="flex items-center gap-2"><h2 className="text-[16px] font-black text-white">BAKR LIVE</h2><span className="text-[8px] font-black text-emerald-300 px-2 py-0.5 rounded-full bg-emerald-500/10">مباشر</span></div><p className="text-[9px] text-slate-500 mt-0.5">مركز اليوم والتشغيل</p></div>
+              </div>
+              <span className="text-[9px] text-slate-500">اليوم</span>
+            </div>
 
+            <div className="grid grid-cols-2 gap-2.5 mt-4">
+              {[
+                ['مشاوير اليوم', String(liveSummary.trips), '#60a5fa'],
+                ['دخل اليوم', formatSAR(liveSummary.income), '#4ade80'],
+                ['مصروف اليوم', formatSAR(liveSummary.expenses), '#fb7185'],
+                ['صافي اليوم', formatSAR(liveSummary.net), liveSummary.net >= 0 ? '#fbbf24' : '#fb7185'],
+              ].map(([label,value,color]) => (
+                <div key={label} className="rounded-[16px] p-3 min-h-[78px]" style={{background:'rgba(255,255,255,.028)',border:'1px solid rgba(255,255,255,.055)'}}>
+                  <p className="text-[9px] text-slate-500">{label}</p>
+                  <p className="text-[13px] font-black mt-3 truncate" style={{color}}>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <button type="button" onClick={() => navigate('/daily-trips')} className="h-[46px] rounded-[14px] text-[10px] font-black text-emerald-300 bg-emerald-500/10 border border-emerald-400/15 active:scale-95">+ مشوار</button>
+              <button type="button" onClick={() => navigate('/operating-expenses')} className="h-[46px] rounded-[14px] text-[10px] font-black text-rose-300 bg-rose-500/10 border border-rose-400/15 active:scale-95">+ مصروف</button>
+              <button type="button" onClick={toggleDayClose} className="h-[46px] rounded-[14px] flex items-center justify-center gap-1 text-[10px] font-black active:scale-95" style={{color:dayClosed?'#86efac':'#fde68a',background:dayClosed?'rgba(34,197,94,.10)':'rgba(245,158,11,.10)',border:dayClosed?'1px solid rgba(34,197,94,.18)':'1px solid rgba(245,158,11,.18)'}}><LockKeyhole className="w-4 h-4" />{dayClosed?'اليوم مقفل':'إنهاء اليوم'}</button>
+            </div>
           </div>
         </section>
 
-        {/* الاختصارات السريعة */}
+        <section className="mt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[16px] font-black text-white flex items-center gap-2">
+              <Truck className="w-5 h-5 text-amber-400" />
+              حالة المعدات اليوم
+            </h2>
+            <button type="button" onClick={() => navigate('/equipment')} className="text-[10px] font-bold text-blue-400">
+              عرض الكل
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              {name:'المعدات والكرينات', shortName:'المعدات', image:'/icons/equipment.png', status:'عرض المعدات', color:'#4ade80', path:'/equipment'},
+              {name:'مستندات المعدات', shortName:'المستندات', image:'/icons/equipment-documents.png', status:'الرخص و TUV', color:'#60a5fa', path:'/equipment-documents'},
+              {name:'السواقين والمشغلين', shortName:'السواقين', image:'/icons/drivers-operators.png', status:'الملفات والحسابات', color:'#c084fc', path:'/drivers'},
+            ].map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => navigate(item.path)}
+                className="min-w-0 overflow-hidden rounded-[17px] text-center active:scale-[0.97] transition-transform"
+                style={{
+                  background:'linear-gradient(145deg,#0d1b2f,#07111f)',
+                  border:`1px solid ${item.color}32`,
+                }}
+              >
+                <div className="w-full aspect-[1.35/1] bg-slate-900/60 overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                </div>
+                <div className="p-2 min-w-0">
+                  <p className="text-[10px] font-black text-white truncate">{item.shortName}</p>
+                  <div className="mt-1.5 flex items-center justify-center gap-1 min-w-0">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{background:item.color}} />
+                    <span className="text-[7.5px] font-bold truncate" style={{color:item.color}}>{item.status}</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-5 grid grid-cols-1 gap-3">
+          <div className="rounded-[22px] p-4" style={{background:'linear-gradient(145deg,#0d1b2f,#07111f)',border:'1px solid rgba(245,158,11,.17)'}}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[15px] font-black text-white">🔔 التنبيهات المهمة</h2>
+              <button type="button" onClick={() => navigate('/equipment-documents')} className="text-[10px] text-blue-400 font-bold">عرض المستندات</button>
+            </div>
+            {[
+              ['🛡️','تأمين ورخص المعدات','راجع تواريخ الانتهاء والتنبيهات','/equipment-documents'],
+              ['🔧','صيانة المعدات','تابع حالة الكرين ومصاريف الصيانة','/expenses'],
+              ['📄','TUV السائق والكرين','جميع مستندات الفحص في مكان واحد','/equipment-documents'],
+              ['🎯','فرص العملاء','راجع المتابعات وعروض السعر والفرص الجديدة','/customers-opportunities'],
+              ['🗑️','سلة المحذوفات','استعادة العناصر المحذوفة قبل حذفها نهائيًا','/recycle-bin'],
+              ['💰','المستحقات','راجع المبالغ المستحقة للعملاء','/customers'],
+            ].map(([icon,title,sub,path],i) => (
+              <button key={title} type="button" onClick={() => navigate(path)} className={`w-full py-3 flex items-center gap-3 text-right ${i ? 'border-t border-white/5' : ''}`}>
+                <span className="text-[20px]">{icon}</span>
+                <div className="flex-1 min-w-0"><p className="text-[11px] font-bold text-slate-100">{title}</p><p className="text-[9px] text-slate-500 mt-1 truncate">{sub}</p></div>
+                <ChevronLeft className="w-4 h-4 text-slate-600" />
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-[22px] p-4" style={{background:'linear-gradient(145deg,#0d1b2f,#07111f)',border:'1px solid rgba(96,165,250,.17)'}}>
+            <div className="flex items-center justify-between mb-3"><h2 className="text-[15px] font-black text-white">📁 المستندات السريعة</h2><button type="button" onClick={() => navigate('/equipment-documents')} className="text-[10px] text-blue-400 font-bold">عرض الكل</button></div>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                ['📄','الفواتير','/invoices','#4ade80'],
+                ['🪪','رخص المعدات','/equipment-documents','#60a5fa'],
+                ['👥','السائقين','/drivers','#c084fc'],
+                ['📝','العقود','/monthly-rental','#fbbf24'],
+              ].map(([icon,label,path,color]) => (
+                <button key={label} type="button" onClick={() => navigate(path)} className="min-h-[88px] rounded-[15px] flex flex-col items-center justify-center gap-2 active:scale-95" style={{background:`${color}10`,border:`1px solid ${color}30`}}>
+                  <span className="text-[25px]">{icon}</span><span className="text-[9px] font-bold text-slate-200 text-center">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[16px] font-black text-white">
               الاختصارات السريعة
             </h2>
 
-            <span className="text-amber-400">
+            <span className="text-cyan-300">
               ⚡
             </span>
           </div>
@@ -1091,57 +1597,46 @@ export function DashboardPage() {
           >
             <div className="grid grid-cols-3 gap-2">
               {actions
-                .filter(
-                  (item) =>
-                    item.path !== '/add'
-                )
-                .map((item) => {
-                  const tone =
-                    tones[item.tone];
+                .filter((item) => item.path !== '/add')
+                .map((item, index) => {
+                  const visual = shortcutPalette[index % shortcutPalette.length];
 
                   return (
                     <button
                       key={`${item.path}-${item.label}`}
                       type="button"
-                      onClick={() =>
-                        navigate(item.path)
-                      }
-                      className="min-h-[120px] rounded-[20px] flex flex-col items-center justify-center gap-2.5 px-1 active:scale-[0.95] transition-transform overflow-hidden"
+                      onClick={() => navigate(item.path)}
+                      className="relative min-h-[120px] rounded-[21px] flex flex-col items-center justify-center gap-2.5 px-1 active:scale-[0.97] transition-transform overflow-hidden"
                       style={{
-                        background:
-                          item.path === '/ai'
-                            ? 'linear-gradient(145deg,rgba(88,28,135,0.22),rgba(255,255,255,0.025))'
-                            : 'linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))',
-                        border:
-                          item.path === '/ai'
-                            ? '1px solid rgba(192,132,252,0.18)'
-                            : '1px solid rgba(255,255,255,0.055)',
-                        boxShadow:
-                          'inset 0 1px 0 rgba(255,255,255,0.035), 0 7px 16px rgba(0,0,0,0.16)',
+                        background: 'linear-gradient(160deg,rgba(14,25,40,.96),rgba(7,15,26,.99))',
+                        border: '1px solid rgba(148,163,184,.14)',
+                        boxShadow: '0 10px 24px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.025)',
                       }}
                     >
                       <div
-                        className="relative w-[72px] h-[72px] rounded-[20px] overflow-hidden shrink-0"
+                        className="relative w-[76px] h-[76px] rounded-[20px] overflow-hidden shrink-0"
                         style={{
-                          background:
-                            tone.background,
-                          border:
-                            `1px solid ${tone.color}35`,
-                          boxShadow: `
-                            0 10px 22px rgba(0,0,0,0.42),
-                            0 0 16px ${tone.color}18
-                          `,
+                          background: 'linear-gradient(145deg,rgba(17,31,49,.96),rgba(7,14,24,.98))',
+                          border: '1px solid rgba(226,232,240,.12)',
+                          boxShadow: '0 9px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04)',
                         }}
                       >
                         <img
                           src={item.image}
                           alt={item.label}
                           className="absolute inset-0 w-full h-full object-cover"
+                          style={{
+                            filter: 'none',
+                            transform: 'scale(1)',
+                          }}
                           draggable={false}
                         />
                       </div>
 
-                      <span className="text-[10px] leading-[15px] font-bold text-slate-200 text-center">
+                      <span
+                        className="text-[10px] leading-[15px] font-black text-center px-1"
+                        style={{ color: '#f1f5f9' }}
+                      >
                         {item.label}
                       </span>
                     </button>
@@ -1150,91 +1645,535 @@ export function DashboardPage() {
             </div>
           </div>
         </section>
-
-        {/* أحدث الحركات */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[16px] font-black text-white">
-              أحدث الحركات
-            </h2>
+            <div>
+              <h2 className="text-[16px] font-black text-white">
+                الملخص السريع
+              </h2>
+              <p className="text-[9px] text-slate-500 mt-1">
+                أهم أرقام اليوم في مكان واحد
+              </p>
+            </div>
 
             <button
               type="button"
-              onClick={() =>
-                navigate('/transactions')
-              }
+              onClick={() => navigate('/daily-calculator')}
               className="flex items-center gap-1 text-[11px] font-bold text-amber-400"
             >
-              عرض الكل
+              عرض اليوم
               <ChevronLeft className="w-4 h-4" />
             </button>
           </div>
+          <div
+            className="rounded-[24px] p-3 overflow-hidden"
+            style={{
+              background:
+                'linear-gradient(145deg,rgba(9,24,43,.98),rgba(5,14,27,.99))',
+              border:
+                '1px solid rgba(96,165,250,.14)',
+              boxShadow:
+                '0 16px 36px rgba(0,0,0,.22)',
+            }}
+          >
+            <div className="flex gap-2.5 overflow-x-auto pb-1 snap-x">
+              {[
+                {
+                  label: 'إيرادات اليوم',
+                  value: formatSAR(liveSummary.income),
+                  color: '#fbbf24',
+                  bg: 'rgba(245,158,11,.10)',
+                  icon: TrendingUp,
+                  path: '/transactions',
+                },
+                {
+                  label: 'مصاريف اليوم',
+                  value: formatSAR(liveSummary.expenses),
+                  color: '#fb7185',
+                  bg: 'rgba(239,68,68,.10)',
+                  icon: TrendingDown,
+                  path: '/operating-expenses',
+                },
+                {
+                  label: 'مشاوير اليوم',
+                  value: String(liveSummary.trips),
+                  color: '#60a5fa',
+                  bg: 'rgba(59,130,246,.10)',
+                  icon: Truck,
+                  path: '/daily-trips',
+                },
+                {
+                  label: 'صافي اليوم',
+                  value: formatSAR(liveSummary.net),
+                  color:
+                    liveSummary.net >= 0
+                      ? '#4ade80'
+                      : '#fb7185',
+                  bg:
+                    liveSummary.net >= 0
+                      ? 'rgba(34,197,94,.10)'
+                      : 'rgba(239,68,68,.10)',
+                  icon: Wallet,
+                  path: '/daily-calculator',
+                },
+              ].map((item) => {
+                const Icon = item.icon;
 
-          {loading ? (
-            <div
-              className="rounded-[22px] p-7 text-center"
-              style={{
-                background:
-                  'rgba(255,255,255,0.025)',
-                border:
-                  '1px solid rgba(255,255,255,0.06)',
-              }}
-            >
-              <div className="w-9 h-9 mx-auto rounded-full border-2 border-white/10 border-t-amber-400 animate-spin" />
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    className="snap-start shrink-0 w-[150px] rounded-[19px] p-3.5 text-right active:scale-[0.97] transition-transform"
+                    style={{
+                      background:
+                        'linear-gradient(145deg,rgba(15,29,49,.98),rgba(7,17,31,.99))',
+                      border:
+                        `1px solid ${item.color}24`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div
+                        className="w-10 h-10 rounded-[13px] flex items-center justify-center"
+                        style={{
+                          background: item.bg,
+                          border:
+                            `1px solid ${item.color}25`,
+                        }}
+                      >
+                        <Icon
+                          className="w-5 h-5"
+                          style={{ color: item.color }}
+                        />
+                      </div>
 
-              <p className="text-[11px] text-slate-500 mt-3">
-                جاري التحميل...
-              </p>
+                      <span className="text-[9px] font-bold text-slate-400">
+                        {item.label}
+                      </span>
+                    </div>
+
+                    <p
+                      className="text-[14px] font-black mt-4 truncate"
+                      style={{ color: item.color }}
+                    >
+                      {item.value}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
-          ) : recentTxs.length === 0 ? (
-            <div
-              className="rounded-[24px] p-7 text-center"
-              style={{
-                background:
-                  'rgba(255,255,255,0.025)',
-                border:
-                  '1px solid rgba(255,255,255,0.06)',
-              }}
-            >
-              <div className="w-14 h-14 rounded-[18px] bg-amber-500/10 flex items-center justify-center mx-auto">
-                <Receipt className="w-7 h-7 text-amber-400" />
-              </div>
-
-              <p className="text-sm font-bold text-white mt-4">
-                لا توجد حركات حتى الآن
-              </p>
-
-              <p className="text-[11px] text-slate-500 mt-1">
-                ابدأ بإضافة أول حركة مالية
-              </p>
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate('/add')
-                }
-                className="mt-4 px-5 py-2.5 rounded-xl font-bold text-[12px] text-slate-950 bg-gradient-to-br from-amber-400 to-orange-500 inline-flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                إضافة حركة
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {recentTxs.map((tx, i) => (
-                <TransactionItem
-                  key={tx.data.id}
-                  tx={tx}
-                  delay={i * 50}
-                />
-              ))}
-            </div>
-          )}
+          </div>
         </section>
 
         <div className="h-4" />
 
-        {/* نافذة البحث */}
+        {/* القائمة السريعة لزر الإضافة */}
+        {quickAddOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="إغلاق قائمة الإضافة"
+              onClick={() => setQuickAddOpen(false)}
+              className="fixed inset-0 z-[9990]"
+              style={{
+                background: 'rgba(2,6,15,.54)',
+                backdropFilter: 'blur(3px)',
+              }}
+            />
+
+            <div
+              className="fixed z-[9992] left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[430px] rounded-[28px] p-3.5"
+              style={{
+                bottom:
+                  'calc(env(safe-area-inset-bottom, 0px) + 93px)',
+                background:
+                  'linear-gradient(180deg,rgba(10,25,44,.98),rgba(5,14,27,.99))',
+                border:
+                  '1px solid rgba(245,158,11,.26)',
+                boxShadow:
+                  '0 24px 60px rgba(0,0,0,.48), 0 0 26px rgba(245,158,11,.08)',
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickAddOpen(false);
+                    setQuickAddCustomizeOpen(true);
+                  }}
+                  className="h-9 px-3 rounded-xl flex items-center gap-1.5 text-[9px] font-black text-amber-300 active:scale-95"
+                  style={{
+                    background:
+                      'rgba(245,158,11,.10)',
+                    border:
+                      '1px solid rgba(245,158,11,.20)',
+                  }}
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  تغيير
+                </button>
+
+                <div className="text-center">
+                  <p className="text-[12px] font-black text-white">
+                    إضافة سريعة
+                  </p>
+                  <p className="text-[8px] text-slate-500 mt-0.5">
+                    اختر العملية التي تريدها
+                  </p>
+                </div>
+
+                <ChevronUp className="w-5 h-5 text-amber-400" />
+              </div>
+
+              <div
+                className="grid gap-2"
+                style={{
+                  gridTemplateColumns:
+                    selectedQuickAddActions.length <= 3
+                      ? `repeat(${Math.max(
+                          selectedQuickAddActions.length,
+                          1
+                        )}, minmax(0, 1fr))`
+                      : 'repeat(3, minmax(0, 1fr))',
+                }}
+              >
+                {selectedQuickAddActions.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        setQuickAddOpen(false);
+                        navigate(item.path);
+                      }}
+                      className="min-w-0 rounded-[18px] py-3 px-1 active:scale-95 transition-transform"
+                      style={{
+                        background: `${item.color}10`,
+                        border: `1px solid ${item.color}25`,
+                      }}
+                    >
+                      <div
+                        className="w-11 h-11 mx-auto rounded-full flex items-center justify-center"
+                        style={{
+                          background: `${item.color}18`,
+                          boxShadow: `0 0 18px ${item.color}20`,
+                        }}
+                      >
+                        <Icon
+                          className="w-5 h-5"
+                          style={{ color: item.color }}
+                        />
+                      </div>
+
+                      <p className="text-[8px] leading-[11px] font-black text-slate-200 text-center mt-2">
+                        {item.label}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* تخصيص اختصارات زر الإضافة */}
+        {quickAddCustomizeOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="إغلاق تخصيص الإضافة"
+              onClick={() =>
+                setQuickAddCustomizeOpen(false)
+              }
+              className="fixed inset-0 z-[9993]"
+              style={{
+                background: 'rgba(2,6,15,.68)',
+                backdropFilter: 'blur(5px)',
+              }}
+            />
+
+            <div
+              className="fixed z-[9994] left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[430px] rounded-[28px] p-4"
+              style={{
+                bottom:
+                  'calc(env(safe-area-inset-bottom, 0px) + 20px)',
+                maxHeight: '78dvh',
+                overflowY: 'auto',
+                background:
+                  'linear-gradient(180deg,rgba(10,25,44,.995),rgba(5,14,27,.995))',
+                border:
+                  '1px solid rgba(245,158,11,.28)',
+                boxShadow:
+                  '0 26px 70px rgba(0,0,0,.58)',
+              }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-[16px] font-black text-white">
+                    تخصيص الإضافة السريعة
+                  </h3>
+                  <p className="text-[9px] text-slate-500 mt-1">
+                    أضف أو احذف الخانات التي تحتاجها
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickAddCustomizeOpen(false);
+                    setQuickAddOpen(true);
+                  }}
+                  className="h-10 px-4 rounded-xl text-[10px] font-black text-slate-950 bg-amber-400 active:scale-95"
+                >
+                  تم
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {QUICK_ADD_CATALOG.map((item) => {
+                  const Icon = item.icon;
+                  const selected =
+                    quickAddIds.includes(item.id);
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() =>
+                        toggleQuickAddAction(item.id)
+                      }
+                      className="relative min-h-[92px] rounded-[18px] p-3 flex items-center gap-3 text-right active:scale-[0.97] transition-transform"
+                      style={{
+                        background: selected
+                          ? `${item.color}14`
+                          : 'rgba(255,255,255,.028)',
+                        border: selected
+                          ? `1px solid ${item.color}45`
+                          : '1px solid rgba(255,255,255,.06)',
+                      }}
+                    >
+                      <div
+                        className="w-12 h-12 rounded-[15px] shrink-0 flex items-center justify-center"
+                        style={{
+                          background: `${item.color}15`,
+                        }}
+                      >
+                        <Icon
+                          className="w-6 h-6"
+                          style={{
+                            color: item.color,
+                          }}
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-black text-white">
+                          {item.label}
+                        </p>
+                        <p className="text-[8px] text-slate-500 mt-1">
+                          {selected
+                            ? 'مضاف للشريط'
+                            : 'اضغط للإضافة'}
+                        </p>
+                      </div>
+
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                        style={{
+                          background: selected
+                            ? item.color
+                            : 'rgba(255,255,255,.06)',
+                        }}
+                      >
+                        {selected ? (
+                          <Check className="w-4 h-4 text-slate-950" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-slate-400" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                className="mt-3 rounded-[15px] px-3 py-2.5 text-center"
+                style={{
+                  background:
+                    'rgba(96,165,250,.06)',
+                  border:
+                    '1px solid rgba(96,165,250,.10)',
+                }}
+              >
+                <p className="text-[8.5px] text-slate-400">
+                  المختار حالياً: {quickAddIds.length} من 8 كحد أقصى
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* قائمة المزيد */}
+        {moreOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="إغلاق المزيد"
+              onClick={() => setMoreOpen(false)}
+              className="fixed inset-0 z-[9990]"
+              style={{
+                background: 'rgba(2,6,15,.58)',
+                backdropFilter: 'blur(4px)',
+              }}
+            />
+
+            <div
+              className="fixed z-[9992] left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[430px] rounded-[28px] p-4"
+              style={{
+                bottom:
+                  'calc(env(safe-area-inset-bottom, 0px) + 93px)',
+                background:
+                  'linear-gradient(180deg,rgba(10,25,44,.99),rgba(5,14,27,.99))',
+                border:
+                  '1px solid rgba(96,165,250,.20)',
+                boxShadow:
+                  '0 24px 60px rgba(0,0,0,.52)',
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-[15px] font-black text-white">
+                    المزيد
+                  </h3>
+                  <p className="text-[9px] text-slate-500 mt-1">
+                    كل أدوات BAKR PRO
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(false)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5"
+                >
+                  <X className="w-4 h-4 text-slate-300" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  ['المعدات', '/equipment', '🏗️'],
+                  ['السواقين', '/drivers', '👷'],
+                  ['الحساب الشهري', '/monthly', '📅'],
+                  ['الشركاء', '/partners', '🤝'],
+                  ['الفواتير', '/invoices', '🧾'],
+                  ['التقارير', '/reports', '📊'],
+                  ['الإعدادات', '/settings', '⚙️'],
+                  ['النسخ الاحتياطي', '/backup', '☁️'],
+                  ['سلة المحذوفات', '/recycle-bin', '🗑️'],
+                ].map(([label, path, emoji]) => (
+                  <button
+                    key={path}
+                    type="button"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      navigate(path);
+                    }}
+                    className="min-h-[76px] rounded-[16px] flex flex-col items-center justify-center gap-1.5 active:scale-95"
+                    style={{
+                      background: 'rgba(255,255,255,.035)',
+                      border:
+                        '1px solid rgba(255,255,255,.065)',
+                    }}
+                  >
+                    <span className="text-[22px]">{emoji}</span>
+                    <span className="text-[8.5px] font-bold text-slate-200 text-center">
+                      {label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* الشريط السفلي الاحترافي */}
+        <nav
+          className="fixed z-[9985] left-1/2 -translate-x-1/2 w-full max-w-[430px] px-3"
+          style={{
+            bottom:
+              'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+          }}
+        >
+          <div
+            className="relative h-[76px] rounded-[26px] px-2 flex items-center justify-between"
+            style={{
+              background:
+                'linear-gradient(180deg,rgba(11,27,47,.98),rgba(5,14,27,.99))',
+              border:
+                '1px solid rgba(96,165,250,.22)',
+              boxShadow:
+                '0 16px 45px rgba(0,0,0,.52), inset 0 1px 0 rgba(255,255,255,.04)',
+            }}
+          >
+            <BottomNavButton
+              label="الرئيسية"
+              icon={Home}
+              active
+              onClick={() => navigate('/')}
+            />
+
+            <BottomNavButton
+              label="اليوم"
+              icon={CalendarDays}
+              onClick={() => navigate('/daily-calculator')}
+            />
+
+            <div className="w-[72px] shrink-0" />
+
+            <BottomNavButton
+              label="العملاء والفرص"
+              icon={UsersRound}
+              onClick={() => navigate('/customers-opportunities')}
+            />
+
+            <BottomNavButton
+              label="المزيد"
+              icon={LayoutGrid}
+              onClick={() => {
+                setQuickAddOpen(false);
+                setMoreOpen(true);
+              }}
+            />
+
+            <button
+              type="button"
+              aria-label="إضافة"
+              onClick={() => {
+                setMoreOpen(false);
+                setQuickAddCustomizeOpen(false);
+                setQuickAddOpen((value) => !value);
+              }}
+              className="absolute left-1/2 -translate-x-1/2 -top-[22px] w-[72px] h-[72px] rounded-[23px] flex items-center justify-center active:scale-95 transition-transform"
+              style={{
+                background:
+                  'linear-gradient(145deg,#fbbf24,#f59e0b,#fb923c)',
+                border:
+                  '5px solid #091524',
+                boxShadow:
+                  '0 0 0 1px rgba(245,158,11,.55), 0 10px 30px rgba(245,158,11,.30)',
+              }}
+            >
+              <Plus className="w-9 h-9 text-slate-950" strokeWidth={2.2} />
+            </button>
+
+            <span className="absolute left-1/2 -translate-x-1/2 bottom-[5px] text-[9px] font-black text-amber-400">
+              إضافة
+            </span>
+          </div>
+        </nav>
+
         {searchOpen && (
           <div
             className="fixed inset-0 z-[99999] flex justify-center"
@@ -1267,29 +2206,13 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={closeSearch}
-                  className="w-10 h-10 rounded-[13px] flex items-center justify-center"
-                  style={{
-                    background:
-                      'rgba(255,255,255,0.05)',
-                    border:
-                      '1px solid rgba(255,255,255,0.08)',
-                  }}
+                  className="w-10 h-10 rounded-[13px] flex items-center justify-center bg-white/5"
                 >
                   <X className="w-5 h-5 text-slate-300" />
                 </button>
               </div>
 
-              <div
-                className="h-[58px] rounded-[18px] px-4 flex items-center gap-3"
-                style={{
-                  background:
-                    'linear-gradient(145deg,#101d30,#07111e)',
-                  border:
-                    '1px solid rgba(245,158,11,0.27)',
-                  boxShadow:
-                    '0 10px 30px rgba(0,0,0,0.25)',
-                }}
-              >
+              <div className="h-[58px] rounded-[18px] px-4 flex items-center gap-3 bg-slate-900">
                 <Search className="w-5 h-5 text-amber-400 shrink-0" />
 
                 <input
@@ -1300,8 +2223,8 @@ export function DashboardPage() {
                       event.target.value
                     )
                   }
-                  placeholder="اسم، جوال، فاتورة، كرين، مبلغ..."
-                  className="flex-1 bg-transparent outline-none text-white text-[13px] placeholder:text-slate-600"
+                  placeholder="اسم، فرصة، جوال، فاتورة، كرين، مبلغ..."
+                  className="flex-1 bg-transparent outline-none text-white text-[13px]"
                 />
 
                 {searchQuery && (
@@ -1310,123 +2233,84 @@ export function DashboardPage() {
                     onClick={() =>
                       setSearchQuery('')
                     }
-                    className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center"
                   >
                     <X className="w-4 h-4 text-slate-500" />
                   </button>
                 )}
               </div>
 
-              {!searchQuery && (
-                <div className="mt-6">
-                  <p className="text-[11px] text-slate-500 mb-3">
-                    يمكنك البحث عن
-                  </p>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      'اسم العميل',
-                      'رقم الجوال',
-                      'رقم الفاتورة',
-                      'اسم الكرين',
-                      'السائق',
-                      'المبلغ',
-                    ].map((text) => (
-                      <button
-                        type="button"
-                        key={text}
-                        className="rounded-[13px] py-3 px-2 text-[9px] text-slate-400"
-                        style={{
-                          background:
-                            'rgba(255,255,255,0.025)',
-                          border:
-                            '1px solid rgba(255,255,255,0.055)',
-                        }}
-                      >
-                        {text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {searchQuery &&
-                searchResults.length === 0 && (
+                searchResults.length ===
+                  0 && (
                   <div className="mt-16 text-center">
-                    <div className="w-16 h-16 rounded-[20px] bg-amber-500/8 flex items-center justify-center mx-auto">
-                      <Search className="w-7 h-7 text-amber-400/50" />
-                    </div>
+                    <Search className="w-8 h-8 text-amber-400/50 mx-auto" />
 
                     <p className="text-[14px] font-bold text-white mt-4">
                       لا توجد نتائج
-                    </p>
-
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      جرّب الاسم أو رقم الجوال أو رقم الفاتورة
                     </p>
                   </div>
                 )}
 
               {searchQuery &&
-                searchResults.length > 0 && (
+                searchResults.length >
+                  0 && (
                   <div className="mt-5 space-y-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">
-                        النتائج
-                      </span>
-
-                      <span className="text-[10px] text-amber-400">
-                        {searchResults.length}{' '}
-                        نتيجة
-                      </span>
-                    </div>
-
                     {Object.entries(
                       groupedSearchResults
                     ).map(
-                      ([category, items]) => (
-                        <section key={category}>
+                      ([
+                        category,
+                        items,
+                      ]) => (
+                        <section
+                          key={
+                            category
+                          }
+                        >
                           <h3 className="text-[12px] font-black text-slate-300 mb-2">
-                            {category}
+                            {
+                              category
+                            }
                           </h3>
 
                           <div className="space-y-2">
                             {items.map(
-                              (item) => (
+                              (
+                                item
+                              ) => (
                                 <button
-                                  key={item.id}
+                                  key={
+                                    item.id
+                                  }
                                   type="button"
                                   onClick={() =>
                                     openSearchResult(
                                       item
                                     )
                                   }
-                                  className="w-full rounded-[16px] p-3.5 flex items-center gap-3 text-right active:scale-[0.99]"
-                                  style={{
-                                    background:
-                                      'linear-gradient(145deg,rgba(15,28,47,0.96),rgba(8,17,30,0.98))',
-                                    border:
-                                      '1px solid rgba(255,255,255,0.055)',
-                                  }}
+                                  className="w-full rounded-[16px] p-3.5 flex items-center gap-3 text-right bg-slate-900"
                                 >
-                                  <div className="w-10 h-10 rounded-[13px] bg-amber-500/10 flex items-center justify-center shrink-0">
-                                    <Search className="w-4 h-4 text-amber-400" />
-                                  </div>
+                                  <Search className="w-4 h-4 text-amber-400" />
 
                                   <div className="flex-1 min-w-0">
                                     <p className="text-[12px] font-bold text-white truncate">
-                                      {item.title}
+                                      {
+                                        item.title
+                                      }
                                     </p>
 
                                     {item.subtitle && (
                                       <p className="text-[9px] text-slate-500 mt-1 truncate">
-                                        {item.subtitle}
+                                        {
+                                          item.subtitle
+                                        }
                                       </p>
                                     )}
                                   </div>
 
-                                  {item.path !== '/' && (
-                                    <ChevronLeft className="w-4 h-4 text-slate-600 shrink-0" />
+                                  {item.path !==
+                                    '/' && (
+                                    <ChevronLeft className="w-4 h-4 text-slate-600" />
                                   )}
                                 </button>
                               )
@@ -1442,6 +2326,49 @@ export function DashboardPage() {
         )}
       </div>
     </AppLayout>
+  );
+}
+
+type BottomNavButtonProps = {
+  label: string;
+  icon: any;
+  active?: boolean;
+  onClick: () => void;
+};
+
+function BottomNavButton({
+  label,
+  icon: Icon,
+  active = false,
+  onClick,
+}: BottomNavButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-[72px] h-[64px] rounded-[18px] flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
+      style={{
+        background: active
+          ? 'linear-gradient(180deg,rgba(245,158,11,.12),rgba(245,158,11,.035))'
+          : 'transparent',
+      }}
+    >
+      <Icon
+        className="w-5 h-5"
+        style={{
+          color: active ? '#fbbf24' : '#94a3b8',
+        }}
+        strokeWidth={2.2}
+      />
+      <span
+        className="text-[8.5px] font-black text-center leading-[11px]"
+        style={{
+          color: active ? '#fbbf24' : '#94a3b8',
+        }}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
 
@@ -1490,9 +2417,7 @@ function MoneyCard({
         >
           <Icon
             className="w-5 h-5"
-            style={{
-              color,
-            }}
+            style={{ color }}
             strokeWidth={2.1}
           />
         </div>
@@ -1500,12 +2425,10 @@ function MoneyCard({
 
       <p
         className="text-[15px] font-black mt-4 leading-tight"
-        style={{
-          color,
-        }}
+        style={{ color }}
       >
         {value}
       </p>
     </button>
   );
-}
+            }
