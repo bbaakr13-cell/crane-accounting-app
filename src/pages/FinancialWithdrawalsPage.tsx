@@ -788,7 +788,7 @@ export function FinancialWithdrawalsPage() {
           </section>
         )}
 
-        {/* قالب PDF النهائي المعتمد — مطابق لتصميم BAKR PRO الكحلي والذهبي */}
+        {/* قالب PDF النهائي المعتمد — نسخة مصححة وثابتة للطباعة */}
         <div
           style={{
             position: 'fixed',
@@ -809,767 +809,599 @@ export function FinancialWithdrawalsPage() {
               height: 1123,
               boxSizing: 'border-box',
               overflow: 'hidden',
-              background: '#f7f4ec',
+              background: '#f8f4ea',
               color: '#0b2440',
               fontFamily: 'Tahoma, Arial, sans-serif',
               position: 'relative',
+              padding: 18,
             }}
           >
-            {/* الإطار الذهبي */}
             <div
               style={{
-                position: 'absolute',
-                inset: 12,
-                border: '2px solid #cda84e',
+                width: '100%',
+                height: '100%',
+                border: '2px solid #cba64d',
                 borderRadius: 24,
-                pointerEvents: 'none',
-                zIndex: 20,
-              }}
-            />
-
-            {/* الرأس الكحلي */}
-            <div
-              style={{
-                height: 142,
-                boxSizing: 'border-box',
-                padding: '22px 28px',
-                background:
-                  'radial-gradient(circle at 18% 22%, rgba(216,175,82,.16), transparent 30%), linear-gradient(125deg,#071a2f 0%,#0b2b4d 58%,#071a2f 100%)',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                position: 'relative',
                 overflow: 'hidden',
-                borderBottom: '4px solid #d0aa4e',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: -45,
-                  top: -70,
-                  width: 210,
-                  height: 210,
-                  borderRadius: '50%',
-                  border: '1px solid rgba(240,211,131,.16)',
-                }}
-              />
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 15,
-                  position: 'relative',
-                  zIndex: 2,
-                }}
-              >
-                <div
-                  style={{
-                    width: 82,
-                    height: 82,
-                    borderRadius: 22,
-                    background: 'linear-gradient(145deg,#ffe18a,#b98022)',
-                    color: '#071a2f',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 38,
-                    fontWeight: 900,
-                    boxShadow: '0 10px 24px rgba(0,0,0,.24)',
-                    border: '2px solid rgba(255,255,255,.28)',
-                  }}
-                >
-                  B
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'baseline',
-                      gap: 8,
-                      direction: 'ltr',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 31,
-                        fontWeight: 900,
-                        letterSpacing: 1.1,
-                      }}
-                    >
-                      BAKR
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 31,
-                        fontWeight: 900,
-                        color: '#f0c95d',
-                        letterSpacing: 1.1,
-                      }}
-                    >
-                      PRO
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 800,
-                      marginTop: 6,
-                      color: '#f3f6f9',
-                    }}
-                  >
-                    إدارة مالية - تتبع ومراقبة
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 7,
-                  fontSize: 11,
-                  color: '#e9eef4',
-                  textAlign: 'right',
-                  position: 'relative',
-                  zIndex: 2,
-                }}
-              >
-                <div>⚙ إدارة أسهل</div>
-                <div>▥ رقابة أدق</div>
-                <div>◇ قرارات أفضل</div>
-              </div>
-            </div>
-
-            {/* العنوان */}
-            <div
-              style={{
-                height: 154,
+                background: '#fffdfa',
                 boxSizing: 'border-box',
-                padding: '22px 30px 18px',
-                background:
-                  'radial-gradient(circle at 88% 46%,rgba(9,43,77,.045),transparent 28%),#fffdfa',
-                textAlign: 'center',
+                position: 'relative',
               }}
             >
+              {/* رأس التقرير */}
               <div
                 style={{
+                  height: 130,
+                  boxSizing: 'border-box',
+                  padding: '20px 26px',
+                  background:
+                    'radial-gradient(circle at 12% 15%,rgba(224,186,91,.16),transparent 30%),linear-gradient(125deg,#071a2f 0%,#0d3155 58%,#071a2f 100%)',
+                  color: '#fff',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 14,
+                  justifyContent: 'space-between',
+                  borderBottom: '4px solid #cba64d',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                  <div
+                    style={{
+                      width: 76,
+                      height: 76,
+                      borderRadius: 20,
+                      background: 'linear-gradient(145deg,#ffe28c,#b98324)',
+                      color: '#071a2f',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 36,
+                      fontWeight: 900,
+                      border: '2px solid rgba(255,255,255,.24)',
+                      boxShadow: '0 8px 20px rgba(0,0,0,.22)',
+                      fontFamily: 'Arial, sans-serif',
+                    }}
+                  >
+                    B
+                  </div>
+
+                  <div>
+                    <div
+                      style={{
+                        direction: 'ltr',
+                        fontFamily: 'Arial, sans-serif',
+                        fontSize: 28,
+                        fontWeight: 900,
+                        letterSpacing: 1.4,
+                      }}
+                    >
+                      <span>BAKR </span>
+                      <span style={{ color: '#efc85d' }}>PRO</span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 800,
+                        marginTop: 6,
+                        color: '#eef3f7',
+                      }}
+                    >
+                      إدارة مالية - تتبع ومراقبة
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 11, color: '#cbd5df' }}>تاريخ التقرير</div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      fontSize: 15,
+                      color: '#efc85d',
+                      fontWeight: 900,
+                      direction: 'ltr',
+                      fontFamily: 'Arial, sans-serif',
+                    }}
+                  >
+                    {createdDate || '—'}
+                  </div>
+                </div>
+              </div>
+
+              {/* عنوان التقرير */}
+              <div
+                style={{
+                  height: 112,
+                  boxSizing: 'border-box',
+                  padding: '20px 28px 14px',
+                  textAlign: 'center',
+                  background: '#fffdfa',
                 }}
               >
                 <div
                   style={{
-                    color: '#c99b38',
-                    fontSize: 42,
-                    lineHeight: 1,
-                    fontWeight: 900,
-                  }}
-                >
-                  ⇩
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 37,
+                    fontSize: 34,
+                    lineHeight: 1.12,
                     fontWeight: 900,
                     color: '#071f3d',
-                    lineHeight: 1.15,
                   }}
                 >
                   سجل السحوبات المالية
                 </div>
-              </div>
-
-              <div
-                style={{
-                  fontSize: 14,
-                  color: '#17385d',
-                  marginTop: 10,
-                  fontWeight: 700,
-                }}
-              >
-                تفاصيل السحوبات والمصروفات الخاصة بالمعدة
-              </div>
-
-              <div
-                style={{
-                  width: 112,
-                  height: 4,
-                  borderRadius: 99,
-                  background: '#d4a947',
-                  margin: '13px auto 0',
-                }}
-              />
-            </div>
-
-            {/* المحتوى */}
-            <div
-              style={{
-                padding: '0 30px',
-                boxSizing: 'border-box',
-              }}
-            >
-              {/* بيانات الحساب والتاريخ */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: 12,
-                  marginBottom: 14,
-                }}
-              >
                 <div
                   style={{
-                    height: 76,
-                    border: '1px solid #dfd1b0',
-                    borderRadius: 15,
-                    background: '#fffdfa',
-                    padding: '12px 16px',
-                    boxSizing: 'border-box',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    fontSize: 13,
+                    color: '#264566',
+                    marginTop: 8,
+                    fontWeight: 700,
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: 10, color: '#655e54', fontWeight: 700 }}>
-                      اسم صاحب الحساب / المعدة
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 17,
-                        color: '#071f3d',
-                        fontWeight: 900,
-                        marginTop: 7,
-                      }}
-                    >
-                      {accountName || '—'}
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: 31, color: '#bd8b28' }}>🏗</div>
+                  تفاصيل السحوبات والمصروفات الخاصة بالمعدة
                 </div>
-
                 <div
                   style={{
-                    height: 76,
-                    border: '1px solid #dfd1b0',
-                    borderRadius: 15,
-                    background: '#fffdfa',
-                    padding: '12px 16px',
-                    boxSizing: 'border-box',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 10, color: '#655e54', fontWeight: 700 }}>
-                      التاريخ
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 17,
-                        color: '#071f3d',
-                        fontWeight: 900,
-                        marginTop: 7,
-                        direction: 'ltr',
-                      }}
-                    >
-                      {createdDate || '—'}
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: 31, color: '#bd8b28' }}>▣</div>
-                </div>
-              </div>
-
-              {/* المبلغ الأساسي */}
-              <div
-                style={{
-                  height: 112,
-                  borderRadius: 18,
-                  background:
-                    'radial-gradient(circle at 84% 45%,rgba(212,169,71,.12),transparent 26%),linear-gradient(125deg,#071f3d,#0d355b)',
-                  border: '2px solid #d3aa4f',
-                  boxSizing: 'border-box',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto 1fr',
-                  alignItems: 'center',
-                  padding: '14px 28px',
-                  color: '#fff',
-                  marginBottom: 14,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 43,
-                    color: '#efc95d',
-                    textAlign: 'center',
-                    lineHeight: 1,
-                  }}
-                >
-                  ◉
-                </div>
-
-                <div
-                  style={{
-                    textAlign: 'center',
-                    minWidth: 320,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 21,
-                      fontWeight: 900,
-                      color: '#fff',
-                    }}
-                  >
-                    المبلغ الأساسي
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 5,
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'baseline',
-                      gap: 10,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 52,
-                        fontWeight: 900,
-                        color: '#f1c95e',
-                        direction: 'ltr',
-                        fontFamily: 'Arial, sans-serif',
-                      }}
-                    >
-                      {formatMoneyEn(base)}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 19,
-                        fontWeight: 900,
-                        color: '#fff',
-                      }}
-                    >
-                      ريال
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    borderRight: '1px solid rgba(226,190,96,.45)',
-                    paddingRight: 22,
-                    minHeight: 66,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: 27, color: '#efc95d', textAlign: 'center' }}>
-                    ▱
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      color: '#e2e9f0',
-                      textAlign: 'center',
-                      marginTop: 3,
-                    }}
-                  >
-                    الرصيد المخصص
-                    <br />
-                    لبداية التشغيل
-                  </div>
-                </div>
-              </div>
-
-              {/* عنوان التفاصيل */}
-              <div
-                style={{
-                  height: 42,
-                  borderRadius: '14px 14px 0 0',
-                  background: 'linear-gradient(90deg,#e9cb7a,#d9ac4d,#f1d98e)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  padding: '0 16px',
-                  boxSizing: 'border-box',
-                  color: '#071f3d',
-                  fontSize: 16,
-                  fontWeight: 900,
-                }}
-              >
-                تفاصيل السحوبات والمصروفات
-              </div>
-
-              {/* الجدول */}
-              <div
-                style={{
-                  border: '1px solid #d9ceb8',
-                  borderTop: 'none',
-                  borderRadius: '0 0 14px 14px',
-                  overflow: 'hidden',
-                  background: '#fff',
-                  marginBottom: 14,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '42px 130px 1.25fr 120px 1fr',
-                    height: 38,
-                    alignItems: 'center',
-                    background: '#082745',
-                    color: '#fff',
-                    fontSize: 10,
-                    fontWeight: 900,
-                  }}
-                >
-                  {['#', 'التاريخ', 'البند / نوع المصروف', 'المبلغ (ريال)', 'ملاحظات'].map(
-                    (label) => (
-                      <div
-                        key={label}
-                        style={{
-                          textAlign: 'center',
-                          padding: '8px 6px',
-                          borderLeft: '1px solid rgba(255,255,255,.11)',
-                        }}
-                      >
-                        {label}
-                      </div>
-                    )
-                  )}
-                </div>
-
-                {shownRows.slice(0, 6).map((row, index) => (
-                  <div
-                    key={row.id}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '42px 130px 1.25fr 120px 1fr',
-                      minHeight: 42,
-                      alignItems: 'center',
-                      background: index % 2 === 0 ? '#fffdfa' : '#f7f2e8',
-                      borderTop: '1px solid #e9dfcc',
-                      fontSize: 10.5,
-                    }}
-                  >
-                    <div style={{ textAlign: 'center', fontWeight: 900 }}>
-                      {index + 1}
-                    </div>
-
-                    <div
-                      style={{
-                        textAlign: 'center',
-                        color: '#17385d',
-                        direction: 'ltr',
-                        fontFamily: 'Arial, sans-serif',
-                      }}
-                    >
-                      {row.date || '—'}
-                    </div>
-
-                    <div
-                      style={{
-                        padding: '8px 10px',
-                        color: '#071f3d',
-                        fontWeight: 800,
-                      }}
-                    >
-                      {row.reason || '—'}
-                    </div>
-
-                    <div
-                      style={{
-                        textAlign: 'center',
-                        color: '#9b111e',
-                        fontSize: 13,
-                        fontWeight: 900,
-                        direction: 'ltr',
-                        fontFamily: 'Arial, sans-serif',
-                      }}
-                    >
-                      {row.amount ? formatMoneyEn(moneyNumber(row.amount)) : '—'}
-                    </div>
-
-                    <div
-                      style={{
-                        padding: '8px 10px',
-                        color: '#526273',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {row.notes || '—'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* عنوان الملخص */}
-              <div
-                style={{
-                  height: 42,
-                  borderRadius: '14px 14px 0 0',
-                  background: 'linear-gradient(90deg,#e9cb7a,#d9ac4d,#f1d98e)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '0 16px',
-                  boxSizing: 'border-box',
-                  color: '#071f3d',
-                  fontSize: 16,
-                  fontWeight: 900,
-                }}
-              >
-                الملخص المالي
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: 10,
-                  padding: '10px 0 14px',
-                }}
-              >
-                <div
-                  style={{
-                    minHeight: 104,
-                    borderRadius: 14,
-                    border: '1px solid #bcd4eb',
-                    background: '#eef6fd',
-                    padding: '12px 13px',
-                    boxSizing: 'border-box',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: 12, fontWeight: 900, color: '#092a4c' }}>
-                    المبلغ الأساسي
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 27,
-                      fontWeight: 900,
-                      color: '#092a4c',
-                      marginTop: 9,
-                      direction: 'ltr',
-                      fontFamily: 'Arial, sans-serif',
-                    }}
-                  >
-                    {formatMoneyEn(base)}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#092a4c', marginTop: 2 }}>
-                    ريال
-                  </div>
-                  <div style={{ fontSize: 8.5, color: '#617185', marginTop: 6 }}>
-                    المبلغ المخصص لبداية التشغيل
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    minHeight: 104,
-                    borderRadius: 14,
-                    border: '1px solid #efc8c8',
-                    background: '#fff0f0',
-                    padding: '12px 13px',
-                    boxSizing: 'border-box',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: 12, fontWeight: 900, color: '#8e111b' }}>
-                    إجمالي المسحوب
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 27,
-                      fontWeight: 900,
-                      color: '#a5111d',
-                      marginTop: 9,
-                      direction: 'ltr',
-                      fontFamily: 'Arial, sans-serif',
-                    }}
-                  >
-                    {formatMoneyEn(totalWithdrawn)}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#a5111d', marginTop: 2 }}>
-                    ريال
-                  </div>
-                  <div style={{ fontSize: 8.5, color: '#74666a', marginTop: 6 }}>
-                    مجموع جميع السحوبات والمصروفات
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    minHeight: 104,
-                    borderRadius: 14,
-                    border: '1px solid #c3dfcc',
-                    background: '#eef9f1',
-                    padding: '12px 13px',
-                    boxSizing: 'border-box',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: 12, fontWeight: 900, color: '#12653c' }}>
-                    المتبقي
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 27,
-                      fontWeight: 900,
-                      color: remaining >= 0 ? '#0e7a45' : '#a5111d',
-                      marginTop: 9,
-                      direction: 'ltr',
-                      fontFamily: 'Arial, sans-serif',
-                    }}
-                  >
-                    {formatMoneyEn(remaining)}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: remaining >= 0 ? '#0e7a45' : '#a5111d',
-                      marginTop: 2,
-                    }}
-                  >
-                    ريال
-                  </div>
-                  <div style={{ fontSize: 8.5, color: '#617568', marginTop: 6 }}>
-                    الرصيد المتبقي من المبلغ الأساسي
-                  </div>
-                </div>
-              </div>
-
-              {/* الملاحظات */}
-              <div
-                style={{
-                  height: 38,
-                  borderRadius: '13px 13px 0 0',
-                  background: 'linear-gradient(90deg,#e9cb7a,#d9ac4d,#f1d98e)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '0 16px',
-                  color: '#071f3d',
-                  fontSize: 15,
-                  fontWeight: 900,
-                  boxSizing: 'border-box',
-                }}
-              >
-                الملاحظات
-              </div>
-
-              <div
-                style={{
-                  height: 72,
-                  border: '1px solid #ded2b9',
-                  borderTop: 'none',
-                  borderRadius: '0 0 13px 13px',
-                  background: '#fffdfa',
-                  padding: '13px 16px',
-                  boxSizing: 'border-box',
-                  color: '#5e6873',
-                  fontSize: 11,
-                  lineHeight: 1.7,
-                }}
-              >
-                {extraNotes || 'لا توجد ملاحظات إضافية.'}
-              </div>
-            </div>
-
-            {/* الفوتر */}
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 132,
-                background:
-                  'linear-gradient(172deg,#fffdfa 0%,#fffdfa 28%,#d0aa4e 29%,#0a2d50 34%,#071b31 100%)',
-                padding: '48px 32px 16px',
-                boxSizing: 'border-box',
-                display: 'grid',
-                gridTemplateColumns: '1fr auto 1fr',
-                alignItems: 'center',
-                gap: 18,
-                color: '#fff',
-              }}
-            >
-              <div
-                style={{
-                  textAlign: 'right',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 900,
-                    color: '#ffffff',
-                  }}
-                >
-                  إدارة مالية
-                  <br />
-                  للمعدات والكرينات
-                </div>
-                <div style={{ fontSize: 9, color: '#c8d4df', marginTop: 5 }}>
-                  تنظيم مالي .. لعمل أكثر استقراراً
-                </div>
-              </div>
-
-              <div
-                style={{
-                  width: 86,
-                  height: 86,
-                  borderRadius: 12,
-                  background: '#fff',
-                  padding: 5,
-                  boxSizing: 'border-box',
-                  border: '2px solid #d2ad50',
-                }}
-              >
-                <img
-                  src="/icons/bakr-whatsapp-qr.png"
-                  alt="WhatsApp QR"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
+                    width: 108,
+                    height: 4,
+                    background: '#d0a548',
+                    borderRadius: 99,
+                    margin: '11px auto 0',
                   }}
                 />
               </div>
 
               <div
                 style={{
-                  textAlign: 'left',
+                  padding: '0 24px',
+                  boxSizing: 'border-box',
+                  height: 735,
                 }}
               >
-                <div style={{ fontSize: 10, color: '#eef3f7' }}>
-                  للتواصل عبر واتساب
+                {/* بيانات الحساب */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.35fr .65fr',
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      height: 68,
+                      border: '1px solid #dfd1b0',
+                      borderRadius: 15,
+                      background: '#fffdfa',
+                      padding: '11px 15px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <div style={{ fontSize: 9, color: '#726957', fontWeight: 700 }}>
+                      اسم صاحب الحساب / المعدة
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        color: '#071f3d',
+                        fontWeight: 900,
+                        marginTop: 6,
+                      }}
+                    >
+                      {accountName || '—'}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: 68,
+                      border: '1px solid #dfd1b0',
+                      borderRadius: 15,
+                      background: '#fffdfa',
+                      padding: '11px 15px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <div style={{ fontSize: 9, color: '#726957', fontWeight: 700 }}>
+                      عدد عمليات السحب
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        color: '#071f3d',
+                        fontWeight: 900,
+                        marginTop: 6,
+                        direction: 'ltr',
+                        fontFamily: 'Arial, sans-serif',
+                      }}
+                    >
+                      {shownRows.filter((row) => moneyNumber(row.amount) > 0).length}
+                    </div>
+                  </div>
+                </div>
+
+                {/* المبلغ الأساسي — مصحح بدون أي تداخل */}
+                <div
+                  style={{
+                    height: 126,
+                    borderRadius: 18,
+                    background:
+                      'radial-gradient(circle at 85% 45%,rgba(214,174,78,.12),transparent 27%),linear-gradient(125deg,#071f3d,#0d355b)',
+                    border: '2px solid #d2aa4f',
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    marginBottom: 12,
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ textAlign: 'center' }}>
+                    <div
+                      style={{
+                        fontSize: 20,
+                        lineHeight: 1.1,
+                        fontWeight: 900,
+                        color: '#ffffff',
+                      }}
+                    >
+                      المبلغ الأساسي
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 11,
+                        direction: 'ltr',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 48,
+                          lineHeight: 1,
+                          fontWeight: 900,
+                          color: '#f1c95e',
+                          fontFamily: 'Arial, sans-serif',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {formatMoneyEn(base)}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 18,
+                          lineHeight: 1,
+                          fontWeight: 900,
+                          color: '#ffffff',
+                          direction: 'rtl',
+                        }}
+                      >
+                        ريال
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* تفاصيل السحوبات */}
+                <div
+                  style={{
+                    height: 38,
+                    borderRadius: '13px 13px 0 0',
+                    background: 'linear-gradient(90deg,#ead083,#d7aa49,#f0da93)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0 15px',
+                    boxSizing: 'border-box',
+                    color: '#071f3d',
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  تفاصيل السحوبات والمصروفات
+                </div>
+
+                <div
+                  style={{
+                    border: '1px solid #d9ceb8',
+                    borderTop: 'none',
+                    borderRadius: '0 0 13px 13px',
+                    overflow: 'hidden',
+                    background: '#fff',
+                    marginBottom: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '40px 118px 1.25fr 110px 1fr',
+                      height: 36,
+                      alignItems: 'center',
+                      background: '#082745',
+                      color: '#fff',
+                      fontSize: 9.5,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {['#', 'التاريخ', 'البند / نوع المصروف', 'المبلغ (ريال)', 'ملاحظات'].map(
+                      (label) => (
+                        <div
+                          key={label}
+                          style={{
+                            textAlign: 'center',
+                            padding: '7px 5px',
+                            borderLeft: '1px solid rgba(255,255,255,.11)',
+                          }}
+                        >
+                          {label}
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  {shownRows.slice(0, 6).map((row, index) => (
+                    <div
+                      key={row.id}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '40px 118px 1.25fr 110px 1fr',
+                        minHeight: 39,
+                        alignItems: 'center',
+                        background: index % 2 === 0 ? '#fffdfa' : '#f7f2e8',
+                        borderTop: '1px solid #e9dfcc',
+                        fontSize: 10,
+                      }}
+                    >
+                      <div style={{ textAlign: 'center', fontWeight: 900 }}>{index + 1}</div>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          color: '#17385d',
+                          direction: 'ltr',
+                          fontFamily: 'Arial, sans-serif',
+                        }}
+                      >
+                        {row.date || '—'}
+                      </div>
+                      <div style={{ padding: '7px 9px', color: '#071f3d', fontWeight: 800 }}>
+                        {row.reason || '—'}
+                      </div>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          color: '#a31120',
+                          fontSize: 12.5,
+                          fontWeight: 900,
+                          direction: 'ltr',
+                          fontFamily: 'Arial, sans-serif',
+                        }}
+                      >
+                        {row.amount ? formatMoneyEn(moneyNumber(row.amount)) : '—'}
+                      </div>
+                      <div style={{ padding: '7px 9px', color: '#526273', textAlign: 'center' }}>
+                        {row.notes || '—'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* الملخص المالي */}
+                <div
+                  style={{
+                    height: 38,
+                    borderRadius: '13px 13px 0 0',
+                    background: 'linear-gradient(90deg,#ead083,#d7aa49,#f0da93)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0 15px',
+                    boxSizing: 'border-box',
+                    color: '#071f3d',
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  الملخص المالي
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: 9,
+                    padding: '9px 0 12px',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: 96,
+                      borderRadius: 14,
+                      border: '1px solid #bad2e8',
+                      background: '#eef6fd',
+                      padding: '11px 12px',
+                      boxSizing: 'border-box',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 900, color: '#092a4c' }}>المبلغ الأساسي</div>
+                    <div
+                      style={{
+                        fontSize: 26,
+                        lineHeight: 1,
+                        fontWeight: 900,
+                        color: '#092a4c',
+                        marginTop: 10,
+                        direction: 'ltr',
+                        fontFamily: 'Arial, sans-serif',
+                      }}
+                    >
+                      {formatMoneyEn(base)}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#092a4c', marginTop: 4 }}>ريال</div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: 96,
+                      borderRadius: 14,
+                      border: '1px solid #ecc5c5',
+                      background: '#fff0f0',
+                      padding: '11px 12px',
+                      boxSizing: 'border-box',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 900, color: '#8e111b' }}>إجمالي المسحوب</div>
+                    <div
+                      style={{
+                        fontSize: 26,
+                        lineHeight: 1,
+                        fontWeight: 900,
+                        color: '#a5111d',
+                        marginTop: 10,
+                        direction: 'ltr',
+                        fontFamily: 'Arial, sans-serif',
+                      }}
+                    >
+                      {formatMoneyEn(totalWithdrawn)}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#a5111d', marginTop: 4 }}>ريال</div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: 96,
+                      borderRadius: 14,
+                      border: '1px solid #c3dfcc',
+                      background: '#eef9f1',
+                      padding: '11px 12px',
+                      boxSizing: 'border-box',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 900, color: '#12653c' }}>المتبقي</div>
+                    <div
+                      style={{
+                        fontSize: 26,
+                        lineHeight: 1,
+                        fontWeight: 900,
+                        color: remaining >= 0 ? '#0e7a45' : '#a5111d',
+                        marginTop: 10,
+                        direction: 'ltr',
+                        fontFamily: 'Arial, sans-serif',
+                      }}
+                    >
+                      {formatMoneyEn(remaining)}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: remaining >= 0 ? '#0e7a45' : '#a5111d',
+                        marginTop: 4,
+                      }}
+                    >
+                      ريال
+                    </div>
+                  </div>
+                </div>
+
+                {/* الملاحظات */}
+                <div
+                  style={{
+                    height: 35,
+                    borderRadius: '12px 12px 0 0',
+                    background: 'linear-gradient(90deg,#ead083,#d7aa49,#f0da93)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0 14px',
+                    color: '#071f3d',
+                    fontSize: 14,
+                    fontWeight: 900,
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  الملاحظات
                 </div>
                 <div
                   style={{
-                    fontSize: 23,
-                    fontWeight: 900,
-                    color: '#ffffff',
-                    marginTop: 4,
-                    direction: 'ltr',
-                    fontFamily: 'Arial, sans-serif',
+                    height: 58,
+                    border: '1px solid #ded2b9',
+                    borderTop: 'none',
+                    borderRadius: '0 0 12px 12px',
+                    background: '#fffdfa',
+                    padding: '11px 14px',
+                    boxSizing: 'border-box',
+                    color: '#5e6873',
+                    fontSize: 10.5,
+                    lineHeight: 1.6,
                   }}
                 >
-                  {PHONE}
+                  {extraNotes || 'لا توجد ملاحظات إضافية.'}
                 </div>
-                <div style={{ fontSize: 9, color: '#c8d4df', marginTop: 4 }}>
-                  دعم سريع .. لخدمة أفضل
+              </div>
+
+              {/* الفوتر الثابت */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 126,
+                  background:
+                    'linear-gradient(170deg,#fffdfa 0%,#fffdfa 24%,#d0aa4e 25%,#0a2d50 31%,#071b31 100%)',
+                  padding: '47px 30px 15px',
+                  boxSizing: 'border-box',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto 1fr',
+                  alignItems: 'center',
+                  gap: 16,
+                  color: '#fff',
+                }}
+              >
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 15, fontWeight: 900 }}>
+                    إدارة مالية للمعدات والكرينات
+                  </div>
+                  <div style={{ fontSize: 8.5, color: '#cbd6df', marginTop: 5 }}>
+                    تنظيم مالي .. لعمل أكثر استقراراً
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    width: 82,
+                    height: 82,
+                    borderRadius: 11,
+                    background: '#fff',
+                    padding: 5,
+                    boxSizing: 'border-box',
+                    border: '2px solid #d2ad50',
+                  }}
+                >
+                  <img
+                    src="/icons/bakr-whatsapp-qr.png"
+                    alt="WhatsApp QR"
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                </div>
+
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 9.5, color: '#eef3f7' }}>للتواصل عبر واتساب</div>
+                  <div
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 900,
+                      color: '#fff',
+                      marginTop: 4,
+                      direction: 'ltr',
+                      fontFamily: 'Arial, sans-serif',
+                    }}
+                  >
+                    {PHONE}
+                  </div>
+                  <div style={{ fontSize: 8.5, color: '#cbd6df', marginTop: 4 }}>
+                    دعم سريع .. لخدمة أفضل
+                  </div>
                 </div>
               </div>
             </div>
@@ -1795,4 +1627,4 @@ function PdfSummary({
       </div>
     </div>
   );
-}
+                            }
