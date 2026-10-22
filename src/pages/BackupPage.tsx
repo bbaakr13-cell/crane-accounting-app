@@ -1,3 +1,4 @@
+import { FullBackupCard } from '@/components/FullBackupCard';
 import {
   useEffect,
   useState,
@@ -591,6 +592,8 @@ export function BackupPage() {
             حماية بيانات BAKR PRO وحفظها بدون الحاجة للإنترنت
           </p>
         </div>
+
+        <FullBackupCard />
 
         <div
           style={{
