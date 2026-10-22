@@ -11,17 +11,25 @@ import {
 const BACKUP_FOLDER =
   'BAAKR_PRO_BACKUPS';
 
+// All main app data namespaces, including expenses, customers, documents,
+// drivers, monthly ledgers, partner accounts, invoices and withdrawals.
+// Keep authentication, passwords and app lock outside the backups.
 const APP_STORAGE_PREFIXES = [
   'crane_accounting_',
   'monthly-ledger-',
+  'monthly-',
+  'bakr_pro_',
+  'baakr-',
+  'baakr_',
+  'professional-crane-invoice-',
 ];
 
 const APP_STORAGE_KEYS = [
-  'crane_accounting_offline_db_v2',
   'crane_drivers_v1',
   'monthly-rentals',
-  'baakr-work-invoice-v3',
 ];
+
+const EXCLUDED_STORAGE = /^(?:baakr_pro_(?:lock_|recovery_|last_backup_at)|bakr_drive_)/i;
 
 const DAILY_DRIVE_MARKER =
   'bakr_drive_daily_uploaded';
@@ -61,6 +69,7 @@ export type SavedBackup = {
 function isAppDataKey(
   key: string
 ): boolean {
+  if (EXCLUDED_STORAGE.test(key)) return false;
   if (
     APP_STORAGE_KEYS.includes(key)
   ) {
