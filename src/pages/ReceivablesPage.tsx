@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarDays, ChevronDown, ChevronUp, ClipboardList, FileDown,
   Pencil, Plus, Save, Search, Share2, Trash2, Wallet, X,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+import { fetchCustomers, type Customer } from '@/lib/customers';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import html2canvas from 'html2canvas';
@@ -13,6 +14,36 @@ import { jsPDF } from 'jspdf';
 
 /** Saved in localStorage, so both the ordinary and the comprehensive BAKR PRO backup include it. */
 const STORAGE_KEY = 'bakr_pro_receivables_v1';
+
+/**
+ * For installed Android APKs the Capgo Contacts plugin must be installed in the
+ * build workflow (npm install @capgo/capacitor-contacts@^8.1.0 before cap sync).
+ * Using the Android system picker with property:'phoneNumber' requires NO
+ * READ_CONTACTS permission and transfers only the contact chosen by the user.
+ */
+type PhoneContact = { displayName?: string; givenName?: string; familyName?: string; phoneNumbers?: Array<{ value?: string }> };
+const AndroidPhonePicker = registerPlugin<{
+  pickContacts(options: { property: 'phoneNumber'; multiple: false }): Promise<{ contacts?: PhoneContact[] }>;
+}>('CapacitorContacts');
+
+function cleanContactPhone(value: string) {
+  // keep + international prefix if it exists; strip spaces, dashes and brackets
+  return value.trim().replace(/[^\d+]/g, '');
+}
+
+function savedCustomerOptions(records: Receivable[], customers: Customer[]) {
+  const map = new Map<string, { name: string; phone: string }>();
+  for (const c of [...customers, ...records.map(r => ({ name:r.customer, phone:r.phone }))]) {
+    const name = String(c.name ?? '').trim();
+    const phone = String(c.phone ?? '').trim();
+    if (!name || !phone) continue;
+    // Duplicate names can have different numbers, so use both.
+    const key = `${name.toLocaleLowerCase()}::${phone.replace(/\D/g, '')}`;
+    if (!map.has(key)) map.set(key, { name, phone });
+  }
+  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+}
+
 
 type Payment = { id: string; date: string; amount: number; note: string };
 type Term = 'آجل' | 'لم يحاسب';
@@ -230,6 +261,70 @@ export function ReceivablesPage() {
   const [paymentInput, setPaymentInput] = useState({ date: localDay(), amount: '', note: '' });
   const [busy, setBusy] = useState(false);
 
+  const [existingCustomers, setExistingCustomers] = useState<Customer[]>([]);
+  const [showCustomerPicker, setShowCustomerPicker] = useState(false);
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [pickingPhoneContact, setPickingPhoneContact] = useState(false);
+  const contactOptions = useMemo(
+    () => savedCustomerOptions(records, existingCustomers), [records, existingCustomers]
+  );
+  const matchingCustomerOptions = useMemo(() => contactOptions.filter(
+    c => `${c.name} ${c.phone}`.toLocaleLowerCase().includes(customerQuery.trim().toLocaleLowerCase())
+  ).slice(0, 60), [contactOptions, customerQuery]);
+
+  useEffect(() => {
+    if (!showForm) return;
+    let active = true;
+    fetchCustomers().then(list => { if (active) setExistingCustomers(list); })
+      .catch(() => { /* Local saved receivable contacts still work offline. */ });
+    return () => { active = false; };
+  }, [showForm]);
+
+  function applyContact(name: string, phone: string) {
+    const trimmedName = name.trim();
+    const trimmedPhone = cleanContactPhone(phone);
+    if (!trimmedPhone) { alert('جهة الاتصال هذه ليس لها رقم جوال محفوظ.'); return; }
+    setForm(current => ({ ...current, customer: trimmedName || current.customer, phone: trimmedPhone }));
+    setShowCustomerPicker(false);
+    setCustomerQuery('');
+  }
+
+  async function pickContactFromDevice() {
+    if (pickingPhoneContact) return;
+    setPickingPhoneContact(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        if (!Capacitor.isPluginAvailable('CapacitorContacts')) {
+          alert('يلزم تفعيل إضافة جهات الاتصال ضمن بناء APK الجديد. حاليًا يمكنك اختيار العميل من قائمة العملاء المحفوظين في BAKR PRO.');
+          return;
+        }
+        const result = await AndroidPhonePicker.pickContacts({ property: 'phoneNumber', multiple: false });
+        const contact = result.contacts?.[0];
+        if (!contact) return; // User cancelled contact selection.
+        const name = contact.displayName || [contact.givenName,contact.familyName].filter(Boolean).join(' ');
+        applyContact(name || '', contact.phoneNumbers?.[0]?.value || '');
+        return;
+      }
+      const nav = navigator as Navigator & {
+        contacts?: { select(fields: string[], options: { multiple: false }): Promise<Array<{ name?: string[]; tel?: string[] }>> };
+      };
+      if (nav.contacts?.select) {
+        const picked = await nav.contacts.select(['name', 'tel'], { multiple: false });
+        if (!picked.length) return;
+        applyContact(picked[0].name?.[0] || '', picked[0].tel?.[0] || '');
+        return;
+      }
+      alert('اختيار جهات اتصال الهاتف غير مدعوم في هذا المتصفح. اختر من عملاء BAKR PRO المحفوظين، أو ثبّت نسخة APK المربوطة بجهات الاتصال.');
+    } catch (error) {
+      const message = String((error as Error)?.message || error).toLowerCase();
+      if (!message.includes('cancel') && !message.includes('canceled') && !message.includes('dismiss')) {
+        console.error('Phone contact picker error:', error);
+        alert('تعذر فتح جهات الاتصال. تأكد من تثبيت نسخة التطبيق المحدثة ثم حاول مرة أخرى.');
+      }
+    } finally { setPickingPhoneContact(false); }
+  }
+
+
   function persist(next: Receivable[]) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -256,8 +351,9 @@ export function ReceivablesPage() {
     unpriced: records.filter(r => r.total <= 0).length,
   }), [records]);
   function updateField<K extends keyof FormData>(key: K, value: FormData[K]) { setForm(f => ({ ...f, [key]: value })); }
-  function openNew() { setEditId(null); setForm(freshForm()); setShowForm(true); window.scrollTo({top:0,behavior:'smooth'}); }
+  function openNew() { setShowCustomerPicker(false); setCustomerQuery(''); setEditId(null); setForm(freshForm()); setShowForm(true); window.scrollTo({top:0,behavior:'smooth'}); }
   function edit(record: Receivable) {
+    setShowCustomerPicker(false); setCustomerQuery('');
     setForm({ customer:record.customer,phone:record.phone,equipment:record.equipment,workName:record.workName || '',work:record.work,date:record.date,dueDate:record.dueDate,total:String(record.total || ''),term:record.term,notes:record.notes });
     setEditId(record.id); setShowForm(true); window.scrollTo({top:0,behavior:'smooth'});
   }
@@ -364,6 +460,33 @@ export function ReceivablesPage() {
 
         {showForm && <section className={`${card} p-4 mb-4`} style={{borderColor:'#d4af63'}}>
           <div className="flex justify-between items-center mb-4"><h2 className="font-black text-amber-200 text-lg">{editId ? 'تعديل حساب العميل' : 'تسجيل شغل لم يُسدّد'}</h2><button type="button" aria-label="إغلاق" onClick={() => {setShowForm(false);setEditId(null);}}><X /></button></div>
+          <div className="rounded-[17px] border border-amber-300/30 bg-[#071a2e] p-3 mb-3">
+            <p className="mb-2 text-[13px] font-black text-amber-200">📱 إضافة العميل ورقم الجوال بدون كتابة</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={pickContactFromDevice} disabled={pickingPhoneContact}
+                className="rounded-xl border border-amber-400/40 bg-amber-400/15 p-2.5 text-[12px] font-black text-amber-200 disabled:opacity-50">
+                {pickingPhoneContact ? 'جاري فتح جهات الاتصال...' : '📱 من جهات الاتصال'}
+              </button>
+              <button type="button" onClick={() => setShowCustomerPicker(p => !p)}
+                className="rounded-xl border border-cyan-400/30 bg-cyan-500/10 p-2.5 text-[12px] font-black text-cyan-100">
+                👥 من العملاء المحفوظين
+              </button>
+            </div>
+            <p className="mt-2 text-[10px] leading-5 text-slate-400">اختر جهة اتصال محفوظة في جوالك أو عميلًا مسجّلًا في BAKR PRO؛ يُملأ الاسم والرقم معًا. محادثات واتساب غير المحفوظة كجهات اتصال لا يمكن قراءتها مباشرة.</p>
+            {showCustomerPicker && <div className="mt-3 rounded-xl border border-white/10 bg-[#061322] p-2">
+              <input className={`${field} mb-2`} value={customerQuery} onChange={e => setCustomerQuery(e.target.value)}
+                placeholder="ابحث باسم العميل أو رقم الجوال..." />
+              <div className="max-h-52 overflow-auto space-y-1">
+                {matchingCustomerOptions.length ? matchingCustomerOptions.map(c => (
+                  <button key={`${c.name}:${c.phone}`} type="button" onClick={() => applyContact(c.name,c.phone)}
+                    className="block w-full rounded-lg border border-white/10 bg-white/5 p-2.5 text-right active:bg-amber-400/15">
+                    <span className="block text-sm font-bold text-white">{c.name}</span>
+                    <span dir="ltr" className="block text-xs text-amber-200">{c.phone}</span>
+                  </button>
+                )) : <p className="p-3 text-center text-xs text-slate-400">لا توجد أرقام محفوظة مطابقة حتى الآن.</p>}
+              </div>
+            </div>}
+          </div>
           <div className="grid grid-cols-1 gap-3">
             <label className="text-xs text-slate-200 font-bold">اسم العميل *<input value={form.customer} onChange={e=>updateField('customer',e.target.value)} className={`${field} mt-1`} placeholder="مثال: شركة المقاولات أو أبو محمد" /></label>
             <label className="text-xs text-slate-200 font-bold">رقم جوال العميل<input type="tel" value={form.phone} onChange={e=>updateField('phone',e.target.value)} className={`${field} mt-1`} placeholder="05xxxxxxxx" dir="ltr" /></label>
@@ -421,7 +544,7 @@ export function ReceivablesPage() {
             const expanded = expandedId === record.id;
             return <article key={record.id} className={`${card} p-4`} style={{borderColor:balance>0?'#b3914b55':'#ffffff20'}}>
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0"><h3 className="text-base font-black truncate">{record.customer}</h3><p className="text-[12px] text-slate-400 mt-1"><CalendarDays className="w-3 h-3 inline ml-1" />{record.date}{record.equipment?' • '+record.equipment:''}</p></div>
+                <div className="min-w-0"><h3 className="text-base font-black truncate">{record.customer}</h3>{record.phone && <p className="text-[12px] text-amber-200 font-bold mt-0.5" dir="ltr">{record.phone}</p>}<p className="text-[12px] text-slate-400 mt-1"><CalendarDays className="w-3 h-3 inline ml-1" />{record.date}{record.equipment?' • '+record.equipment:''}</p></div>
                 <span className={`text-[10px] font-black rounded-full px-2.5 py-1 border whitespace-nowrap ${balance <= 0 && record.total > 0?'border-emerald-400/25 text-emerald-300 bg-emerald-500/10':'border-amber-400/25 text-amber-300 bg-amber-500/10'}`}>{status}</span>
               </div>
               <p className="mt-2 text-[13px] font-black text-amber-200">اسم العمل: {record.workName || 'غير محدد'}</p>
@@ -463,4 +586,4 @@ export function ReceivablesPage() {
       </main>
     </AppLayout>
   );
-}
+          }
