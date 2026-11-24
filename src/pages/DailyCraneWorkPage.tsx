@@ -7,6 +7,8 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
 type WorkDay = { date: string; worked: boolean; notes: string };
+type Trip = { id: string; date: string; price: number; notes: string };
+type WorkMode = 'daily' | 'trips';
 type WorkRecord = {
   id: string;
   equipmentId: string;
@@ -17,6 +19,18 @@ type WorkRecord = {
   rate: number;
   paid: number;
   days: WorkDay[];
+  createdAt: string;
+};
+
+type TripRecord = {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  client: string;
+  driver: string;
+  site: string;
+  paid: number;
+  trips: Trip[];
   createdAt: string;
 };
 
@@ -35,18 +49,21 @@ type ReportData = {
   dailyRate: number;
   paid: number;
   workedDays: WorkDay[];
+  mode: WorkMode;
+  trips: Trip[];
 };
 
 // مهم: لا تغيّر المفتاح. الكشوف المسجلة سابقاً ستظل متاحة.
 const KEY = 'bakr_pro_daily_crane_work_v1';
+const TRIPS_KEY = 'bakr_pro_crane_trips_v1';
 const CONTACT_PHONE = '0558995962';
 
 // اسم PDF هو اسم العميل، مع حذف الرموز الممنوعة في أسماء ملفات أندرويد.
-const pdfFileName = (name: string): string => {
+const pdfFileName = (name: string, mode: WorkMode): string => {
   const safe = name.normalize('NFC').trim()
     .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ')
     .replace(/\s+/g, ' ').replace(/[. ]+$/g, '').slice(0, 100).trim();
-  return `${safe || 'كشف شغل اليوميات'}.pdf`;
+  return mode === 'trips' ? `${safe || 'عميل'} - كشف شغل مشاوير.pdf` : `${safe || 'كشف شغل اليوميات'}.pdf`;
 };
 
 const NAVY = '#132b46';
@@ -77,6 +94,10 @@ const dayName = (s: string) => new Intl.DateTimeFormat('ar-SA', { weekday: 'long
 const clean = (s: string) => s.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
   .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 const validNumber = (s: string) => s.trim() !== '' && Number.isFinite(Number(clean(s))) && Number(clean(s)) >= 0;
+const parseTrips = (): TripRecord[] => {
+  try { const value = JSON.parse(localStorage.getItem(TRIPS_KEY) || '[]'); return Array.isArray(value) ? value : []; }
+  catch { return []; }
+};
 const parseRecords = (): WorkRecord[] => {
   try { const value = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(value) ? value : []; }
   catch { return []; }
@@ -130,17 +151,24 @@ const boxLabel: CSSProperties = { fontSize: 11, color: '#8792a3', marginBottom: 
 const boxValue: CSSProperties = { fontSize: 15, fontWeight: 900, color: NAVY, overflowWrap: 'anywhere' };
 
 function WorkReportA4({ data }: { data: ReportData }) {
-  const rows = makeRows(data.workedDays);
+  const isTrips = data.mode === 'trips';
+  const rows: ReportRow[] = isTrips
+    ? data.trips.flatMap((t, index) => noteSegments(t.notes).map((part, at) => ({
+        date: t.date, notes: part, number: index + 1, continued: at > 0,
+      })))
+    : makeRows(data.workedDays);
   const pages = paginateRows(rows);
-  const total = data.workedDays.length * data.dailyRate;
+  const total = isTrips ? data.trips.reduce((sum, t) => sum + t.price, 0) : data.workedDays.length * data.dailyRate;
   const balance = total - data.paid;
-  const first = data.workedDays[0]?.date || today();
-  const last = data.workedDays[data.workedDays.length - 1]?.date || first;
+  const sourceDates = isTrips ? data.trips.map(t => t.date) : data.workedDays.map(d => d.date);
+  const dates = [...sourceDates].sort();
+  const first = dates[0] || today();
+  const last = dates[dates.length - 1] || first;
 
   const info = [
     ['العميل / المشروع', data.client], ['المعدة', data.equipmentName], ['موقع العمل', data.site || '—'],
-    ['اسم السائق', data.driver || '—'], ['سعر التشغيل اليومي', amount(data.dailyRate)],
-    ['عدد أيام العمل', `${data.workedDays.length} يوم`],
+    ['اسم السائق', data.driver || '—'], isTrips ? ['نوع التشغيل', 'مشاوير'] : ['سعر التشغيل اليومي', amount(data.dailyRate)],
+    isTrips ? ['عدد المشاوير', `${data.trips.length} مشوار`] : ['عدد أيام العمل', `${data.workedDays.length} يوم`],
   ];
 
   return <div dir="rtl" style={{ width: 794, fontFamily: reportFont, color: NAVY, background: '#fff' }}>
@@ -163,12 +191,12 @@ function WorkReportA4({ data }: { data: ReportData }) {
         }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 6 }}>BAKR <span style={{ color: '#f0c777' }}>PRO</span></div>
-            <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.35 }}>كشف شغل اليوميات</div>
-            <div style={{ color: '#cbd6e4', fontSize: 10, marginTop: 5 }}>بيان تفصيلي بأيام تشغيل الكرين والمبالغ المستحقة</div>
+            <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.35 }}>{isTrips ? 'كشف شغل مشاوير' : 'كشف شغل اليوميات'}</div>
+            <div style={{ color: '#cbd6e4', fontSize: 10, marginTop: 5 }}>{isTrips ? 'بيان تفصيلي بالمشاوير وقيمتها والمبالغ المستحقة' : 'بيان تفصيلي بأيام تشغيل الكرين والمبالغ المستحقة'}</div>
           </div>
           <div dir="ltr" style={{ textAlign: 'left', borderLeft: '1px solid #37506c', paddingLeft: 18 }}>
             <div style={{ fontSize: 9, letterSpacing: 1.4, color: '#d7b677', fontWeight: 900 }}>WORK STATEMENT</div>
-            <div style={{ fontSize: 10, marginTop: 7, lineHeight: 1.7 }}>DAILY CRANE<br />WORK REPORT</div>
+            <div style={{ fontSize: 10, marginTop: 7, lineHeight: 1.7 }}>{isTrips ? <>CRANE TRIPS<br />WORK REPORT</> : <>DAILY CRANE<br />WORK REPORT</>}</div>
             <div dir="ltr" style={{ display: 'inline-block', marginTop: 6, color: '#f4cb81', fontSize: 15, fontWeight: 900, letterSpacing: 0.4 }}>{CONTACT_PHONE}</div>
             <div style={{ fontSize: 9, color: '#b9c6d6', marginTop: 7 }}>{first} — {last}</div>
           </div>
@@ -191,8 +219,8 @@ function WorkReportA4({ data }: { data: ReportData }) {
         {/* تفاصيل الأيام - صفوف حقيقية، لا قص للصورة */}
         <div style={{ marginTop: 25 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ ...headingStyle, marginBottom: 12 }}>تفاصيل أيام العمل</h3>
-            <span style={{ fontSize: 10, color: '#9aa5b3' }}>سجل التشغيل اليومي {pages.length > 1 ? `• صفحة ${pageIndex + 1} من ${pages.length}` : ''}</span>
+            <h3 style={{ ...headingStyle, marginBottom: 12 }}>{isTrips ? 'تفاصيل المشاوير' : 'تفاصيل أيام العمل'}</h3>
+            <span style={{ fontSize: 10, color: '#9aa5b3' }}>{isTrips ? 'سجل المشاوير' : 'سجل التشغيل اليومي'} {pages.length > 1 ? `• صفحة ${pageIndex + 1} من ${pages.length}` : ''}</span>
           </div>
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'fixed', fontSize: 12, textAlign: 'right' }}>
             <colgroup>
@@ -201,7 +229,7 @@ function WorkReportA4({ data }: { data: ReportData }) {
             </colgroup>
             <thead>
               <tr style={{ background: NAVY, color: '#fff' }}>
-                {['م', 'اليوم والتاريخ', 'الحالة', 'المبلغ', 'ملاحظات'].map((label, i) => <th key={label} style={{
+                {['م', 'اليوم والتاريخ', isTrips ? 'النوع' : 'الحالة', 'المبلغ', 'ملاحظات'].map((label, i) => <th key={label} style={{
                   padding: '12px 8px', fontSize: 12, textAlign: 'right',
                   borderTopRightRadius: i === 0 ? 7 : 0, borderTopLeftRadius: i === 4 ? 7 : 0,
                 }}>{label}</th>)}
@@ -219,8 +247,8 @@ function WorkReportA4({ data }: { data: ReportData }) {
                 <td style={pdfCell}>{r.continued ? '—' : <span style={{
                   display: 'inline-block', background: '#e9f5ec', border: '1px solid #d6e9dc',
                   padding: '5px 8px', borderRadius: 15, color: '#237349', fontWeight: 800, fontSize: 11,
-                }}>اشتغل</span>}</td>
-                <td style={{ ...pdfCell, whiteSpace: 'nowrap', fontSize: 11 }}>{r.continued ? '—' : amount(data.dailyRate)}</td>
+                }}>{isTrips ? 'مشوار' : 'اشتغل'}</span>}</td>
+                <td style={{ ...pdfCell, whiteSpace: 'nowrap', fontSize: 11 }}>{r.continued ? '—' : amount(isTrips ? (data.trips[r.number - 1]?.price || 0) : data.dailyRate)}</td>
                 <td style={{ ...pdfCell, overflowWrap: 'anywhere', whiteSpace: 'normal', lineHeight: 1.5, fontSize: 11 }}>{r.notes}</td>
               </tr>)}
             </tbody>
@@ -247,7 +275,7 @@ function WorkReportA4({ data }: { data: ReportData }) {
               </div>)}
             </div>
             <div style={{ fontSize: 11, color: '#7d8998', marginTop: 11 }}>
-              إجمالي أيام العمل: <b>{data.workedDays.length} يوم</b>　 •　 السعر اليومي: <b>{amount(data.dailyRate)}</b>
+              {isTrips ? <>إجمالي المشاوير: <b>{data.trips.length} مشوار</b></> : <>إجمالي أيام العمل: <b>{data.workedDays.length} يوم</b>　 •　 السعر اليومي: <b>{amount(data.dailyRate)}</b></>}
             </div>
           </div>
           <div style={{ marginTop: 25 }}>
@@ -262,7 +290,7 @@ function WorkReportA4({ data }: { data: ReportData }) {
               </div>)}
             </div>
           </div>
-        </> : <div style={{ marginTop: 23, fontSize: 11, color: '#8693a3' }}>يتبع كشف شغل اليوميات في الصفحة التالية...</div>}
+        </> : <div style={{ marginTop: 23, fontSize: 11, color: '#8693a3' }}>يتبع {isTrips ? 'كشف شغل مشاوير' : 'كشف شغل اليوميات'} في الصفحة التالية...</div>}
 
         {/* تذييل مستقل لكل صفحة */}
         <footer style={{
@@ -270,8 +298,8 @@ function WorkReportA4({ data }: { data: ReportData }) {
           paddingTop: 11, display: 'flex', justifyContent: 'space-between',
           fontSize: 9, color: '#9aa5b3',
         }}>
-          <span>BAKR PRO • كشف شغل اليوميات • {CONTACT_PHONE}</span>
-          <span dir="ltr">DAILY CRANE WORK STATEMENT　|　{String(pageIndex + 1).padStart(2, '0')} / {String(pages.length).padStart(2, '0')}</span>
+          <span>BAKR PRO • {isTrips ? 'كشف شغل مشاوير' : 'كشف شغل اليوميات'} • {CONTACT_PHONE}</span>
+          <span dir="ltr">{isTrips ? 'CRANE TRIPS STATEMENT' : 'DAILY CRANE WORK STATEMENT'}　|　{String(pageIndex + 1).padStart(2, '0')} / {String(pages.length).padStart(2, '0')}</span>
         </footer>
       </section>;
     })}
@@ -287,6 +315,8 @@ export function DailyCraneWorkPage() {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [equipmentError, setEquipmentError] = useState('');
   const [records, setRecords] = useState<WorkRecord[]>(parseRecords);
+  const [tripRecords, setTripRecords] = useState<TripRecord[]>(parseTrips);
+  const [mode, setMode] = useState<WorkMode>('daily');
   const [editing, setEditing] = useState<string | null>(null);
   const [equipmentId, setEquipmentId] = useState('');
   const [client, setClient] = useState('');
@@ -296,6 +326,9 @@ export function DailyCraneWorkPage() {
   const [paid, setPaid] = useState('0');
   const [newDate, setNewDate] = useState(today());
   const [days, setDays] = useState<WorkDay[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [tripPrice, setTripPrice] = useState('');
+  const [tripNotes, setTripNotes] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
@@ -312,7 +345,8 @@ export function DailyCraneWorkPage() {
   const workDays = useMemo(() => days.filter(d => d.worked).sort((a, b) => a.date.localeCompare(b.date)), [days]);
   const dailyRate = validNumber(rate) ? Number(clean(rate)) : 0;
   const received = validNumber(paid) ? Number(clean(paid)) : 0;
-  const total = workDays.length * dailyRate;
+  const total = mode === 'trips' ? trips.reduce((sum, t) => sum + t.price, 0) : workDays.length * dailyRate;
+  const title = mode === 'trips' ? 'كشف شغل مشاوير' : 'كشف شغل اليوميات';
   const balance = total - received;
 
   const addDay = () => {
@@ -325,9 +359,23 @@ export function DailyCraneWorkPage() {
     setNotice('تمت إضافة يوم العمل');
   };
   const removeDay = (date: string) => setDays(old => old.filter(d => d.date !== date));
+  const addTrip = () => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate) || Number.isNaN(new Date(`${newDate}T12:00:00`).getTime())) {
+      setNotice('اختر تاريخ مشوار صحيحاً'); return;
+    }
+    if (!validNumber(tripPrice)) { setNotice('أدخل قيمة المشوار بشكل صحيح'); return; }
+    setTrips(old => [...old, { id: `trip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, date: newDate, price: Number(clean(tripPrice)), notes: tripNotes.trim() }]);
+    setTripPrice(''); setTripNotes(''); setNotice('تمت إضافة المشوار');
+  };
+  const switchMode = (next: WorkMode) => {
+    if (next === mode) return;
+    setMode(next); setEditing(null); setEquipmentId(''); setClient(''); setDriver(''); setSite('');
+    setRate(''); setPaid('0'); setNewDate(today()); setDays([]); setTrips([]); setTripPrice(''); setTripNotes('');
+    setNotice(''); setPreviewImages([]);
+  };
   const reset = () => {
     setEditing(null); setEquipmentId(''); setClient(''); setDriver(''); setSite(''); setRate('');
-    setPaid('0'); setNewDate(today()); setDays([]); setNotice('كشف جديد');
+    setPaid('0'); setNewDate(today()); setDays([]); setTrips([]); setTripPrice(''); setTripNotes(''); setPreviewImages([]); setNotice('كشف جديد');
   };
   const load = (r: WorkRecord) => {
     setEditing(r.id); setEquipmentId(String(r.equipmentId)); setClient(r.client);
@@ -336,15 +384,38 @@ export function DailyCraneWorkPage() {
     setNewDate(today()); setNotice('تم فتح الكشف للتعديل. أيام التوقف القديمة لا تدخل في الحساب.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  const loadTrip = (r: TripRecord) => {
+    setEditing(r.id); setEquipmentId(String(r.equipmentId)); setClient(r.client);
+    setDriver(r.driver); setSite(r.site); setPaid(String(r.paid));
+    setTrips((r.trips || []).map(t => ({ ...t }))); setNewDate(today());
+    setNotice('تم فتح كشف المشاوير للتعديل.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const check = () => {
-    if (!selected || !client.trim() || workDays.length === 0 || !validNumber(rate) || !validNumber(paid)) {
-      setNotice('اختر الكرين والعميل وأضف يوم عمل واحداً على الأقل وأدخل السعر والمستلم بشكل صحيح.');
+    if (!selected || !client.trim() || (mode === 'trips' ? trips.length === 0 : workDays.length === 0) || (mode === 'daily' && !validNumber(rate)) || !validNumber(paid)) {
+      setNotice(mode === 'trips'
+        ? 'اختر الكرين والعميل وأضف مشواراً واحداً على الأقل وأدخل المستلم بشكل صحيح.'
+        : 'اختر الكرين والعميل وأضف يوم عمل واحداً على الأقل وأدخل السعر والمستلم بشكل صحيح.');
       return false;
     }
     return true;
   };
   const save = () => {
     if (!check()) return;
+    if (mode === 'trips') {
+      const entry: TripRecord = {
+        id: editing || `tr-${Date.now()}`, equipmentId: String(selected!.id), equipmentName: selected!.name,
+        client: client.trim(), driver: driver.trim(), site: site.trim(), paid: received,
+        trips: trips.map(t => ({ ...t })),
+        createdAt: editing ? (tripRecords.find(r => r.id === editing)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      };
+      const next = editing ? tripRecords.map(r => r.id === editing ? entry : r) : [entry, ...tripRecords];
+      try {
+        localStorage.setItem(TRIPS_KEY, JSON.stringify(next)); setTripRecords(next); setEditing(entry.id);
+        setNotice('تم حفظ كشف شغل مشاوير على الجهاز.');
+      } catch { setNotice('تعذر حفظ المشاوير؛ تحقق من المساحة المتاحة.'); }
+      return;
+    }
     const entry: WorkRecord = {
       id: editing || `dw-${Date.now()}`, equipmentId: String(selected!.id), equipmentName: selected!.name,
       client: client.trim(), driver: driver.trim(), site: site.trim(), rate: dailyRate,
@@ -389,7 +460,7 @@ export function DailyCraneWorkPage() {
         setPreviewImages(images);
         setNotice('تم تجهيز المعاينة. راجع الصفحات ثم احفظ ملف PDF.');
       }
-      return { base64: pdf.output('datauristring').split(',')[1], filename: pdfFileName(client) };
+      return { base64: pdf.output('datauristring').split(',')[1], filename: pdfFileName(client, mode) };
     } catch (error) {
       console.error(error);
       setNotice(error instanceof Error && error.message.startsWith('تجاوز') ? error.message : 'تعذر إنشاء PDF، حاول مرة أخرى.');
@@ -430,7 +501,7 @@ export function DailyCraneWorkPage() {
       const saved = await Filesystem.writeFile({
         path: `BAKR-PDF/${result.filename}`, data: result.base64, directory: Directory.Cache, recursive: true,
       });
-      await Share.share({ title: 'كشف شغل اليوميات - BAKR PRO', text: 'كشف شغل اليوميات', url: saved.uri, dialogTitle: 'مشاركة PDF عبر واتساب' });
+      await Share.share({ title: `${title} - BAKR PRO`, text: title, url: saved.uri, dialogTitle: 'مشاركة PDF عبر واتساب' });
       setNotice('اختر واتساب من قائمة المشاركة.');
     } catch (error) {
       console.error(error);
@@ -446,12 +517,21 @@ export function DailyCraneWorkPage() {
     <div dir="rtl" style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'clip', boxSizing: 'border-box', padding: '0 0 24px', color: NAVY }}>
       <header style={{ background: NAVY, color: '#fff', borderRadius: 17, padding: 18, marginBottom: 14 }}>
         <div style={{ color: '#e5bd65', fontSize: 12, fontWeight: 800 }}>BAKR PRO</div>
-        <h1 style={{ fontSize: 22, fontWeight: 900, margin: '5px 0' }}>شغل اليوميات</h1>
-        <div style={{ fontSize: 12, color: '#dbe3ec' }}>أضف أيام العمل الفعلية فقط • حفظ ومعاينة ومشاركة PDF</div>
+        <h1 style={{ fontSize: 22, fontWeight: 900, margin: '5px 0' }}>شغل اليوميات والمشاوير</h1>
+        <div style={{ fontSize: 12, color: '#dbe3ec' }}>كشوف مستقلة لليوميات والمشاوير • معاينة وحفظ ومشاركة PDF</div>
       </header>
 
+      <section style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 8 }}>
+        {([['daily', 'شغل اليوميات'], ['trips', 'شغل المشاوير']] as const).map(([value, label]) => <button
+          type="button" key={value} onClick={() => switchMode(value)}
+          style={{ ...btn, background: mode === value ? NAVY : '#e9eef4', color: mode === value ? '#fff' : NAVY,
+            border: mode === value ? `2px solid ${GOLD}` : '2px solid transparent', minWidth: 0 }}>
+          {label}
+        </button>)}
+      </section>
+
       <section style={card}>
-        <h2 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 14px' }}>بيانات العمل</h2>
+        <h2 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 14px' }}>بيانات العمل — {mode === 'trips' ? 'مشاوير' : 'يوميات'}</h2>
         <label style={{ display: 'block', fontWeight: 800, fontSize: 13, marginBottom: 6 }}>الكرين من المعدات المحفوظة</label>
         <select style={inputStyle} value={equipmentId} onChange={(e: ChangeEvent<HTMLSelectElement>) => setEquipmentId(e.target.value)}>
           <option value="">اختر الكرين</option>
@@ -465,7 +545,7 @@ export function DailyCraneWorkPage() {
         </div>
       </section>
 
-      <section style={card}>
+      {mode === 'daily' ? <section style={card}>
         <h2 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 8px' }}>أيام الشغل الفعلية</h2>
         <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px' }}>
           اختر تاريخ اليوم الذي اشتغل فيه الكرين ثم اضغط إضافة. الأيام التي لم يشتغل فيها لا تضيفها.
@@ -482,16 +562,35 @@ export function DailyCraneWorkPage() {
             <button type="button" onClick={() => removeDay(d.date)} style={{ ...btn, background: '#fee2e2', color: '#991b1b', padding: '8px 10px', fontSize: 12, flexShrink: 0 }}>حذف</button>
           </div>)}
         </div>
-      </section>
+      </section> : <section style={card}>
+        <h2 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 8px' }}>تفاصيل شغل المشاوير</h2>
+        <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px' }}>
+          أضف كل مشوار بتاريخ وقيمة مستقلة، حتى لو تكرر التاريخ في نفس اليوم.
+        </p>
+        {field('تاريخ المشوار', newDate, setNewDate, 'date')}
+        <div style={{ marginTop: 12 }}>{field('قيمة المشوار (ريال)', tripPrice, setTripPrice)}</div>
+        <div style={{ marginTop: 12 }}>{field('وصف / ملاحظات المشوار (اختياري)', tripNotes, setTripNotes)}</div>
+        <button type="button" style={{ ...btn, width: '100%', marginTop: 12, background: '#157347' }} onClick={addTrip}>+ إضافة مشوار</button>
+        <div style={{ marginTop: 12 }}>
+          {trips.length === 0 ? <p style={{ fontSize: 13, color: '#64748b' }}>لم تضف مشاوير بعد.</p> : trips.map((t, index) => <div key={t.id} style={{ padding: '10px 0', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, fontSize: 13 }}>
+              <b>{index + 1}. {dayName(t.date)} — {t.date}</b>
+              <div style={{ color: '#166534', fontWeight: 900 }}>{amount(t.price)}</div>
+              {t.notes && <div style={{ overflowWrap: 'anywhere' }}>{t.notes}</div>}
+            </div>
+            <button type="button" style={{ ...btn, background: '#fee2e2', color: '#991b1b', padding: '8px 10px', fontSize: 12, flexShrink: 0 }} onClick={() => setTrips(old => old.filter(x => x.id !== t.id))}>حذف</button>
+          </div>)}
+        </div>
+      </section>}
 
       <section style={card}>
         <h2 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 14px' }}>الحساب المالي</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 12 }}>
-          {field('سعر اليوم (ريال)', rate, setRate, 'text')}
+          {mode === 'daily' && field('سعر اليوم (ريال)', rate, setRate, 'text')}
           {field('المبلغ المستلم (ريال)', paid, setPaid, 'text')}
         </div>
         <div style={{ marginTop: 14, background: '#f1f5f9', borderRadius: 12, padding: 13, lineHeight: 2, fontSize: 14 }}>
-          <div>أيام العمل: <b>{workDays.length}</b></div>
+          <div>{mode === 'trips' ? 'عدد المشاوير' : 'أيام العمل'}: <b>{mode === 'trips' ? trips.length : workDays.length}</b></div>
           <div>الإجمالي: <b>{amount(total)}</b></div>
           <div>المستلم: <b>{amount(received)}</b></div>
           <div style={{ fontSize: 19, fontWeight: 900, color: balance > 0 ? '#9a3412' : '#166534' }}>المتبقي: {amount(balance)}</div>
@@ -508,21 +607,24 @@ export function DailyCraneWorkPage() {
       {notice && <p role="status" style={{ background: '#fef3c7', color: '#78350f', padding: 12, borderRadius: 12, fontSize: 13 }}>{notice}</p>}
 
       <section style={card}>
-        <h2 style={{ fontSize: 16, fontWeight: 900, margin: '0 0 12px' }}>الكشوف المحفوظة</h2>
-        {records.length === 0 ? <p style={{ fontSize: 13 }}>لا توجد كشوف محفوظة بعد.</p> : records.map(r => <button type="button" key={r.id} onClick={() => load(r)} style={{ ...inputStyle, height: 'auto', textAlign: 'right', marginBottom: 8, padding: 12, cursor: 'pointer' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 900, margin: '0 0 12px' }}>الكشوف المحفوظة — {mode === 'trips' ? 'المشاوير' : 'اليوميات'}</h2>
+        {(mode === 'trips' ? tripRecords : records).length === 0 ? <p style={{ fontSize: 13 }}>لا توجد كشوف محفوظة بعد.</p> : mode === 'daily' ? records.map(r => <button type="button" key={r.id} onClick={() => load(r)} style={{ ...inputStyle, height: 'auto', textAlign: 'right', marginBottom: 8, padding: 12, cursor: 'pointer' }}>
           <b>{r.client}</b>
           <div style={{ fontSize: 12 }}>{r.equipmentName} — {(r.days || []).filter(x => x.worked).length} أيام — {amount((r.days || []).filter(x => x.worked).length * r.rate)}</div>
+        </button>) : tripRecords.map(r => <button type="button" key={r.id} onClick={() => loadTrip(r)} style={{ ...inputStyle, height: 'auto', textAlign: 'right', marginBottom: 8, padding: 12, cursor: 'pointer' }}>
+          <b>{r.client}</b>
+          <div style={{ fontSize: 12 }}>{r.equipmentName} — {(r.trips || []).length} مشوار — {amount((r.trips || []).reduce((sum, t) => sum + t.price, 0))}</div>
         </button>)}
       </section>
 
       {/* html2canvas يحتاج HTML فعلياً موجوداً في الصفحة، ولا يظهر للمستخدم. */}
       <div aria-hidden="true" style={{ position: 'fixed', left: -10000, top: 0, width: 794, pointerEvents: 'none' }}>
         <div ref={reportRef}>
-          <WorkReportA4 data={{ client, equipmentName: selected?.name || '', driver, site, dailyRate, paid: received, workedDays: workDays }} />
+          <WorkReportA4 data={{ client, equipmentName: selected?.name || '', driver, site, dailyRate, paid: received, workedDays: workDays, mode, trips }} />
         </div>
       </div>
 
-      {previewImages.length > 0 && <div role="dialog" aria-modal="true" aria-label="معاينة كشف شغل اليوميات" style={{
+      {previewImages.length > 0 && <div role="dialog" aria-modal="true" aria-label={`معاينة ${title}`} style={{
         position: 'fixed', zIndex: 9999, inset: 0, background: '#071323ec', padding: '18px 10px 25px',
         overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
       }}>
@@ -530,7 +632,7 @@ export function DailyCraneWorkPage() {
           <b>معاينة كشف PDF — {previewImages.length} صفحة</b>
           <button type="button" onClick={() => setPreviewImages([])} style={{ ...btn, background: '#b63e3e' }}>إغلاق ✕</button>
         </div>
-        {previewImages.map((src, index) => <img key={index} alt={`صفحة ${index + 1} من كشف شغل اليوميات`} src={src} style={{ width: '100%', maxWidth: 600, height: 'auto', display: 'block', boxShadow: '0 8px 24px #0005' }} />)}
+        {previewImages.map((src, index) => <img key={index} alt={`صفحة ${index + 1} من ${title}`} src={src} style={{ width: '100%', maxWidth: 600, height: 'auto', display: 'block', boxShadow: '0 8px 24px #0005' }} />)}
       </div>}
     </div>
   </AppLayout>;
