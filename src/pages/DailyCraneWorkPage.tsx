@@ -306,6 +306,109 @@ function WorkReportA4({ data }: { data: ReportData }) {
   </div>;
 }
 
+type ClientLine = {
+  id: string;
+  recordId: string;
+  date: string;
+  equipmentId: string;
+  equipmentName: string;
+  driver: string;
+  notes: string;
+  price: number;
+};
+
+function ClientAccountA4({ client, mode, items, paid }: {
+  client: string; mode: WorkMode; items: ClientLine[]; paid: number | null;
+}) {
+  const isTrips = mode === 'trips';
+  const ordered = [...items].sort((a, b) => a.date.localeCompare(b.date));
+  const total = ordered.reduce((sum, item) => sum + item.price, 0);
+  // اترك مساحة كافية للملخص والتوقيع في الصفحة الأخيرة.
+  const pages: ClientLine[][] = [];
+  let rest = ordered;
+  while (rest.length > 5) {
+    const take = Math.min(8, rest.length - 1);
+    pages.push(rest.slice(0, take));
+    rest = rest.slice(take);
+  }
+  pages.push(rest);
+  const firstDate = ordered[0]?.date || '—';
+  const lastDate = ordered[ordered.length - 1]?.date || '—';
+  const reportTitle = isTrips ? 'كشف حساب شغل مشاوير' : 'كشف حساب شغل اليوميات';
+  return <div dir="rtl" style={{ width: 794, color: NAVY, fontFamily: reportFont, background: '#fff' }}>
+    {pages.map((pageRows, pageIndex) => {
+      const lastPage = pageIndex === pages.length - 1;
+      return <section key={pageIndex} data-report-page="true" style={{
+        width: 794, height: 1123, padding: '43px 46px 53px', boxSizing: 'border-box',
+        background: '#fff', position: 'relative', overflow: 'hidden', direction: 'rtl',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+          minHeight: 112, padding: '18px 24px', borderRadius: 10, background: NAVY, color: '#fff', boxSizing: 'border-box' }}>
+          <div>
+            <div style={{ fontSize: 21, fontWeight: 900 }}>BAKR <span style={{ color: '#e9c078' }}>PRO</span></div>
+            <div style={{ fontSize: 19, fontWeight: 900, marginTop: 7 }}>{reportTitle}</div>
+            <div style={{ color: '#d6e0ec', fontSize: 11, marginTop: 5 }}>بيان الأعمال المسجلة للعميل</div>
+          </div>
+          <div dir="ltr" style={{ textAlign: 'left', fontSize: 11, lineHeight: 2 }}>
+            <b>{CONTACT_PHONE}</b>
+            <div>{firstDate} — {lastDate}</div>
+            <div>PAGE {pageIndex + 1} / {pages.length}</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 22, background: SOFT, border: '1px solid #e7ebf1', padding: 16, borderRadius: 9 }}>
+          <div style={{ fontSize: 11, color: '#67778a' }}>اسم العميل / المشروع</div>
+          <div style={{ fontSize: 19, fontWeight: 900, marginTop: 6, overflowWrap: 'anywhere' }}>{client}</div>
+          <div style={{ fontSize: 12, marginTop: 12 }}>نوع الشغل: <b>{isTrips ? 'مشاوير' : 'يوميات'}</b>　|　عدد {isTrips ? 'المشاوير' : 'الأيام'}: <b>{ordered.length}</b></div>
+        </div>
+        <div style={{ marginTop: 23 }}>
+          <h3 style={headingStyle}>{isTrips ? 'تفاصيل المشاوير' : 'تفاصيل أيام العمل'}</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, tableLayout: 'fixed', textAlign: 'right' }}>
+            <colgroup><col style={{ width: '7%' }}/><col style={{ width: '20%' }}/><col style={{ width: '24%' }}/><col style={{ width: '19%' }}/><col style={{ width: '30%' }}/></colgroup>
+            <thead><tr style={{ background: NAVY, color: '#fff' }}>
+              {['م','التاريخ','الكرين / المعدة','المبلغ','البيان / ملاحظات'].map(col => <th key={col} style={{ padding: '11px 8px', textAlign: 'right', fontWeight: 900 }}>{col}</th>)}
+            </tr></thead>
+            <tbody>{pageRows.map((item, idx) => <tr key={item.id} style={{ background: idx % 2 ? '#f5f7fa' : '#fff' }}>
+              <td style={pdfCell}>{ordered.indexOf(item) + 1}</td>
+              <td style={pdfCell}><div dir="ltr" style={{ textAlign: 'right' }}>{item.date}</div></td>
+              <td style={{ ...pdfCell, overflowWrap: 'anywhere' }}>{item.equipmentName}</td>
+              <td style={{ ...pdfCell, whiteSpace: 'nowrap' }}>{amount(item.price)}</td>
+              <td style={{ ...pdfCell, overflowWrap: 'anywhere', whiteSpace: 'normal', fontSize: 10.5 }}>{item.notes || (isTrips ? 'مشوار' : 'يومية')}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        {lastPage ? <>
+          <div style={{ marginTop: 25 }}>
+            <h3 style={headingStyle}>الملخص المالي</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: paid === null ? '1fr' : 'repeat(3,1fr)', gap: 9 }}>
+              {([['إجمالي قيمة الأعمال', total], ...(paid === null ? [] : [['المبلغ المستلم', paid], ['المتبقي', total - paid]])] as [string, number][]).map(([label, value]) =>
+                <div key={label} style={{ background: label === 'المتبقي' ? NAVY : SOFT, color: label === 'المتبقي' ? '#fff' : NAVY,
+                  borderRadius: 8, padding: 15, boxSizing: 'border-box' }}>
+                  <div style={{ fontSize: 11, marginBottom: 10 }}>{label}</div>
+                  <div style={{ fontWeight: 900, fontSize: 20 }}>{amount(value)}</div>
+                </div>)}
+            </div>
+            {paid === null && <div style={{ fontSize: 11, color: '#8b5b18', marginTop: 12 }}>
+              كشف أعمال جزئي: لم يتم احتساب المستلم أو الرصيد؛ لأن الدفعات المسجلة تخص كشوفاً قد تحتوي أعمالاً خارج هذا الاختيار.
+            </div>}
+          </div>
+          <div style={{ marginTop: 26 }}>
+            <h3 style={headingStyle}>الاعتماد والتوقيع</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {['توقيع المسؤول','توقيع العميل'].map(label => <div key={label} style={{ height: 75, border: '1px solid #e4e8ed', borderRadius: 8, padding: 12, boxSizing: 'border-box', fontSize: 12, fontWeight: 800 }}>
+                {label}<div style={{ borderBottom: '1px solid #bfc9d4', marginTop: 29 }}/>
+              </div>)}
+            </div>
+          </div>
+        </> : <div style={{ fontSize: 11, color: '#8190a1', marginTop: 25 }}>يتبع {reportTitle} في الصفحة التالية...</div>}
+        <footer style={{ position: 'absolute', bottom: 29, left: 46, right: 46, borderTop: '1px solid #e6ebf1', paddingTop: 10,
+          display: 'flex', justifyContent: 'space-between', color: '#8997a6', fontSize: 10 }}>
+          <span>BAKR PRO • {reportTitle}</span><span>{pageIndex + 1} / {pages.length}</span>
+        </footer>
+      </section>;
+    })}
+  </div>;
+}
+
 const pdfCell: CSSProperties = {
   padding: '11px 8px', verticalAlign: 'middle',
   borderBottom: '1px solid #e8ecf1', lineHeight: 1.4,
@@ -333,6 +436,14 @@ export function DailyCraneWorkPage() {
   const [busy, setBusy] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const reportRef = useRef<HTMLDivElement>(null);
+  const clientReportRef = useRef<HTMLDivElement>(null);
+  const [statementOpen, setStatementOpen] = useState(false);
+  const [statementClient, setStatementClient] = useState('');
+  const [statementEquipment, setStatementEquipment] = useState('');
+  const [statementFrom, setStatementFrom] = useState('');
+  const [statementTo, setStatementTo] = useState('');
+  const [excludedStatementRows, setExcludedStatementRows] = useState<string[]>([]);
+  const [previewTitle, setPreviewTitle] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -348,6 +459,58 @@ export function DailyCraneWorkPage() {
   const total = mode === 'trips' ? trips.reduce((sum, t) => sum + t.price, 0) : workDays.length * dailyRate;
   const title = mode === 'trips' ? 'كشف شغل مشاوير' : 'كشف شغل اليوميات';
   const balance = total - received;
+
+  // تُقرأ بيانات كشف العميل من السجلات المحفوظة فقط؛ لا نضيف أياماً أو مشاوير جديدة.
+  const customerNames = useMemo(() => [...new Set((mode === 'daily' ? records : tripRecords)
+    .map(r => r.client.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar')), [mode, records, tripRecords]);
+  const customerEquipment = useMemo(() => {
+    const list = mode === 'daily' ? records : tripRecords;
+    return [...new Map(list.filter(r => r.client.trim() === statementClient)
+      .map(r => [String(r.equipmentId), { id: String(r.equipmentId), name: r.equipmentName }])).values()];
+  }, [mode, records, tripRecords, statementClient]);
+  const availableStatementRows = useMemo<ClientLine[]>(() => {
+    if (!statementClient || (statementFrom && statementTo && statementFrom > statementTo)) return [];
+    const inPeriod = (date: string) => (!statementFrom || date >= statementFrom) && (!statementTo || date <= statementTo);
+    if (mode === 'daily') return records.filter(r => r.client.trim() === statementClient &&
+      (!statementEquipment || String(r.equipmentId) === statementEquipment)).flatMap(r =>
+      (r.days || []).filter(d => d.worked && inPeriod(d.date)).map(d => ({
+        id: `daily:${r.id}:${d.date}`, recordId: r.id, date: d.date, equipmentId: String(r.equipmentId),
+        equipmentName: r.equipmentName, driver: r.driver, notes: d.notes, price: Number(r.rate) || 0,
+      })) ).sort((a, b) => a.date.localeCompare(b.date));
+    return tripRecords.filter(r => r.client.trim() === statementClient &&
+      (!statementEquipment || String(r.equipmentId) === statementEquipment)).flatMap(r =>
+      (r.trips || []).filter(t => inPeriod(t.date)).map((t, i) => ({
+        id: `trips:${r.id}:${t.id || i}`, recordId: r.id, date: t.date, equipmentId: String(r.equipmentId),
+        equipmentName: r.equipmentName, driver: r.driver, notes: t.notes, price: Number(t.price) || 0,
+      })) ).sort((a, b) => a.date.localeCompare(b.date));
+  }, [mode, records, tripRecords, statementClient, statementEquipment, statementFrom, statementTo]);
+  const statementRows = useMemo(() => availableStatementRows.filter(r => !excludedStatementRows.includes(r.id)),
+    [availableStatementRows, excludedStatementRows]);
+  const statementTotal = statementRows.reduce((sum, r) => sum + r.price, 0);
+  const statementPaid = useMemo<number | null>(() => {
+    if (!statementRows.length) return null;
+    const selectedRecordIds = new Set(statementRows.map(row => row.recordId));
+    const sourceRecords = mode === 'daily' ? records : tripRecords;
+    let sum = 0;
+    for (const r of sourceRecords) {
+      if (!selectedRecordIds.has(r.id)) continue;
+      const fullCount = mode === 'daily'
+        ? (r as WorkRecord).days.filter(d => d.worked).length
+        : (r as TripRecord).trips.length;
+      const chosenCount = statementRows.filter(row => row.recordId === r.id).length;
+      // لا ننسب دفعة كشف كامل إلى بعض أيامه أو بعض مشاويره فقط.
+      if (chosenCount !== fullCount) return null;
+      sum += Number(r.paid) || 0;
+    }
+    return sum;
+  }, [mode, records, tripRecords, statementRows]);
+  const statementReportName = `كشف حساب ${mode === 'daily' ? 'شغل اليوميات' : 'شغل مشاوير'}`;
+  const statementFilename = () => {
+    const safe = statementClient.normalize('NFC').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').trim().slice(0, 75) || 'عميل';
+    return `${safe} - ${statementReportName}.pdf`;
+  };
+  const changeStatementFilter = () => setExcludedStatementRows([]);
+
 
   const addDay = () => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate) || Number.isNaN(new Date(newDate + 'T12:00:00').getTime())) {
@@ -430,12 +593,18 @@ export function DailyCraneWorkPage() {
   };
 
   // كل ورقة تُحوّل لصورة مستقلة بالحجم الكامل A4؛ بدون قص الجدول وسط الصف.
-  const makePdf = async (withPreview = false): Promise<{ base64: string; filename: string } | null> => {
-    if (busy || !check() || !reportRef.current) return null;
+  const makePdf = async (withPreview = false, source: 'current' | 'client' = 'current'): Promise<{ base64: string; filename: string } | null> => {
+    if (busy) return null;
+    if (source === 'current' && !check()) return null;
+    if (source === 'client' && (!statementClient || !statementRows.length)) {
+      setNotice('اختر العميل وحدد يوماً أو مشواراً واحداً على الأقل.'); return null;
+    }
+    const target = source === 'client' ? clientReportRef.current : reportRef.current;
+    if (!target) return null;
     setBusy(true); setNotice('جار إعداد كشف PDF الاحترافي...');
     try {
       if (document.fonts?.ready) await document.fonts.ready;
-      const pages = Array.from(reportRef.current.querySelectorAll<HTMLElement>('[data-report-page]'));
+      const pages = Array.from(target.querySelectorAll<HTMLElement>('[data-report-page]'));
       if (!pages.length) throw new Error('No PDF pages');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const images: string[] = [];
@@ -458,9 +627,10 @@ export function DailyCraneWorkPage() {
       }
       if (withPreview) {
         setPreviewImages(images);
+        setPreviewTitle(source === 'client' ? statementReportName : title);
         setNotice('تم تجهيز المعاينة. راجع الصفحات ثم احفظ ملف PDF.');
       }
-      return { base64: pdf.output('datauristring').split(',')[1], filename: pdfFileName(client, mode) };
+      return { base64: pdf.output('datauristring').split(',')[1], filename: source === 'client' ? statementFilename() : pdfFileName(client, mode) };
     } catch (error) {
       console.error(error);
       setNotice(error instanceof Error && error.message.startsWith('تجاوز') ? error.message : 'تعذر إنشاء PDF، حاول مرة أخرى.');
@@ -481,8 +651,8 @@ export function DailyCraneWorkPage() {
     return `${stem}-${Date.now()}.pdf`;
   };
 
-  const exportPdf = async () => {
-    const result = await makePdf(); if (!result) return;
+  const exportPdf = async (source: 'current' | 'client' = 'current') => {
+    const result = await makePdf(false, source); if (!result) return;
     try {
       const filename = await availableFilename(result.filename);
       await Filesystem.writeFile({ path: filename, data: result.base64, directory: Directory.Documents, recursive: true });
@@ -495,13 +665,13 @@ export function DailyCraneWorkPage() {
       setNotice('تم طلب تنزيل PDF. تحقق من التنزيلات.');
     }
   };
-  const sharePdf = async () => {
-    const result = await makePdf(); if (!result) return;
+  const sharePdf = async (source: 'current' | 'client' = 'current') => {
+    const result = await makePdf(false, source); if (!result) return;
     try {
       const saved = await Filesystem.writeFile({
         path: `BAKR-PDF/${result.filename}`, data: result.base64, directory: Directory.Cache, recursive: true,
       });
-      await Share.share({ title: `${title} - BAKR PRO`, text: title, url: saved.uri, dialogTitle: 'مشاركة PDF عبر واتساب' });
+      await Share.share({ title: `${source === 'client' ? statementReportName : title} - BAKR PRO`, text: source === 'client' ? statementReportName : title, url: saved.uri, dialogTitle: 'مشاركة PDF عبر واتساب' });
       setNotice('اختر واتساب من قائمة المشاركة.');
     } catch (error) {
       console.error(error);
@@ -600,11 +770,74 @@ export function DailyCraneWorkPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 9, marginBottom: 14 }}>
         <button type="button" style={{ ...btn, background: '#15803d' }} onClick={save}>حفظ الكشف</button>
         <button type="button" style={{ ...btn, background: '#475569' }} disabled={busy} onClick={() => { void makePdf(true); }}>{busy ? 'جار التجهيز...' : 'معاينة PDF'}</button>
-        <button type="button" style={{ ...btn, background: '#98712b' }} disabled={busy} onClick={exportPdf}>{busy ? 'جار التجهيز...' : 'حفظ PDF'}</button>
-        <button type="button" style={{ ...btn, background: '#0b7a4b' }} disabled={busy} onClick={sharePdf}>مشاركة PDF عبر واتساب</button>
+        <button type="button" style={{ ...btn, background: '#98712b' }} disabled={busy} onClick={() => { void exportPdf(); }}>{busy ? 'جار التجهيز...' : 'حفظ PDF'}</button>
+        <button type="button" style={{ ...btn, background: '#0b7a4b' }} disabled={busy} onClick={() => { void sharePdf(); }}>مشاركة PDF عبر واتساب</button>
         <button type="button" style={{ ...btn, background: '#475569' }} onClick={reset}>كشف جديد</button>
       </div>
       {notice && <p role="status" style={{ background: '#fef3c7', color: '#78350f', padding: 12, borderRadius: 12, fontSize: 13 }}>{notice}</p>}
+
+      <section style={{ ...card, border: `1px solid ${GOLD}` }}>
+        <button type="button" style={{ ...btn, width: '100%', background: NAVY, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          onClick={() => { setStatementOpen(v => !v); setNotice(''); }}>
+          <span>استخراج كشف حساب العميل</span><span>{statementOpen ? '−' : '+'}</span>
+        </button>
+        {statementOpen && <div style={{ marginTop: 15 }}>
+          <p style={{ color: '#64748b', fontSize: 12, margin: '0 0 14px' }}>يجمع أعمال العميل المسجلة سابقاً، ويمكنك اختيار الفترة أو استبعاد أيام ومشاوير محددة.</p>
+          <label style={{ display: 'block', fontWeight: 800, fontSize: 13, marginBottom: 6 }}>اختر العميل من الكشوف المحفوظة</label>
+          <select style={inputStyle} value={statementClient} onChange={e => {
+            setStatementClient(e.target.value); setStatementEquipment(''); changeStatementFilter();
+          }}>
+            <option value="">اختر العميل</option>
+            {customerNames.map(name => <option key={name} value={name}>{name}</option>)}
+          </select>
+          <label style={{ display: 'block', marginTop: 12, fontWeight: 800, fontSize: 13, marginBottom: 6 }}>الكرين / المعدة</label>
+          <select style={inputStyle} value={statementEquipment} onChange={e => { setStatementEquipment(e.target.value); changeStatementFilter(); }}>
+            <option value="">جميع كرينات العميل</option>
+            {customerEquipment.map(e => <option value={e.id} key={e.id}>{e.name}</option>)}
+          </select>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 9, marginTop: 12 }}>
+            <label style={{ minWidth: 0 }}><span style={{ fontSize: 12, fontWeight: 800 }}>من تاريخ</span>
+              <input style={{ ...inputStyle, marginTop: 6 }} type="date" value={statementFrom} onChange={e => { setStatementFrom(e.target.value); changeStatementFilter(); }}/></label>
+            <label style={{ minWidth: 0 }}><span style={{ fontSize: 12, fontWeight: 800 }}>إلى تاريخ</span>
+              <input style={{ ...inputStyle, marginTop: 6 }} type="date" value={statementTo} onChange={e => { setStatementTo(e.target.value); changeStatementFilter(); }}/></label>
+          </div>
+          <button type="button" style={{ ...btn, marginTop: 10, width: '100%', background: '#64748b' }}
+            onClick={() => { setStatementFrom(''); setStatementTo(''); setStatementEquipment(''); changeStatementFilter(); }}>عرض جميع الأيام / المشاوير</button>
+          {statementFrom && statementTo && statementFrom > statementTo &&
+            <p style={{ fontSize: 12, color: '#b91c1c' }}>تاريخ البداية يجب أن يسبق تاريخ النهاية.</p>}
+          <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <b style={{ fontSize: 14 }}>الأعمال المحددة ({statementRows.length})</b>
+            <button type="button" onClick={() => setExcludedStatementRows([])}
+              style={{ ...btn, background: '#e9eef4', color: NAVY, minHeight: 36, fontSize: 12 }}>تحديد الكل</button>
+          </div>
+          <div style={{ maxHeight: 260, overflowY: 'auto', marginTop: 8 }}>
+            {!availableStatementRows.length ? <p style={{ fontSize: 12, color: '#64748b' }}>لا توجد أعمال محفوظة مطابقة للاختيار.</p> :
+              availableStatementRows.map(item => <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 5px', borderBottom: '1px solid #edf0f4', fontSize: 12 }}>
+                <input type="checkbox" checked={!excludedStatementRows.includes(item.id)}
+                  onChange={e => setExcludedStatementRows(old => e.target.checked ? old.filter(x => x !== item.id) : [...old, item.id])}
+                  style={{ width: 19, height: 19, flexShrink: 0 }}/>
+                <span style={{ flex: 1, minWidth: 0 }}><b>{item.date}</b> — {item.equipmentName}</span>
+                <b style={{ whiteSpace: 'nowrap' }}>{amount(item.price)}</b>
+              </label>)}
+          </div>
+          <div style={{ background: SOFT, borderRadius: 12, marginTop: 12, padding: 13, lineHeight: 2 }}>
+            <div>إجمالي الأعمال المحددة: <b>{amount(statementTotal)}</b></div>
+            <div>المستلم: <b>{statementPaid === null ? 'غير محتسب لكشف جزئي' : amount(statementPaid)}</b></div>
+            {statementPaid !== null && <div>المتبقي: <b>{amount(statementTotal - statementPaid)}</b></div>}
+          </div>
+          {statementPaid === null && statementRows.length > 0 && <p style={{ fontSize: 12, color: '#92400e' }}>
+            عند اختيار بعض أيام كشف سابق فقط، لا نخصم دفعاته بالكامل حتى لا يظهر رصيد غير صحيح.
+          </p>}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 8, marginTop: 12 }}>
+            <button type="button" style={{ ...btn, background: '#475569' }} disabled={busy || !statementRows.length}
+              onClick={() => { void makePdf(true, 'client'); }}>معاينة كشف حساب العميل PDF</button>
+            <button type="button" style={{ ...btn, background: '#98712b' }} disabled={busy || !statementRows.length}
+              onClick={() => { void exportPdf('client'); }}>حفظ كشف الحساب PDF</button>
+            <button type="button" style={{ ...btn, background: '#0b7a4b' }} disabled={busy || !statementRows.length}
+              onClick={() => { void sharePdf('client'); }}>إرسال كشف الحساب عبر واتساب</button>
+          </div>
+        </div>}
+      </section>
 
       <section style={card}>
         <h2 style={{ fontSize: 16, fontWeight: 900, margin: '0 0 12px' }}>الكشوف المحفوظة — {mode === 'trips' ? 'المشاوير' : 'اليوميات'}</h2>
@@ -622,9 +855,12 @@ export function DailyCraneWorkPage() {
         <div ref={reportRef}>
           <WorkReportA4 data={{ client, equipmentName: selected?.name || '', driver, site, dailyRate, paid: received, workedDays: workDays, mode, trips }} />
         </div>
+        <div ref={clientReportRef}>
+          <ClientAccountA4 client={statementClient} mode={mode} items={statementRows} paid={statementPaid}/>
+        </div>
       </div>
 
-      {previewImages.length > 0 && <div role="dialog" aria-modal="true" aria-label={`معاينة ${title}`} style={{
+      {previewImages.length > 0 && <div role="dialog" aria-modal="true" aria-label={`معاينة ${previewTitle || title}`} style={{
         position: 'fixed', zIndex: 9999, inset: 0, background: '#071323ec', padding: '18px 10px 25px',
         overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
       }}>
@@ -632,7 +868,7 @@ export function DailyCraneWorkPage() {
           <b>معاينة كشف PDF — {previewImages.length} صفحة</b>
           <button type="button" onClick={() => setPreviewImages([])} style={{ ...btn, background: '#b63e3e' }}>إغلاق ✕</button>
         </div>
-        {previewImages.map((src, index) => <img key={index} alt={`صفحة ${index + 1} من ${title}`} src={src} style={{ width: '100%', maxWidth: 600, height: 'auto', display: 'block', boxShadow: '0 8px 24px #0005' }} />)}
+        {previewImages.map((src, index) => <img key={index} alt={`صفحة ${index + 1} من ${previewTitle || title}`} src={src} style={{ width: '100%', maxWidth: 600, height: 'auto', display: 'block', boxShadow: '0 8px 24px #0005' }} />)}
       </div>}
     </div>
   </AppLayout>;
