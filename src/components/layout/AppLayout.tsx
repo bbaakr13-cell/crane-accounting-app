@@ -43,6 +43,11 @@ export function AppLayout({
       path: '/',
     },
     {
+      label: 'مركز التنبيهات الذكي',
+      icon: Bell,
+      path: '/command-center',
+    },
+    {
       label: 'المعدات',
       icon: Truck,
       path: '/equipment',
@@ -76,11 +81,6 @@ export function AppLayout({
       label: 'الفواتير',
       icon: Receipt,
       path: '/invoices',
-    },
-    {
-      label: 'شغل اليوميات',
-      icon: CalendarClock,
-      path: '/daily-crane-work',
     },
     {
       label: 'حساب اليوم',
@@ -250,7 +250,7 @@ export function AppLayout({
                 <button
                   type="button"
                   onClick={() =>
-                    setNotificationsOpen(true)
+                    navigate('/command-center')
                   }
                   className="relative w-11 h-11 rounded-[16px] flex items-center justify-center active:scale-95 transition-transform"
                   style={{
