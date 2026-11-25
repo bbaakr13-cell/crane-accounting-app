@@ -68,6 +68,7 @@ jobs:
             html2canvas \
             @capacitor/filesystem \
             @capacitor/share \
+            @capacitor/local-notifications@^8.0.0 \
             @capacitor/app \
             @aparajita/capacitor-biometric-auth \
             @capgo/capacitor-social-login \
