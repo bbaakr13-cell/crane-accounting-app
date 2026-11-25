@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapacitorApp } from '@capacitor/app';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 
 import { DashboardPage } from '@/pages/DashboardPage';
+import { CommandCenterPage } from '@/pages/CommandCenterPage';
 import { TransactionsPage } from '@/pages/TransactionsPage';
 import { AddPage } from '@/pages/AddPage';
 import { AddEquipmentPage } from '@/pages/AddEquipmentPage';
@@ -21,7 +24,6 @@ import { RentalInvoicePage } from '@/pages/RentalInvoicePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { DailyCalculatorPage } from '@/pages/DailyCalculatorPage';
 import { DailyTripsPage } from '@/pages/DailyTripsPage';
-import { DailyCraneWorkPage } from '@/pages/DailyCraneWorkPage';
 import { DriverEquipmentExpensesPage } from '@/pages/DriverEquipmentExpensesPage';
 import { ExpensesPage } from '@/pages/ExpensesPage';
 import { CalculatorPage } from '@/pages/CalculatorPage';
@@ -49,6 +51,17 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const showBackButton = location.pathname !== '/';
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let active = true;
+    let subscription: { remove: () => Promise<void> } | undefined;
+    void LocalNotifications.addListener('localNotificationActionPerformed', () => {
+      if (active) navigate('/command-center');
+    }).then(listener => { if (active) subscription = listener; else void listener.remove(); }).catch(() => undefined);
+    return () => { active = false; void subscription?.remove(); };
+  }, [navigate]);
+
 
   const [showExitHint, setShowExitHint] = useState(false);
   const [lastBackPress, setLastBackPress] = useState(0);
@@ -187,6 +200,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/command-center" element={<CommandCenterPage />} />
         <Route path="/ai" element={<AIAssistantPage />} />
         <Route path="/opportunity-radar" element={<OpportunityRadarPage />} />
         <Route path="/marketing-center" element={<MarketingCenterPage />} />
@@ -208,7 +222,6 @@ function App() {
         <Route path="/receivables" element={<ReceivablesPage />} />
         <Route path="/receivable-reminders" element={<ReceivablesRemindersPage />} />
         <Route path="/daily-trips" element={<DailyTripsPage />} />
-        <Route path="/daily-crane-work" element={<DailyCraneWorkPage />} />
         <Route path="/operating-expenses" element={<DriverEquipmentExpensesPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/drivers" element={<DriversPage />} />
