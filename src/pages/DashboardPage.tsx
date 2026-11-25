@@ -75,6 +75,7 @@ const QUICK_ADD_DEFAULT_IDS = [
 ];
 
 const QUICK_ADD_CATALOG: QuickAddAction[] = [
+  { id: 'command-center', label: 'مركز التنبيهات', icon: Clock, color: '#e7bd70', path: '/command-center' },
   { id: 'trip', label: 'مشوار', icon: Truck, color: '#fbbf24', path: '/daily-trips' },
   { id: 'expense', label: 'مصروف', icon: Wallet, color: '#fb7185', path: '/operating-expenses' },
   { id: 'income', label: 'دخل جديد', icon: TrendingUp, color: '#4ade80', path: '/add' },
