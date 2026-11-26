@@ -17,17 +17,13 @@ import {
   CalendarDays,
   UsersRound,
   LayoutGrid,
-  UserPlus,
-  FileText,
-  ChevronUp,
-  SlidersHorizontal,
-  Check,
   ReceiptText,
 } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { QuickControlPanel } from '@/components/layout/QuickControlPanel';
 import { type Transaction } from '@/components/dashboard/TransactionItem';
 import { formatSAR } from '@/lib/format';
 import {
@@ -55,42 +51,6 @@ type ActionItem = {
   path: string;
   tone: ActionTone;
 };
-
-type QuickAddAction = {
-  id: string;
-  label: string;
-  icon: any;
-  color: string;
-  path: string;
-};
-
-const QUICK_ADD_STORAGE_KEY = 'bakr_pro_quick_add_actions_v1';
-
-const QUICK_ADD_DEFAULT_IDS = [
-  'lead',
-  'work-invoice',
-  'income',
-  'expense',
-  'trip',
-];
-
-const QUICK_ADD_CATALOG: QuickAddAction[] = [
-  { id: 'command-center', label: 'مركز التنبيهات', icon: Clock, color: '#e7bd70', path: '/command-center' },
-  { id: 'trip', label: 'مشوار', icon: Truck, color: '#fbbf24', path: '/daily-trips' },
-  { id: 'expense', label: 'مصروف', icon: Wallet, color: '#fb7185', path: '/operating-expenses' },
-  { id: 'income', label: 'دخل جديد', icon: TrendingUp, color: '#4ade80', path: '/add' },
-  { id: 'work-invoice', label: 'فاتورة عمل', icon: FileText, color: '#60a5fa', path: '/work-invoice' },
-  { id: 'lead', label: 'عميل / فرصة', icon: UserPlus, color: '#c084fc', path: '/customers-opportunities' },
-  { id: 'quotation', label: 'عرض سعر', icon: FileText, color: '#22d3ee', path: '/quotation' },
-  { id: 'quotation-pro', label: 'عرض سعر احترافي', icon: FileText, color: '#f59e0b', path: '/quotation-pro' },
-  { id: 'invoice', label: 'الفواتير', icon: FileText, color: '#a78bfa', path: '/invoices' },
-  { id: 'customer', label: 'العملاء', icon: UsersRound, color: '#38bdf8', path: '/customers' },
-  { id: 'equipment', label: 'المعدات', icon: Truck, color: '#f59e0b', path: '/equipment' },
-  { id: 'today', label: 'حساب اليوم', icon: CalendarDays, color: '#34d399', path: '/daily-calculator' },
-  { id: 'financial-withdrawals', label: 'سجل السحوبات', icon: ReceiptText, color: '#fbbf24', path: '/financial-withdrawals' },
-  { id: 'receivables', label: 'مستحقات العملاء', icon: Wallet, color: '#fbbf24', path: '/receivables' },
-  { id: 'receivable-reminders', label: 'تذكير المستحقات', icon: Clock, color: '#d7af62', path: '/receivable-reminders' },
-];
 
 type SearchResult = {
   id: string;
@@ -308,26 +268,6 @@ export function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [quickAddCustomizeOpen, setQuickAddCustomizeOpen] = useState(false);
-
-  const [quickAddIds, setQuickAddIds] = useState<string[]>(() => {
-    try {
-      const raw = localStorage.getItem(QUICK_ADD_STORAGE_KEY);
-      if (!raw) return QUICK_ADD_DEFAULT_IDS;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return QUICK_ADD_DEFAULT_IDS;
-
-      const validIds = parsed.filter(
-        (id: unknown) =>
-          typeof id === 'string' &&
-          QUICK_ADD_CATALOG.some((item) => item.id === id)
-      );
-
-      return validIds.length ? validIds.slice(0, 8) : QUICK_ADD_DEFAULT_IDS;
-    } catch {
-      return QUICK_ADD_DEFAULT_IDS;
-    }
-  });
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [localSearchItems, setLocalSearchItems] = useState<SearchResult[]>([]);
@@ -384,38 +324,6 @@ export function DashboardPage() {
       window.removeEventListener('focus', handleFocus);
     };
   }, [load, loadHeroImage, refreshSearchData]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(QUICK_ADD_STORAGE_KEY, JSON.stringify(quickAddIds));
-    } catch (error) {
-      console.error('Quick add preferences save error:', error);
-    }
-  }, [quickAddIds]);
-
-  const selectedQuickAddActions = useMemo(
-    () =>
-      quickAddIds
-        .map((id) => QUICK_ADD_CATALOG.find((item) => item.id === id))
-        .filter((item): item is QuickAddAction => Boolean(item)),
-    [quickAddIds]
-  );
-
-  function toggleQuickAddAction(id: string) {
-    setQuickAddIds((current) => {
-      if (current.includes(id)) {
-        if (current.length <= 1) return current;
-        return current.filter((itemId) => itemId !== id);
-      }
-
-      if (current.length >= 8) {
-        alert('يمكن إضافة 8 اختصارات كحد أقصى');
-        return current;
-      }
-
-      return [...current, id];
-    });
-  }
 
   const transactionSearchItems = useMemo(
     () => buildTransactionSearchItems(allTxs),
@@ -1037,153 +945,13 @@ export function DashboardPage() {
         <div className="h-4" />
 
         {quickAddOpen && (
-          <>
-            <button
-              type="button"
-              aria-label="إغلاق قائمة الإضافة"
-              onClick={() => setQuickAddOpen(false)}
-              className="fixed inset-0 z-[9990]"
-              style={{ background: 'rgba(2,6,15,.54)', backdropFilter: 'blur(3px)' }}
-            />
-
-            <div
-              className="fixed z-[9992] left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[430px] rounded-[28px] p-3.5"
-              style={{
-                bottom: 'calc(env(safe-area-inset-bottom, 0px) + 93px)',
-                background: 'linear-gradient(180deg,rgba(10,25,44,.98),rgba(5,14,27,.99))',
-                border: '1px solid rgba(245,158,11,.26)',
-                boxShadow: '0 24px 60px rgba(0,0,0,.48), 0 0 26px rgba(245,158,11,.08)',
-              }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuickAddOpen(false);
-                    setQuickAddCustomizeOpen(true);
-                  }}
-                  className="h-9 px-3 rounded-xl flex items-center gap-1.5 text-[9px] font-black text-amber-300 active:scale-95"
-                  style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.20)' }}
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  تغيير
-                </button>
-
-                <div className="text-center">
-                  <p className="text-[12px] font-black text-white">إضافة سريعة</p>
-                  <p className="text-[8px] text-slate-500 mt-0.5">اختر العملية التي تريدها</p>
-                </div>
-
-                <ChevronUp className="w-5 h-5 text-amber-400" />
-              </div>
-
-              <div
-                className="grid gap-2"
-                style={{
-                  gridTemplateColumns:
-                    selectedQuickAddActions.length <= 3
-                      ? `repeat(${Math.max(selectedQuickAddActions.length, 1)}, minmax(0, 1fr))`
-                      : 'repeat(3, minmax(0, 1fr))',
-                }}
-              >
-                {selectedQuickAddActions.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => {
-                        setQuickAddOpen(false);
-                        navigate(item.path);
-                      }}
-                      className="min-w-0 rounded-[18px] py-3 px-1 active:scale-95 transition-transform"
-                      style={{ background: `${item.color}10`, border: `1px solid ${item.color}25` }}
-                    >
-                      <div className="w-11 h-11 mx-auto rounded-full flex items-center justify-center" style={{ background: `${item.color}18`, boxShadow: `0 0 18px ${item.color}20` }}>
-                        <Icon className="w-5 h-5" style={{ color: item.color }} />
-                      </div>
-                      <p className="text-[8px] leading-[11px] font-black text-slate-200 text-center mt-2">{item.label}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-
-        {quickAddCustomizeOpen && (
-          <>
-            <button
-              type="button"
-              aria-label="إغلاق تخصيص الإضافة"
-              onClick={() => setQuickAddCustomizeOpen(false)}
-              className="fixed inset-0 z-[9993]"
-              style={{ background: 'rgba(2,6,15,.68)', backdropFilter: 'blur(5px)' }}
-            />
-
-            <div
-              className="fixed z-[9994] left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[430px] rounded-[28px] p-4"
-              style={{
-                bottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
-                maxHeight: '78dvh',
-                overflowY: 'auto',
-                background: 'linear-gradient(180deg,rgba(10,25,44,.995),rgba(5,14,27,.995))',
-                border: '1px solid rgba(245,158,11,.28)',
-                boxShadow: '0 26px 70px rgba(0,0,0,.58)',
-              }}
-            >
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div>
-                  <h3 className="text-[16px] font-black text-white">تخصيص الإضافة السريعة</h3>
-                  <p className="text-[9px] text-slate-500 mt-1">أضف أو احذف الخانات التي تحتاجها</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuickAddCustomizeOpen(false);
-                    setQuickAddOpen(true);
-                  }}
-                  className="h-10 px-4 rounded-xl text-[10px] font-black text-slate-950 bg-amber-400 active:scale-95"
-                >
-                  تم
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {QUICK_ADD_CATALOG.map((item) => {
-                  const Icon = item.icon;
-                  const selected = quickAddIds.includes(item.id);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => toggleQuickAddAction(item.id)}
-                      className="relative min-h-[92px] rounded-[18px] p-3 flex items-center gap-3 text-right active:scale-[0.97] transition-transform"
-                      style={{
-                        background: selected ? `${item.color}14` : 'rgba(255,255,255,.028)',
-                        border: selected ? `1px solid ${item.color}45` : '1px solid rgba(255,255,255,.06)',
-                      }}
-                    >
-                      <div className="w-12 h-12 rounded-[15px] shrink-0 flex items-center justify-center" style={{ background: `${item.color}15` }}>
-                        <Icon className="w-6 h-6" style={{ color: item.color }} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-black text-white">{item.label}</p>
-                        <p className="text-[8px] text-slate-500 mt-1">{selected ? 'مضاف للشريط' : 'اضغط للإضافة'}</p>
-                      </div>
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: selected ? item.color : 'rgba(255,255,255,.06)' }}>
-                        {selected ? <Check className="w-4 h-4 text-slate-950" /> : <Plus className="w-4 h-4 text-slate-400" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-3 rounded-[15px] px-3 py-2.5 text-center" style={{ background: 'rgba(96,165,250,.06)', border: '1px solid rgba(96,165,250,.10)' }}>
-                <p className="text-[8.5px] text-slate-400">المختار حالياً: {quickAddIds.length} من 8 كحد أقصى</p>
-              </div>
-            </div>
-          </>
+          <QuickControlPanel
+            onClose={() => setQuickAddOpen(false)}
+            onNavigate={(path) => {
+              setQuickAddOpen(false);
+              navigate(path);
+            }}
+          />
         )}
 
         {moreOpen && (
@@ -1279,7 +1047,6 @@ export function DashboardPage() {
               aria-label="إضافة"
               onClick={() => {
                 setMoreOpen(false);
-                setQuickAddCustomizeOpen(false);
                 setQuickAddOpen((value) => !value);
               }}
               className="absolute left-1/2 -translate-x-1/2 -top-[22px] w-[72px] h-[72px] rounded-[23px] flex items-center justify-center active:scale-95 transition-transform"
