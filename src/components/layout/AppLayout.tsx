@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import { QuickControlPanel } from '@/components/layout/QuickControlPanel';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu,
@@ -35,6 +36,7 @@ export function AppLayout({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
 
   const menuItems = [
     {
@@ -599,6 +601,13 @@ export function AppLayout({
         </div>
       )}
 
+      {quickOpen && (
+        <QuickControlPanel
+          onClose={() => setQuickOpen(false)}
+          onNavigate={(path) => {setQuickOpen(false); navigate(path);}}
+        />
+      )}
+
       {/* =========================
           شريط التنقل السفلي
       ========================== */}
@@ -661,7 +670,7 @@ export function AppLayout({
 
             <button
               type="button"
-              onClick={() => navigate('/add')}
+              onClick={() => setQuickOpen(true)}
               className="relative flex flex-col items-center justify-center"
             >
               <div
