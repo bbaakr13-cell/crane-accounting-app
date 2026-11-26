@@ -26,6 +26,10 @@ import {
   Eye,
   UserRound,
   CheckCircle2,
+  ClipboardList,
+  CalendarDays,
+  ChevronLeft,
+  RefreshCw,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -45,6 +49,36 @@ import jsPDF from 'jspdf';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
+type FleetMovement = { id: string; date: string; label: string; amount: number; kind: 'work' | 'expense'; subtitle: string };
+
+// Read-only: never rewrite the existing source records.
+function loadFleetMovements(equipmentId: string): FleetMovement[] {
+  if (!equipmentId) return [];
+  const read = (key: string): any[] => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  };
+  const works: FleetMovement[] = read('bakr_pro_trips_daily_entries_v1')
+    .filter((r) => String(r.equipmentId) === equipmentId)
+    .map((r) => ({
+      id: `w-${r.id}`, date: String(r.date || ''),
+      label: r.mode === 'daily' ? 'يومية كرين' : 'مشوار كرين',
+      amount: Number(r.price || 0), kind: 'work' as const,
+      subtitle: [r.client, r.site].filter(Boolean).join(' • '),
+    }));
+  const expenses: FleetMovement[] = read('crane_accounting_driver_equipment_expenses_v1')
+    .filter((r) => String(r.equipmentId) === equipmentId && r.affectsDriverBalance !== true && r.category !== 'سلفة / سحب')
+    .map((r) => ({
+      id: `e-${r.id}`, date: String(r.date || ''),
+      label: String(r.category || 'مصروف معدة'),
+      amount: Number(r.amount || 0), kind: 'expense' as const,
+      subtitle: String(r.notes || r.location || 'مصروف تشغيل'),
+    }));
+  return [...works, ...expenses].sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export function EquipmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -54,6 +88,8 @@ export function EquipmentDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
+  const [fleetMovements, setFleetMovements] = useState<FleetMovement[]>([]);
+  const [showAllMovements, setShowAllMovements] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -62,6 +98,7 @@ export function EquipmentDetailPage() {
         const [eq, st] = await Promise.all([fetchEquipmentById(id), fetchEquipmentStats(id)]);
         setEquipment(eq);
         setStats(st);
+        setFleetMovements(loadFleetMovements(id));
       } catch {
         setEquipment(null);
       }
@@ -109,11 +146,9 @@ export function EquipmentDetailPage() {
   const styles = statusStyles[equipment.status];
 
   const actionButtons = [
-    { label: 'إضافة عمل', icon: ArrowDownLeft, onClick: () => navigate('/add'), tone: 'bg-income/10 text-income border-income/20' },
-    { label: 'إضافة مصروف', icon: ArrowUpLeft, onClick: () => navigate('/add'), tone: 'bg-expense/10 text-expense border-expense/20' },
     { label: 'الحساب الشهري', icon: CalendarClock, onClick: () => navigate(`/monthly/${equipment.id}`), tone: 'bg-receivable/10 text-receivable border-receivable/20' },
     { label: 'مستندات الكرين والمشغل', icon: FolderOpen, onClick: () => setShowDocuments(true), tone: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
-    { label: 'عرض الحركات', icon: Receipt, onClick: () => navigate('/transactions'), tone: 'bg-white/5 text-slate-200 border-white/10' },
+    { label: 'سجل عمليات الكرين', icon: Receipt, onClick: () => document.getElementById('fleet-360-movements')?.scrollIntoView({ behavior: 'smooth' }), tone: 'bg-white/5 text-slate-200 border-white/10' },
     { label: 'كشف PDF', icon: FileText, onClick: () => navigate(`/monthly/${equipment.id}`), tone: 'bg-gold-500/10 text-gold-400 border-gold-500/20' },
     { label: 'تعديل المعدة', icon: Pencil, onClick: () => navigate(`/equipment/${equipment.id}/edit`), tone: 'bg-white/5 text-slate-200 border-white/10' },
   ];
@@ -126,11 +161,17 @@ export function EquipmentDetailPage() {
           icon={Truck}
           onBack={() => navigate('/equipment')}
           action={
-            <button onClick={() => navigate('/add')} className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-glow-gold active:scale-95 transition-transform flex-shrink-0">
+            <button onClick={() => navigate(`/daily-trips?equipmentId=${encodeURIComponent(String(equipment.id))}`)} className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-glow-gold active:scale-95 transition-transform flex-shrink-0">
               <Plus className="w-5 h-5 text-ink-950" strokeWidth={2.5} />
             </button>
           }
         />
+
+        <div className="mb-3 rounded-[20px] border border-amber-400/20 bg-gradient-to-l from-[#142b47] to-[#081522] p-3.5">
+          <p className="text-[10px] font-black tracking-wide text-amber-300">BAKR PRO • FLEET 360</p>
+          <p className="mt-1 text-[17px] font-black text-white">الملف الشامل للمعدة</p>
+          <p className="mt-1 text-[10px] text-slate-400">كل أعمال الكرين ومصاريفه ومستنداته في مكان واحد</p>
+        </div>
 
         {/* Hero image */}
         <Card className="overflow-hidden mb-4 animate-scale-in">
@@ -152,6 +193,17 @@ export function EquipmentDetailPage() {
             </div>
           </div>
         </Card>
+
+        <div className="mb-3 grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={() => navigate(`/daily-trips?equipmentId=${encodeURIComponent(String(equipment.id))}`)} className="min-h-[73px] rounded-[17px] border border-emerald-400/25 bg-emerald-500/10 px-3 py-2.5 text-right active:scale-[.98]">
+            <div className="flex items-center gap-2 text-emerald-300"><CalendarDays size={21} /><span className="text-[12px] font-black">إضافة مشوار / يومية</span></div>
+            <p className="mt-2 text-[9px] text-slate-400">الكرين محدد تلقائياً</p>
+          </button>
+          <button type="button" onClick={() => navigate(`/operating-expenses?equipmentId=${encodeURIComponent(String(equipment.id))}&mode=equipment`)} className="min-h-[73px] rounded-[17px] border border-rose-400/25 bg-rose-500/10 px-3 py-2.5 text-right active:scale-[.98]">
+            <div className="flex items-center gap-2 text-rose-300"><Wallet size={21} /><span className="text-[12px] font-black">إضافة مصروف كرين</span></div>
+            <p className="mt-2 text-[9px] text-slate-400">الكرين محدد تلقائياً</p>
+          </button>
+        </div>
 
         {/* Action buttons grid */}
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -198,6 +250,49 @@ export function EquipmentDetailPage() {
             </div>
           </Card>
         </div>
+
+        {/* FLEET 360: only the operations saved by the dedicated trip/expense screens.
+            These are shown separately and never merged into the legacy summary cards. */}
+        <section id="fleet-360-movements" className="mb-4 rounded-[22px] border border-white/10 bg-[#0c1a2e] p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-amber-300" />
+              <div>
+                <h3 className="text-[14px] font-black text-white">سجل تشغيل الكرين</h3>
+                <p className="text-[10px] text-slate-400">مشاوير • يوميات • مصروفات مسجلة</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => setFleetMovements(loadFleetMovements(String(equipment.id)))} className="rounded-xl border border-white/10 bg-white/5 p-2" aria-label="تحديث سجل العمليات"><RefreshCw className="h-4 w-4 text-amber-300" /></button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/5 p-3">
+              <p className="text-[10px] text-slate-400">أعمال التشغيل المسجلة</p>
+              <p className="mt-1 text-[12px] font-black text-emerald-300">{fleetMovements.filter(x => x.kind === 'work').length} حركة</p>
+            </div>
+            <div className="rounded-xl border border-rose-400/15 bg-rose-500/5 p-3">
+              <p className="text-[10px] text-slate-400">مصروفات المعدة المسجلة</p>
+              <p className="mt-1 text-[12px] font-black text-rose-300">{fleetMovements.filter(x => x.kind === 'expense').length} حركة</p>
+            </div>
+          </div>
+          {fleetMovements.length === 0 ? (
+            <p className="rounded-xl bg-white/[.03] p-4 text-center text-[11px] text-slate-400">ما فيه عمليات جديدة مرتبطة بهذا الكرين في سجلات المشاوير والمصروفات بعد.</p>
+          ) : (fleetMovements.slice(0, showAllMovements ? undefined : 5).map((movement) => (
+            <div key={movement.id} className="flex items-center gap-2 border-b border-white/5 py-2.5 last:border-0">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${movement.kind === 'work' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-rose-500/10 text-rose-300'}`}>
+                {movement.kind === 'work' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-bold text-slate-100">{movement.label}</p>
+                <p className="truncate text-[10px] text-slate-500">{movement.date} • {movement.subtitle}</p>
+              </div>
+              <span className={`shrink-0 text-[11px] font-black ${movement.kind === 'work' ? 'text-emerald-300' : 'text-rose-300'}`}>{formatSAR(movement.amount)}</span>
+            </div>
+          )))}
+          {fleetMovements.length > 5 && (
+            <button type="button" onClick={() => setShowAllMovements(x => !x)} className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 py-2.5 text-[11px] font-bold text-amber-300">{showAllMovements ? 'عرض آخر 5 حركات' : `عرض كل الحركات (${fleetMovements.length})`}</button>
+          )}
+          <p className="mt-3 text-[9px] leading-5 text-slate-500">هذا السجل يعرض العمليات المسجلة في قسمي المشاوير والمصاريف. بطاقات الحسابات أعلاه تستخدم حسابات النظام الحالية، ولا تُضاف هذه العمليات إليها مرة ثانية.</p>
+        </section>
 
         {/* Info rows */}
         <Card className="divide-y divide-white/5 mb-4">
