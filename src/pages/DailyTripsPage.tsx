@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { fetchEquipment, type Equipment } from '@/lib/equipment';
 import { CalendarDays, Truck, Save, FileText, Send, Wallet, ExternalLink } from 'lucide-react';
@@ -59,6 +59,8 @@ function addToMonthlyLedger(entry: Entry) {
 
 export function DailyTripsPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedEquipmentId = searchParams.get('equipmentId') || '';
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [equipmentId, setEquipmentId] = useState('');
   const [mode, setMode] = useState<Mode>('trip');
@@ -90,11 +92,11 @@ export function DailyTripsPage() {
     fetchEquipment().then(v => {
       if (!active) return;
       setEquipment(v || []);
-      setEquipmentId(old => old || String(v?.[0]?.id || ''));
+      setEquipmentId(old => (requestedEquipmentId && v?.some(e => String(e.id) === requestedEquipmentId)) ? requestedEquipmentId : (old || String(v?.[0]?.id || '')));
     }).catch(() => { if(active) setError('تعذر تحميل الكرينات المحفوظة'); })
       .finally(() => { if(active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [requestedEquipmentId]);
 
   const equip = equipment.find(x => String(x.id) === equipmentId);
   const equipName = String(equip?.name || '');
