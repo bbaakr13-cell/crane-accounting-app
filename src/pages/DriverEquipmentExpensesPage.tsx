@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { fetchEquipment, type Equipment } from '@/lib/equipment';
 import { CalendarDays, Check, ChevronDown, Pencil, Search, Trash2, Truck, UserRound } from 'lucide-react';
@@ -41,6 +42,8 @@ const action: CSSProperties = { border: 0, borderRadius: 12, height: 48, fontWei
 const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new Date(`${v}T12:00:00`).getTime());
 
 export function DriverEquipmentExpensesPage() {
+  const [searchParams] = useSearchParams();
+  const requestedEquipmentId = searchParams.get('equipmentId') || '';
   const [drivers] = useState<Driver[]>(() => readArray<Driver>(DRIVER_KEY));
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [records, setRecords] = useState<ExpenseRecord[]>(() => readArray<ExpenseRecord>(STORAGE_KEY));
@@ -63,11 +66,11 @@ export function DriverEquipmentExpensesPage() {
 
   useEffect(() => {
     let mounted = true;
-    fetchEquipment().then(v => { if (mounted) setEquipment(v || []); })
+    fetchEquipment().then(v => { if (mounted) { setEquipment(v || []); if (requestedEquipmentId && (v || []).some(x => String(x.id) === requestedEquipmentId)) { setMode('equipment'); setEquipmentId(requestedEquipmentId); } } })
       .catch(() => { if (mounted) setError('تعذر تحميل المعدات. حاول إعادة فتح الصفحة.'); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, []);
+  }, [requestedEquipmentId]);
 
   const selectedEquipment = equipment.find(e => String(e.id) === equipmentId);
   const selectedDriver = drivers.find(d => String(d.id) === driverId);
