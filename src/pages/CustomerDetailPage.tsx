@@ -10,6 +10,7 @@ import {
 } from '@/lib/customers';
 import { fetchJobsByCustomer, fetchPaymentsByCustomer, recordPayment, type Job, type Payment, paymentStatusLabels, paymentStatusStyles, paymentMethods } from '@/lib/transactions';
 import { formatSAR } from '@/lib/format';
+import { CustomerVipCard } from '@/components/customers/CustomerVipCard';
 
 export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -142,6 +143,9 @@ export function CustomerDetailPage() {
             </button>
           </div>
         </Card>
+
+        {/* VIP loyalty card: stored separately from existing financial records */}
+        <CustomerVipCard customerId={customer.id} customerName={customer.name} jobs={jobs} />
 
         {/* Financial summary */}
         <section className="grid grid-cols-3 gap-2.5 mb-4">
